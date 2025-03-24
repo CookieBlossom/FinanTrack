@@ -113,5 +113,26 @@
         "normalizedName": "Farmacia Ahumada",
         "keywords": ["FARM AHUM", "FARMACIA AHUMADA", "AHUM", "AHUMADA"],
         "category": "Health"
+    },
+    {
+        "normalizedName": "Farmacia Ahumada",
+        "keywords": ["FARM AHUM", "FARMACIA AHUMADA", "AHUM", "AHUMADA"],
+        "category": "Health"
+    },
+    {
+        "normalizedName": "San Camilo",
+        "keywords": ["SAN CAMIL"],
+        "category": "Food"
+    }
+    ,
+    {
+        "normalizedName": "Homecenter Sodimac",
+        "keywords": ["SODIMAC"],
+        "category": "Retail"
+    },
+    {
+        "normalizedName": "Zapping",
+        "keywords": ["ZAPPING CL"],
+        "category": "Home"
     }
 ]
