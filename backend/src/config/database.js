@@ -19,8 +19,4 @@ const pool = new Pool({
 pool.on('connect', () => {
   console.log('Conected to the database');
 });
-
-require('dotenv').config();
-console.log(process.env);
-
 module.exports = pool;
