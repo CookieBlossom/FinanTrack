@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors'); 
 const dotenv = require('dotenv');
 const pool = require('./config/database.js');
-const userRoutes = require('./routes/userRoutes.js');
 const errorHandler = require('./middlewares/errorHandler.js');
 dotenv.config();
 const app = express();
@@ -13,10 +12,9 @@ app.use(cors({ origin: 'http://localhost:4200' })); // Cambia al dominio de prod
 app.use(express.json());
 
 // Rutas
-app.use('/api', userRoutes); // Rutas de usuario
+// app.use('/api', userRoutes); // Rutas de usuario
 // Error handling middleware
-app.use(errorHandler);
-// app.use('/api', financeRoutes);
+// app.use(errorHandler);
 
 // Server
 app.get('/', async(req, res) => {
