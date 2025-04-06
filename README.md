@@ -44,13 +44,16 @@
 
 ## 6. Comandos comunes a utilizar
 **GIT**
+
 - ```git status``` (comprueba que cambios has hecho)
 - ```git checkout -b 'nombre-de-nueva-rama'``` (crea una nueva rama)
 - ```git switch 'nombre-de-la-rama'``` (cambias de una rama a otra)
 - ```git add .'``` (agregas los cambios realizados para ser guardados)
 - ```git commit -am 'mensaje'``` (guardas los cambios realizados)
 - ```git push -u origin 'nombre-de-la-rama'``` (subes los cambios)
-**ANGULAR - FRONTED**
+
+**ANGULAR**
+
 - ``` ng serve ``` (para levantar el fronted y dejarlo activo)
 - ``` ng build ``` (para compilar el fronted y se que actualicen todos los cambios)
 - ``` ng generate component component/nombre ``` (Crea un componente)
