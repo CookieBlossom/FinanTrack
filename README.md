@@ -25,8 +25,6 @@ b. Reinicia tu PC si es necesario
 c. abre docker-desktop e ve a la seccion de "extensiones", donde buscas "Pg" y descargas la que diga "Open Source management tool for PostgreSQL"
 d. una vez que se instale la extension, tienes que setear una master password, esta debes guardarla por que sera tu autenticador de pgAdmin
 e. creas un nuevo server, lo llamas postgres, y en conexion colocas, host/address: host.docker.internal, port: 5432 (el predeterminado), username: postgres, password: (tu masterPassword)
-f. ![alt text](image.png) 
-
 
 ## 4. Instalacion de dependencias
 a. en la carpeta raiz de "finantrack" verifica ``` node -v ``` y ``` npm -v ``` 

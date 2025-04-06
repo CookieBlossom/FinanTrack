@@ -8,7 +8,7 @@ yarn-error.log*
 # Dependency directories
 backend/node_modules/
 frontend/node_modules/
-
+node_modules
 # Environment files
 backend/.env
 *.env
@@ -50,6 +50,3 @@ Desktop.ini
 .idea/
 *.sw?
 *.swo
-
-# Others (custom for you)
-image.png
