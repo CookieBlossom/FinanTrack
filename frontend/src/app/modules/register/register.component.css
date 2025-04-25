@@ -1,0 +1,110 @@
+
+.mb-3 {
+    margin: 10px;
+    color: blueviolet;
+    border-color: blueviolet;
+}
+.input-form{
+    border-color: #990066;
+    border-radius: 15px;
+    width: 200px;
+    height: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin:  5px 155px;
+    padding: 10px;
+
+}
+
+.container {
+    position: relative;
+    right: 50px;
+
+}
+
+.container-fluid img {
+    width: 300px;
+}
+
+.container-fluid a {
+    font-size: xx-large;
+    color: #990066;
+    position: relative;
+    top: -70px;
+    left: 75%;
+    font-family: ' nimbus' !important;
+    font-style: oblique;
+    font-weight: bold;
+    
+}
+
+.container-fluid{
+    width: 300px;
+    position: relative;
+
+    right: 50px;
+    
+    
+}
+
+
+.btn{
+    margin: 10px;
+    top: 20px;
+    width: 120px;
+    height: 40px;
+    border-radius: 15px;
+    border-color: #990066;
+    background-color: white;
+    color: gray;
+    margin-left: 210px;
+    font-weight: bold;
+    
+}
+
+.btn:active {
+    background-color: #990066;
+    color: white;
+    
+    
+}
+
+.contchecklist{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px;
+    margin-left: 160px;
+    color: #990066;
+}
+
+.checklist{
+    margin: 10px;
+
+}
+label{
+    text-decoration: underline;
+}
+.contenedor {
+    display: flex;
+    justify-content: flex-end;
+}
+.circulo{
+    width: 200vw;
+    height: 200vw;
+    border-radius: 50%;
+    background-color: #990066;
+    position: absolute;
+    top: -50vw;
+    right: -150vw;
+    z-index: -1;
+   
+}
+
+.circulo img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    margin-bottom: 5px;
+}
