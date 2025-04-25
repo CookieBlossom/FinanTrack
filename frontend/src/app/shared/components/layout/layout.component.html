@@ -1,0 +1,13 @@
+<div class="layout-grid" [class.sidebar-closed]="!isSidebarOpen">
+  <aside class="sidebar">
+    <app-sidebar *ngIf="isSidebarOpen"></app-sidebar>
+  </aside>
+
+  <header class="toolbar">
+    <app-toolbar (toggle)="toggleSidebar()"></app-toolbar>
+  </header>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
