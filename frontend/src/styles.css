@@ -2,3 +2,29 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+:root {
+    /* 🎨 Colores base */
+    --color-primary-darkest: #311019;
+    --color-primary-darker:  #4f0f20;
+    --color-primary-dark:    #6d2237;
+    --color-primary:         #86324a;
+    --color-accent:          #9b2949;
+    --color-highlight:       #d84a72;
+  
+    --color-bg-light:        #edf0f2;
+    --color-bg-gray:         #cac9c9;
+  
+    /* 🅰️ Tipografía */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.25rem;
+    --font-size-xl: 1.5rem;
+  
+    /* Espaciado */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+  }
