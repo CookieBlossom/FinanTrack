@@ -6,12 +6,12 @@ export const routes: Routes = [
   // Rutas públicas (sin layout)
   {
     path: 'login',
-    loadChildren: () =>
+    loadComponent: () =>
       import('./modules/login/login.component').then(m => m.LoginComponent),
   },
   {
     path: 'register',
-    loadChildren: () =>
+    loadComponent: () =>
       import('./modules/register/register.component').then(m => m.RegisterComponent),
   },
 
