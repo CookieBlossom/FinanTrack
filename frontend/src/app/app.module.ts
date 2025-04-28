@@ -4,11 +4,8 @@ import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
 import { HttpClientModule } from '@angular/common/http';
 import { routes } from './app.routes';
-
 @NgModule({
-  declarations: [
-    AppComponent // Declaración del componente principal
-  ],
+  declarations: [AppComponent],
   imports: [
     BrowserModule,
     HttpClientModule,

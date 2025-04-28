@@ -1,0 +1,101 @@
+.contenedor{
+    display: flex;
+    justify-content: flex-end;
+    position: relative;
+    top: 150px;
+    right: 100px;
+
+}
+
+
+.card {
+    border: 3px solid #9b2949;
+    border-radius: 20px;
+    background-color: white;
+    
+}
+
+html,body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #9b2949;
+    overflow: hidden;
+    
+}
+
+.container{
+    position: relative;
+    top: 40px;
+}
+
+img{
+    width: 150px;
+}
+
+.container h4 {
+    position: relative;
+    left: 120px;
+    top: -70px;
+}
+
+ h4 {
+    font-family: ' nimbus' !important;
+    font-style: oblique;
+    font-weight: bold;
+    color: black;
+    font-size: x-large;
+    color: #9b2949;
+}
+
+.input-form{
+    border: 3px solid #9b2949;
+    border-radius: 20px;
+    width: 230px;
+    height: 30px;
+    gap: 8px;
+    margin: 5px;
+    text-align: center;
+    position: relative;
+    left: 30px;
+}
+
+.contButton{
+    position: relative;
+    left: 80px;
+}
+
+button{
+    border-radius: 20px;
+    width: 100px;
+    height: 35px;
+    margin: 20px;
+    background-color: #9b2949;
+    border-color: #9b2949;
+    color: white;
+
+}
+
+.contButton a {
+    position: relative;
+    top: 40px;
+    right: 150px;
+    color: #9b2949;    
+}
+
+h1{
+    color: white;
+    position: relative;
+    top: -390px;
+    left: 200px;
+    letter-spacing: 4px;
+}
+
+.img-bienvenidos{
+    width: 50%;
+    border-radius: 15px;
+    position: relative;
+    top: -400px;
+    left: 150px;
+}
+
