@@ -1,4 +1,15 @@
 <button mat-icon-button (click)="toggleSidebar()">
-    <mat-icon>menu</mat-icon>
+  <mat-icon>menu</mat-icon>
+</button>
+
+<span class="toolbar-title">Finantrack</span>
+
+<div class="toolbar-actions">
+  <button mat-icon-button (click)="toggleTheme()">
+    <mat-icon>dark_mode</mat-icon>
   </button>
-  <span class="toolbar-title">Finantrack</span>
+
+  <button mat-icon-button routerLink="/profile" routerLinkActive="active">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+</div>

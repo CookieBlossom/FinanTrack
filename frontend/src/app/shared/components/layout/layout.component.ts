@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { MatToolbarModule } from '@angular/material/toolbar';
-
+import { HostListener } from '@angular/core';
 @Component({
   selector: 'app-layout',
   standalone: true,
@@ -22,8 +22,27 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 })
 export class LayoutComponent {
   isSidebarOpen = true;
+  isMobile = false;
 
+  constructor() {
+    this.checkIfMobile();
+  }
+
+  @HostListener('window:resize', [])
+  onResize() {
+    this.checkIfMobile();
+  }
+
+  checkIfMobile() {
+    this.isMobile = window.innerWidth <= 1150;
+  }
   toggleSidebar() {
-    this.isSidebarOpen = !this.isSidebarOpen;
+    if (this.isMobile) {
+      // En mobile simplemente mostramos/ocultamos
+      this.isSidebarOpen = !this.isSidebarOpen;
+    } else {
+      // En desktop, seguimos cambiando el grid
+      this.isSidebarOpen = !this.isSidebarOpen;
+    }
   }
 }

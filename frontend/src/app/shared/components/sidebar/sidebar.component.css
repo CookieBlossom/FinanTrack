@@ -1,6 +1,77 @@
+/* Sidebar general */
 :host {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 1rem;
+  grid-template-rows: 10% 70% 1fr;
   height: 100%;
+  min-width: 0;
+}
+
+/* Cambios de colores específicos */
+.logo {
+  padding: 15px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-name {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  color: var(--color-primary-darkest); /* Brand name color */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Iconos */
+.mat-icon {
+  color: var(--color-primary-darkest); /* Icon color */
+}
+
+/* Lista de navegación */
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  padding: 0px;
+  justify-content: space-evenly;
+}
+
+/* Links */
+a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  padding: 0px;
+  color: var(--color-text);
+}
+
+/* Forzar el color de los list items */
+:host ::ng-deep .menu-items .mat-list-item,
+:host ::ng-deep .sidebar-footer .mat-list-item,
+:host ::ng-deep .menu-items .mdc-list-item,
+:host ::ng-deep .sidebar-footer .mdc-list-item,
+:host ::ng-deep .menu-items .mdc-list-item__primary-text,
+:host ::ng-deep .sidebar-footer .mdc-list-item__primary-text {
+  color: var(--color-text) !important;
+}
+
+:host ::ng-deep .mdc-list-item.active {
+  background-color: var(--color-primary-darkest) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+:host ::ng-deep .mdc-list-item.active .mdc-list-item__primary-text {
+  color: var(--color-text-inverse) !important;
 }
