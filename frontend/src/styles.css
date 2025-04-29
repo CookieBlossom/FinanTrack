@@ -1,30 +1,60 @@
-/* You can add global styles to this file, and also import other style files */
-
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body{
+  margin: 0px;
+  padding: 0px;
+}
 :root {
-    /* 🎨 Colores base */
-    --color-primary-darkest: #311019;
-    --color-primary-darker:  #4f0f20;
-    --color-primary-dark:    #6d2237;
-    --color-primary:         #86324a;
-    --color-accent:          #9b2949;
-    --color-highlight:       #d84a72;
-  
-    --color-bg-light:        #edf0f2;
-    --color-bg-gray:         #cac9c9;
-  
-    /* 🅰️ Tipografía */
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-md: 1rem;
-    --font-size-lg: 1.25rem;
-    --font-size-xl: 1.5rem;
-  
-    /* Espaciado */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-  }
+  /* 🎨 Light Theme */
+  --color-primary-darkest: #311019;
+  --color-primary-darker: #4f0f20;
+  --color-primary-dark: #6d2237;
+  --color-primary: #a84f68;
+  --color-accent: #9b2949;
+  --color-highlight: #e69ac3;
+  --color-bg-light: #000000;
+  --color-bg-gray: #cfcfcf;
+  /* colores para los fondos */
+  --clr-surface-a0: #ffffff;
+  --clr-surface-a10: #d6d5d5;
+  --clr-surface-a20: #c0bebe;
+  --clr-surface-a30: #9b9999;
+  --clr-surface-a40: #868686;
+  --clr-surface-a50: #6a6a6a;
+
+  --color-text: #000000;
+  --color-text-inverse: #ffffff;
+
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-xxl: 2rem;
+
+  --font-family-normal: "QuickSand", sans-serif;
+  --font-family-bold: "QuickSand-Bold", sans-serif;
+}
+
+/* 🌑 Dark Theme */
+.dark-theme {
+  --color-primary-darkest: #d745a2;
+  --color-primary-darker: #c94095;
+  --color-primary-dark: #d159a0;
+  --color-primary: #d870ac;
+  --color-accent: #df85b7;
+  --color-highlight: #e69ac3;
+  --color-bg-light: #fafafa;
+  --color-bg-gray: #e0e0e0;
+
+  /* colores para los fondos */
+  --clr-surface-a0: #030303;
+  --clr-surface-a10: #1f1f1f;
+  --clr-surface-a20: #373737;
+  --clr-surface-a30: #505050;
+  --clr-surface-a40: #6a6a6a;
+  --clr-surface-a50: #868686;
+
+  --color-text: #ffffff;
+  --color-text-inverse: #000000;
+}
+
