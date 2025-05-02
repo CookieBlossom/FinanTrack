@@ -14,7 +14,7 @@ body{
   --color-bg-gray: #cfcfcf;
   /* colores para los fondos */
   --clr-surface-a0: #ffffff;
-  --clr-surface-a10: #d6d5d5;
+  --clr-surface-a10: #f1f1f1;
   --clr-surface-a20: #c0bebe;
   --clr-surface-a30: #9b9999;
   --clr-surface-a40: #868686;
@@ -37,14 +37,15 @@ body{
 
 /* 🌑 Dark Theme */
 .dark-theme {
-  --color-primary-darkest: #d745a2;
-  --color-primary-darker: #c94095;
-  --color-primary-dark: #d159a0;
-  --color-primary: #d870ac;
+  --color-primary-darkest: #a02b73;
+  --color-primary-darker: #d745a2;
+  --color-primary-dark: #e644a4;
+  --color-primary: #dc59ac;
   --color-accent: #df85b7;
-  --color-highlight: #e69ac3;
+  --color-highlight: #c856a0;
+
   --color-bg-light: #fafafa;
-  --color-bg-gray: #e0e0e0;
+  --color-bg-gray: #2f2f2f;
 
   /* colores para los fondos */
   --clr-surface-a0: #030303;

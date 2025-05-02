@@ -1,3 +1,171 @@
-:host{
-    background-color: var(--color-bg-gray);
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .title-section{
+    margin: 0px;
+    text-align: center;
+    font-family: var(--font-family-bold);
+    font-size: var(--font-size-xl);
+    color: var(--color-accent);
+  }
+  
+  .container-dashboard {
+    padding: 1rem;
+    display: grid;
+    gap: 1rem;
+    height: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  
+  /* Secciones */
+  .ingresosVsCostos,
+  .movimientos,
+  .gastosPorCategoria {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 90%;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  /* Gráfico de líneas */
+  .ingresosVsCostos ngx-charts-line-chart {
+    flex: 1;
+    min-height: 200px;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  .chart-wrapper {
+    height: 100%;
+    width: 100%;
+    background-color: var(--clr-surface-a10);
+    border-radius: 1rem;
+  }
+  /* Pie chart */
+  .gastosPorCategoria ngx-charts-pie-chart {
+    flex: 1;
+    min-height: 200px;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--clr-surface-a10);
+    border-radius: 1rem;
+  }
+  .movimientos {
+    display: flex;
+    flex-direction: column;
+    width: 100%;   /* <--- IMPORTANTE */
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+  /* Tabla ag-grid */
+  .movimientos ag-grid-angular {
+    display: block; /* IMPORTANTE */
+    flex: 1;
+    width: 100%;
+    height: 100% !important;
+    min-height: 0;
+    overflow: auto;
+  }
+  
+  /* Layout en pantallas grandes */
+  @media (min-width: 768px) {
+    .container-dashboard {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 50% 1fr;
+      grid-template-areas:
+        "ingresosVsCostos ingresosVsCostos"
+        "movimientos gastosPorCategoria";
+    }
+  
+    .ingresosVsCostos {
+      grid-area: ingresosVsCostos;
+    }
+  
+    .movimientos {
+      grid-area: movimientos;
+    }
+  
+    .gastosPorCategoria {
+      grid-area: gastosPorCategoria;
+    }
+  }
+  .ag-theme-alpine {
+    --ag-foreground-color: var(--color-text);
+    --ag-background-color: var(--clr-surface-a0);
+    --ag-header-foreground-color: var(--color-text);
+    --ag-header-background-color: var(--clr-surface-a10);
+    --ag-odd-row-background-color: var(--clr-surface-a0);
+    --ag-row-hover-color: var(--clr-surface-a20);
+    --ag-font-family: var(--font-family-normal);
+    --ag-font-size: var(--font-size-md);
+  }
+  ::ng-deep .chart-legend .legend-title{
+    font-family: var(--font-family-bold) !important;
+    font-size: var(--font-size-md) !important;
+    color: var(--color-text) !important;
+    margin: 0px !important;
+    text-align: center;
+    padding: 10px;
+  }
+  ::ng-deep .chart-legend .legend-labels {
+    list-style: none;
+    text-align: left;
+    float: left;
+    width: 100%;
+    border-radius: 3px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: nowrap;
+    background: var(--color-bg-gray);
+    color: var(--color-text);
+    text-align: center;
 }
+::ng-deep .chart-legend .legend-label .active .legend-label-text {
+    color: var(--color-text) !important;
+}
+
+::ng-deep .chart-legend .legend-label-text {
+    display: inline-block;
+    vertical-align: top;
+    font-size: var(--font-size-md);
+    color: var(--color-primary-dark);
+    font-family: var(--font-family-bold) !important;
+    width: calc(100% - 20px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+  ::ng-deep ngx-charts text {
+    font-family: var(--font-family-normal) !important;
+    fill: var(--color-text) !important;
+    font-size: var(--font-size-sm) !important;
+  }
+  ::ng-deep .ngx-charts text {
+    font-family: var(--font-family-normal) !important;
+    font-size: var(--font-size-sm) !important;
+    fill: var(--color-text) !important;
+  }
+  ::ng-deep .x.axis text,
+  ::ng-deep .y.axis text,
+  ::ng-deep .x.axis-label,
+  ::ng-deep .y.axis-label {
+    font-family: var(--font-family-normal) !important;
+    font-size: var(--font-size-sm) !important;
+    fill: var(--color-text) !important;
+  }
+  ::ng-deep .tooltip-label,
+  ::ng-deep .tooltip-value {
+    font-family: var(--font-family-bold) !important;
+    font-size: var(--font-size-sm) !important;
+    color: var(--color-text) !important;
+  }
