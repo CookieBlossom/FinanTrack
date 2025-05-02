@@ -1,1 +1,44 @@
-<p>dashboard works!</p>
+<div class="container-dashboard">
+    <div class="ingresosVsCostos">
+        <h2 class="title-section">Ingresos vs Costos (por Año)</h2>
+        <div class="chart-wrapper" #chartContainer>
+            <ngx-charts-line-chart
+                [view]="chartView"
+                [results]="ingresosVsCostos"
+                [scheme]="colorScheme2"
+                [legend]="true"
+                [legendTitle]="'Leyenda'"
+                [xAxis]="true"
+                [yAxis]="true"
+                [animations]="true"
+                [autoScale]="true"
+                [curve]="curve">
+            </ngx-charts-line-chart>
+          </div>
+      </div>
+    <div class="movimientos">
+        <h2 class="title-section">Últimos Movimientos</h2>
+        <ag-grid-angular
+        class="ag-theme-alpine"
+        [columnDefs]="columnDefs"
+        [rowData]="rowData"
+        [theme]="myTheme"
+        rowModelType="clientSide"
+        (gridReady)="onGridReady($event)"
+        (gridSizeChanged)="onGridSizeChanged($event)">
+      </ag-grid-angular>
+    </div>
+    <div class="gastosPorCategoria">
+      <h2 class="title-section">Gastos por Categoría (Mes Actual)</h2>
+      <ngx-charts-pie-chart
+        [results]="gastosPorCategoria"
+        [scheme]="colorScheme"
+        [legend]="true"
+        [legendTitle]="'Leyenda'"
+        [explodeSlices]="false"
+        [labels]="true"
+        [animations]="true"
+        [doughnut]="true">
+      </ngx-charts-pie-chart>
+    </div>
+</div>

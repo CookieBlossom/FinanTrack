@@ -27,7 +27,7 @@
 /* Content */
 .content {
   grid-area: content;
-  background-color: var(--clr-surface-a0); /* Content background */
+  background-color: var(--clr-surface-a0);
   overflow-y: auto;
 }
 
