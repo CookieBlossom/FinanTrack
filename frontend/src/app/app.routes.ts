@@ -14,6 +14,7 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./modules/register/register.component').then(m => m.RegisterComponent),
   },
+  
 
   // Rutas privadas (con layout u otra propiedad)
   {
@@ -61,13 +62,22 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./modules/upcoming-transactions/upcoming-transactions.component').then(m => m.UpcomingTransactionsComponent),
       },
+      
       {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',
       },
     ],
+
   },
+  {
+    path:'about-company',
+    loadComponent:() =>
+      import('./modules/about-company/about-company.component').then(m => m.AboutCompanyComponent),
+
+  },
+
 
   // Ruta para no encontradas
   {
