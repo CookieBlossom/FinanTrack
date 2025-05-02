@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
+<div class="container-login">
   <div class="contenedor">
     <div class="card" style="width: 20rem;">
       <div class="card-body">
@@ -13,23 +6,19 @@
           <img src="assets/images/logoVino.png" alt="">
           <h4>FinanTrack</h4>
         </div>
-       <input type="text" placeholder="Ingrese su correo electronico" class="input-form">
-       <input type="text" placeholder="Ingrese su contraseña" class="input-form">
-       <div class="contButton">
-        <button>Iniciar sesión</button>
-        <a href="">¿Olvido su contraseña?</a>
-        <button>Registrarse</button>
-       </div>
-       
+        <input type="text" placeholder="Ingrese su correo electronico" class="input-form">
+        <input type="text" placeholder="Ingrese su contraseña" class="input-form">
+        <div class="contButton">
+        <button routerLink="/dashboard">Iniciar sesión</button>
+        <a>¿Olvido su contraseña?</a>
+        <button routerLink='/register'>Registrarse</button>
+        </div>
+        
       </div>
     </div>
-
   </div>
-
   <div>
     <h1>Bienvenidos</h1>
     <img src="assets/images/imagenBienvenidos.jpg" alt="" class="img-bienvenidos">
   </div>
-    
-</body>
-</html>
+</div>
