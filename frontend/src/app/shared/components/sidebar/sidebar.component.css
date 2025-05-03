@@ -1,7 +1,7 @@
 /* Sidebar general */
 :host {
   display: grid;
-  grid-template-rows: 10% 70% 1fr;
+  grid-template-rows: 10% 70% 20%;
   height: 100%;
   min-width: 0;
 }

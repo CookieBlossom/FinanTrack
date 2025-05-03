@@ -73,6 +73,7 @@
       grid-template-areas:
         "toolbar"
         "content";
+      grid-template-rows: auto 1fr;
       .sidebar {
         display: none;
       }

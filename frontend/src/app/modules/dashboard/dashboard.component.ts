@@ -38,7 +38,7 @@ ModuleRegistry.registerModules([
 export class DashboardComponent {
   @ViewChild('chartContainer') chartContainerRef!: ElementRef<HTMLDivElement>;
 
-  chartView: [number, number] = [700, 300]; // ancho x alto inicial
+  chartView: [number, number] = [300, 300];
   curve = curveLinear;
   ngAfterViewInit(): void {
     const observer = new ResizeObserver(entries => {
