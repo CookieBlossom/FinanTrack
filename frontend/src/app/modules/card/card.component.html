@@ -1,1 +1,75 @@
-<p>card works!</p>
+<div class="container-card">
+    <div class="container-left">
+      <h3 class="title-container">Tarjetas</h3>
+  
+      <div class="card-carousel">
+        <button *ngIf="mostrarBotonArriba()" class="top-card-btn" (click)="irArriba()">Arriba</button>
+  
+        <div class="card-item" *ngFor="let tarjeta of tarjetasVisibles">
+          <div class="card-visual">
+            <label class="switch">
+                <mat-slide-toggle [(ngModel)]="tarjeta.activa" color="primary">{{ tarjeta.activa ? 'Activa' : 'Desactivada' }}</mat-slide-toggle>
+            </label>
+          </div>
+          <div class="card-saldo">Saldo: {{ tarjeta.saldo | currency:'CLP' }}</div>
+        </div>
+  
+        <button *ngIf="mostrarBotonAbajo()" class="down-card-btn" (click)="irAbajo()">Abajo</button>
+      </div>
+  
+      <button class="add-card-btn" (click)="agregarTarjeta()">Agregar Tarjeta</button>
+    </div>
+  
+    <div class="container-right">
+        <div class="cards-graphs">
+            <div class="card-a">
+                <h3 class="title-card">Tus ingresos</h3>
+                <p class="text-card">$130.000</p>
+                <span class="tooltip-card">10% mas que el mes anterior</span>
+            </div>
+            <div class="card-b">
+                <h3 class="title-card">Tus ingresos</h3>
+                <p class="text-card">$130.000</p>
+                <span class="tooltip-card">10% mas que el mes anterior</span>
+            </div>
+            <div class="card-c">
+                <h3 class="title-card">Tus ingresos</h3>
+                <p class="text-card">$130.000</p>
+                <span class="tooltip-card">10% mas que el mes anterior</span>
+            </div>
+        </div>
+        <div class="container-graphs">
+            <div class="graph-a">
+              <h3>Categorías de gasto</h3>
+              <ngx-charts-number-card
+                [results]="categoriasGasto"
+                [scheme]="'cool'"
+                [animations]="true"
+                [innerPadding]="5">
+              </ngx-charts-number-card>
+            </div>
+          
+            <div class="graph-b">
+                <div class="graph-header">
+                    <h3>Comparación de Ingresos / Costos</h3>
+                    <mat-slide-toggle [(ngModel)]="mostrarIngresos" color="primary">
+                      {{ mostrarIngresos ? 'Ingresos' : 'Costos' }}
+                    </mat-slide-toggle>
+                </div>
+                <div class="chart-wrapper">
+                    <ngx-charts-line-chart
+                        [results]="mostrarIngresos ? dataIngresos : dataCostos"
+                        [xAxis]="true"
+                        [yAxis]="true"
+                        [legend]="true"
+                        [showXAxisLabel]="true"
+                        [showYAxisLabel]="true"
+                        [xAxisLabel]="'Mes'"
+                        [yAxisLabel]="'Monto ($)'"
+                        [autoScale]="true">
+                    </ngx-charts-line-chart>
+                </div>
+            </div>
+          </div>
+    </div>
+  </div>
