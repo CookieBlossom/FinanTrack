@@ -3,10 +3,15 @@ import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { AgGridModule } from 'ag-grid-angular';
+import { MatDialog } from '@angular/material/dialog';
+import { AddMovementComponent } from './add-movement.component';
+
 import {
+  AllCommunityModule,
   ClientSideRowModelApiModule,
   ClientSideRowModelModule,
   ColDef,
+  ColGroupDef,
   ColumnApiModule,
   ColumnAutoSizeModule,
   GridReadyEvent,
@@ -17,8 +22,6 @@ import {
   themeQuartz,
   ValidationModule,
 } from 'ag-grid-community';
-import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
-import { ToolbarComponent } from '../../shared/components/toolbar/toolbar.component';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -28,8 +31,8 @@ ModuleRegistry.registerModules([
   ValidationModule,
   PaginationModule,
   RowSelectionModule,
+  AllCommunityModule,
 ]);
-
 @Component({
   selector: 'app-movements',
   templateUrl: './movements.component.html',
@@ -37,19 +40,26 @@ ModuleRegistry.registerModules([
   standalone: true,
   imports: [
     CommonModule,
-    
     RouterModule,
     NgxChartsModule,
     AgGridModule,
-    SidebarComponent,
-    ToolbarComponent,
+    AddMovementComponent,
   ]
 })
 export class MovementsComponent {
+  constructor(private dialog: MatDialog) {}
+  openAddMovementDialog() {
+    const dialogRef = this.dialog.open(AddMovementComponent);
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.historyCash.push(result);
+      }
+    });
+  }
   columnDefsCard: ColDef[] = [
     { field: 'fecha' },
     { field: 'nameCompany' },
-    { field: 'monto' }
+    { field: 'monto' },
   ];
 
   columnDefsCash: ColDef[] = [
@@ -58,7 +68,11 @@ export class MovementsComponent {
     { field: 'monto' },
     { field: 'tipoMovimiento' }
   ];
-
+  defaultColDef: ColDef = {
+    editable: false,
+    filter: true,
+    resizable: true,
+  };
   historyCard = [
     { fecha: '2024-04-01', nameCompany: 'Supermercado', monto: -42000 },
     { fecha: '2024-04-05', nameCompany: 'Sueldo', monto: 850000 },
@@ -94,14 +108,14 @@ export class MovementsComponent {
   myTheme = themeQuartz.withParams({
     backgroundColor: 'var(--clr-surface-a10)',
     spacing: 10,
-    accentColor: 'var(--color-primary-darker)',
+    accentColor: 'var(--color-text)',
     foregroundColor: 'var(--color-accent)',
     headerTextColor: 'var(--color-text-inverse)',
     headerBackgroundColor: 'var(--color-accent)',
     oddRowBackgroundColor: 'var(--clr-surface-a10)',
-    headerColumnResizeHandleColor: 'var(--color-highlight)'
+    headerColumnResizeHandleColor: 'var(--color-highlight)',
+    textColor: 'var(--color-text)',
   });
-
   onGridSizeChanged(params: GridSizeChangedEvent) {
     params.api.sizeColumnsToFit();
   }

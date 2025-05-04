@@ -38,7 +38,7 @@ body{
 /* 🌑 Dark Theme */
 .dark-theme {
   --color-primary-darkest: #a02b73;
-  --color-primary-darker: #d745a2;
+  --color-primary-darker: #c542a2;
   --color-primary-dark: #e644a4;
   --color-primary: #dc59ac;
   --color-accent: #df85b7;
@@ -59,3 +59,6 @@ body{
   --color-text-inverse: #000000;
 }
 
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

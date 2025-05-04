@@ -1,0 +1,29 @@
+<h2 mat-dialog-title align="center" >Agregar Movimiento</h2>
+<div mat-dialog-content>
+  <form (ngSubmit)="onSubmit()" #form="ngForm">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Fecha</mat-label>
+      <input matInput [(ngModel)]="formData.fecha" name="fecha" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nombre</mat-label>
+      <input matInput [(ngModel)]="formData.nombre" name="nombre" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Monto</mat-label>
+      <input matInput type="number" [(ngModel)]="formData.monto" name="monto" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Tipo de Movimiento</mat-label>
+      <input matInput [(ngModel)]="formData.tipoMovimiento" name="tipoMovimiento" required />
+    </mat-form-field>
+  </form>
+</div>
+
+<div mat-dialog-actions align="center" justify="space-between">
+  <button mat-button (click)="onCancel()">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()">Agregar</button>
+</div>

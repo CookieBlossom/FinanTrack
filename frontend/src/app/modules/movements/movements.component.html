@@ -37,6 +37,7 @@
               [stopEditingWhenCellsLoseFocus]="true"
               [rowSelection]="'single'"
               [theme]="myTheme"
+              [defaultColDef]="defaultColDef"
               rowModelType="clientSide"
               (gridReady)="onGridReady($event)"
               (gridSizeChanged)="onGridSizeChanged($event)">
@@ -50,15 +51,15 @@
               [columnDefs]="columnDefsCash"
               [pagination]="true"
               [paginationPageSize]="5"
-              [singleClickEdit]="true"
               [stopEditingWhenCellsLoseFocus]="true"
               [rowSelection]="'single'"
               [theme]="myTheme"
+              [defaultColDef]="defaultColDef"
               rowModelType="clientSide"
               (gridReady)="onGridReady($event)"
               (gridSizeChanged)="onGridSizeChanged($event)">
             </ag-grid-angular>
-            <button class="btn-add">+ Agregar Movimiento</button>
+            <button class="btn-add" (click)="openAddMovementDialog()">+ Agregar Movimiento</button>
         </div>
     </div>
   </div>

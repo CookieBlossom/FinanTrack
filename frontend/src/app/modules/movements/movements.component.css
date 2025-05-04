@@ -86,14 +86,15 @@
 
   .container-tables {
     display: grid;
-    grid-template-columns: 50% 50%;
+    grid-template-columns: 40% 60%;
   }
   .table{
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 95%;
+    height: 99%;
+    width: 100%;
   }
   h3 {
     font-family: var(--font-family-bold);
@@ -114,9 +115,11 @@
     width: 97%;
   }
   ag-grid-angular {
+    display: block;
     flex: 1;
-    height: 100%;
     width: 97%;
+    height: 100% !important;
+    min-width: 0;
     min-height: 0;
     overflow: auto;
   }
@@ -125,17 +128,37 @@
       padding: 0px;
     }
     .container-tables{
-        display: grid;
-        grid-template-columns: 50% 50%;
+        display: flex;
+        flex-direction: column;
         justify-items: center;
     }
-    ag-grid-angular {
-      width: 100%;
-    }
-    .table{
-        width: 98%;
+    .cards{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 100%;
+        width: 90%;
+        border-radius: 20px;
+        justify-content: center;
+        
     }
     .card-summary-a, .card-summary-b, .card-summary-c{
+        display: flex;
         width: 90%;
+        height: 60%;
+        padding: 0.4rem;
+        flex-direction: column;
+        justify-content: center;
+        h3{
+            font-size: var(--font-size-sm);
+        }
+        .text-card{
+            p{
+                font-size: var(--font-size-xs);
+            }
+            h3{
+                font-size: var(--font-size-md);
+            }
+        }
     }
   }
