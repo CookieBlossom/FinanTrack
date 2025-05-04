@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SharedModule } from '../../shared/shared.modules';
 import { RouterModule } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
@@ -9,7 +8,7 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, SharedModule, RouterModule, NgxChartsModule, AgGridModule],
+  imports: [CommonModule, RouterModule, NgxChartsModule, AgGridModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })

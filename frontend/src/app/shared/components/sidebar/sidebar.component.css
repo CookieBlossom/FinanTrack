@@ -4,6 +4,7 @@
   grid-template-rows: 10% 70% 20%;
   height: 100%;
   min-width: 0;
+  min-height: 0;
 }
 
 /* Cambios de colores específicos */
@@ -22,7 +23,7 @@
 .brand-name {
   font-size: var(--font-size-lg);
   font-weight: bold;
-  color: var(--color-primary-darkest); /* Brand name color */
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

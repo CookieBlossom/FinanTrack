@@ -1,1 +1,65 @@
-<p>movements works!</p>
+<div class="container-movements">
+    <div class="container-cards">
+        <div class="cards">
+            <div class="card-summary-a">
+                <h3>Limite de gastos (Tarjeta)</h3>
+                <div class="text-card">
+                    <h3 class="title">$450.000</h3>
+                    <p class="text">usado de $450.000</p>
+                </div>
+            </div>
+            <div class="card-summary-b">
+                <h3>Limite de gastos (Efectivo)</h3>
+                <div class="text-card">
+                    <h3 class="title">$450.000</h3>
+                    <p class="text">usado de $450.000</p>
+                </div>
+            </div>
+            <div class="card-summary-c">
+                <h3>Limite de gastos (Alimentacion)</h3>
+                <div class="text-card">
+                    <h3 class="title">$450.000</h3>
+                    <p class="text">usado de $450.000</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-tables">
+        <div class="table">
+            <h3>Movimientos de Cuenta</h3>
+            <ag-grid-angular
+              class="ag-theme-alpine"
+              [rowData]="historyCard"
+              [columnDefs]="columnDefsCard"
+              [pagination]="true"
+              [paginationPageSize]="5"
+              [singleClickEdit]="true"
+              [stopEditingWhenCellsLoseFocus]="true"
+              [rowSelection]="'single'"
+              [theme]="myTheme"
+              rowModelType="clientSide"
+              (gridReady)="onGridReady($event)"
+              (gridSizeChanged)="onGridSizeChanged($event)">
+            </ag-grid-angular>
+        </div>
+        <div class="table">
+            <h3>Movimientos en Efectivo</h3>
+            <ag-grid-angular
+              class="ag-theme-alpine"
+              [rowData]="historyCash"
+              [columnDefs]="columnDefsCash"
+              [pagination]="true"
+              [paginationPageSize]="5"
+              [singleClickEdit]="true"
+              [stopEditingWhenCellsLoseFocus]="true"
+              [rowSelection]="'single'"
+              [theme]="myTheme"
+              rowModelType="clientSide"
+              (gridReady)="onGridReady($event)"
+              (gridSizeChanged)="onGridSizeChanged($event)">
+            </ag-grid-angular>
+            <button class="btn-add">+ Agregar Movimiento</button>
+        </div>
+    </div>
+  </div>
+  
