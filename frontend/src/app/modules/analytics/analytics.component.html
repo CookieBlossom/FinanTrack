@@ -1,1 +1,33 @@
-<p>analytics works!</p>
+<div class="container-analytics">
+    <div class="analytics">
+        <div class="chart-wrapper" #chartWrapper>
+            <ngx-charts-line-chart
+              [results]="chartData"
+              [view]="[700, 400]"
+              [xAxis]="false"
+              [yAxis]="true"
+              [legend]="true"
+              [showXAxisLabel]="false"
+              [showYAxisLabel]="true"
+              [legendPosition]="below"
+              [animations]="false" 
+              [autoScale]="true">
+            </ngx-charts-line-chart>
+          
+            <div class="x-axis-buttons" [ngStyle]="{ width: innerChartWidth + 'px' }">
+              <button
+                *ngFor="let mes of meses"
+                [class.active]="mes === selectedMonth"
+                (click)="filtrarPorMes(mes)">
+                {{ mes }}
+              </button>
+            </div>
+          </div>
+          
+        <div *ngIf="selectedMonth" class="summary">
+            <h3>Resumen de {{ selectedMonth }}</h3>
+            <!-- Aquí podrías mostrar información adicional basada en el mes -->
+        </div>
+    </div>
+    <div class="cards"></div>
+</div>

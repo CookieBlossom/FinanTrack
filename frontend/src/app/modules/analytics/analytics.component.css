@@ -1,0 +1,69 @@
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+.container-analytics {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+}
+.analytics{
+    background-color: var(--clr-surface-a10);
+    display: grid;
+    grid-template-rows: 0.2fr 0.8fr;
+    align-content: center;
+    justify-content: center;
+}
+ngx-charts-line-chart{
+    flex: 1;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+.cards{
+    background-color: blanchedalmond;
+}
+.chart-wrapper {
+    margin-bottom: 1rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 700px;
+    align-self: center; 
+  }
+  
+  .x-axis-buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .x-axis-buttons button {
+    font-size: var(--font-size-xxs);
+    border: none;
+    background: transparent;
+    text-transform: uppercase;
+    border-top: 2px solid var(--clr-surface-a30);
+    color: var(--color-text);
+    font-family: var(--font-family-normal);
+    cursor: pointer;
+    text-align: center;
+  }
+  
+  .x-axis-buttons button.active {
+    font-weight: bold;
+    color: var(--color-primary);
+    border-top: 2px solid var(--color-primary);
+  }
+
+.summary {
+    text-align: center;
+    margin-top: 1rem;
+    font-family: var(--font-family-normal);
+}
