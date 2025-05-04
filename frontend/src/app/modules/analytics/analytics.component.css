@@ -3,67 +3,228 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
-}
-.container-analytics {
+  }
+  .container-analytics {
     width: 100%;
     height: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto;
-}
-.analytics{
+  }
+  .analytics{
     background-color: var(--clr-surface-a10);
     display: grid;
-    grid-template-rows: 0.2fr 0.8fr;
-    align-content: center;
-    justify-content: center;
-}
-ngx-charts-line-chart{
+    grid-template-columns: 1fr;
+    grid-template-rows: 40% 60%;
+    width: 100%;
+    justify-items: center;
+  }
+  ngx-charts-line-chart {
     flex: 1;
+    min-height: 0px;
+    min-width: 0px;
     height: 100%;
     width: 100%;
     overflow: hidden;
-}
-.cards{
+  }
+  .cards{
     background-color: blanchedalmond;
-}
-.chart-wrapper {
-    margin-bottom: 1rem;
+  }
+  .chart-wrapper {
     width: 100%;
+    height: 100%;
+    background-color: var(--clr-surface-a10);
+    border-radius: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 700px;
-    align-self: center; 
-  }
-  
-  .x-axis-buttons {
-    display: flex;
-    flex-wrap: nowrap;
-    flex-direction: row;
-    justify-content: space-between;
-  }
-  
-  .x-axis-buttons button {
-    font-size: var(--font-size-xxs);
-    border: none;
-    background: transparent;
-    text-transform: uppercase;
-    border-top: 2px solid var(--clr-surface-a30);
-    color: var(--color-text);
-    font-family: var(--font-family-normal);
-    cursor: pointer;
-    text-align: center;
-  }
-  
-  .x-axis-buttons button.active {
-    font-weight: bold;
-    color: var(--color-primary);
-    border-top: 2px solid var(--color-primary);
+    align-self: center;
   }
 
-.summary {
-    text-align: center;
-    margin-top: 1rem;
+  .summary {
+    width: 100%;
+    height: 100%;
+    border-radius: 0.5rem;
     font-family: var(--font-family-normal);
+    color: var(--color-text);
+  }
+  
+  .summary-title {
+    text-align: center;
+    font-size: var(--font-size-lg);
+    font-family: var(--font-family-bold);
+    margin: 0px;
+    height: 5%;
+  }
+  
+  .summary-content {
+    display: grid;
+    grid-template-areas: "left right";
+    width: 100%;
+    gap: 10px;
+    height: 90%;
+  }
+  
+  .summary-left {
+    grid-area: left;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+
+  }
+  
+  .summary-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    text-align: center;
+    font-weight: bold;
+    color: var(--color-text-inverse);
+    border-radius: 10px;
+    width: 40%;
+    padding: 5px;
+    background: var(--color-primary-darkest);
+  }
+  
+  .summary-block {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    border-radius: 0.5rem;
+    width: 100%;
+  }
+  
+  .grid-header {
+    font-weight: bold;
+    font-family: var(--font-family-bold);
+    background-color: var(--color-accent);
+    color: var(--color-text-inverse);
+    padding: 6px;
+    text-align: center;
+    border-radius: 4px;
+    border: 1px solid var(--color-primary-darkest)
+  }
+  
+  .grid-cell {
+    font-family: var(--font-family-normal);
+    background-color: var(--clr-surface-a0);
+    color: var(--color-primary-darkest);
+    padding: 6px;
+    text-align: center;
+    border-radius: 4px;
+    border: 1px solid var(--color-primary-darkest)
+  }
+  
+  .summary-right {
+    grid-area: right;
+    width: 98%;
+    background: var(--clr-surface-a50);
+    height: 100%;
+    border-radius: 10px;
+    p{
+      margin: 0px;
+    }
+  }
+  .summary-item{
+    display: grid;
+    grid-template-columns: 0.1fr 1fr;
+    width: 100%;
+    height: 40%;
+    justify-items: center;
+  }
+  :host ::ng-deep g.x.axis g.tick text {
+    fill: var(--color-primary);
+    font-weight: 600;
+    font-size: 0.8rem;
+    font-family: var(--font-family-normal);
+    cursor: pointer;
+    border-radius: 4px;
+    user-select: none;
+  }
+  
+  :host ::ng-deep g.x.axis g.tick text:hover {
+    fill: var(--color-accent);
+    font-weight: 700;
+    text-decoration: underline;
+  }
+  :host ::ng-deep g.x.axis g.tick text.selected {
+    fill: var(--color-text-inverse);
+    font-weight: 700;
+  }
+  ::ng-deep .chart-legend .legend-title{
+    font-family: var(--font-family-bold) !important;
+    font-size: var(--font-size-md) !important;
+    color: var(--color-text) !important;
+    margin: 0px !important;
+    text-align: center;
+    padding: 10px;
+  }
+  ::ng-deep .chart-legend .legend-labels {
+    list-style: none;
+    text-align: left;
+    float: left;
+    width: 100%;
+    border-radius: 3px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: nowrap;
+    background: var(--color-bg-gray);
+    color: var(--color-text);
+    text-align: center;
+}
+::ng-deep .chart-legend .legend-label .active .legend-label-text {
+    color: var(--color-text) !important;
+}
+
+::ng-deep .chart-legend .legend-label-text {
+    display: inline-block;
+    vertical-align: top;
+    font-size: var(--font-size-xs);
+    color: var(--color-primary-dark);
+    font-family: var(--font-family-bold) !important;
+    width: calc(100% - 20px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+@media screen and (max-height: 1000px) {
+  .summary-left {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: flex-start;
+  }
+  .summary-right {
+    grid-area: right;
+    display: flex;
+    width: 98%;
+    background: var(--clr-surface-a50);
+    height: 90%;
+    border-radius: 10px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .summary-item {
+    width: 48%;
+    height: auto;
+    min-height: 250px;
+  }
+  .summary-content{
+    height: 100%;
+  }
+  .summary-block {
+    font-size: 0.7rem;
+  }
+  .summary-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    text-align: center;
+    font-weight: bold;
+    color: var(--color-text-inverse);
+    border-radius: 10px;
+    width: 50%;
+    padding: 5px;
+    background: var(--color-primary-darkest);
+  }
 }
