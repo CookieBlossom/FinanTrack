@@ -1,1 +1,43 @@
-<p>categories works!</p>
+<div class="container-categories">
+    <div class="left-panel">
+      <div class="summary-box">
+        <h3>Categorías</h3>
+        <p>Resumen y opciones</p>
+      </div>
+      <div class="table-section">
+        <ag-grid-angular
+          class="ag-theme-alpine"
+          [rowData]="rowData"
+          [columnDefs]="columnDefs"
+          [pagination]="true"
+          [theme]="myTheme"
+          [paginationPageSize]="5"
+          [defaultColDef]="defaultColDef"
+          rowModelType="clientSide"
+          (gridReady)="onGridReady($event)"
+          (gridSizeChanged)="onGridSizeChanged($event)">
+        </ag-grid-angular>
+      </div>
+    </div>
+  
+    <div class="right-panel">
+      <div class="chart-box">
+        <h3>Gastos por Tarjeta</h3>
+        <ngx-charts-pie-grid
+        [results]="gastoTarjeta"
+        [scheme]="'cool'"
+        [view]="chartView"
+        [animations]="true">
+      </ngx-charts-pie-grid>
+      </div>
+      <div class="chart-box">
+        <h3>Gastos en Efectivo</h3>
+        <ngx-charts-pie-grid
+          [results]="gastoEfectivo"
+          [scheme]="'vivid'"
+          [view]="chartView"
+          [animations]="true">
+        </ngx-charts-pie-grid>
+      </div>
+    </div>
+  </div>
