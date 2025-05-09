@@ -18,12 +18,8 @@ button{
 
 }
 
-.label label{
-    position: relative;
-    top: -5px;
-}
 
-label{
+span{
     font-size:large;
     font-family:var(--font-family-normal);
     

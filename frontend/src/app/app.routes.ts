@@ -25,6 +25,12 @@ export const routes: Routes = [
     loadComponent:() =>
       import('./modules/reset-pasword/reset-pasword.component').then(m => m.ResetPaswordComponent),
   },
+  {
+    path:'new-password',
+    loadComponent:()=>
+      import('./modules/new-password/new-password.component').then(m => m.NewPasswordComponent),
+
+  },
 
   // Rutas privadas (con layout u otra propiedad)
   {
