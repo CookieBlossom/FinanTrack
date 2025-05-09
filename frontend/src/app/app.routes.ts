@@ -20,6 +20,11 @@ export const routes: Routes = [
       import('./modules/about-company/about-company.component').then(m => m.AboutCompanyComponent),
 
   },
+  {
+    path:'reset-pasword',
+    loadComponent:() =>
+      import('./modules/reset-pasword/reset-pasword.component').then(m => m.ResetPaswordComponent),
+  },
 
   // Rutas privadas (con layout u otra propiedad)
   {
@@ -56,6 +61,11 @@ export const routes: Routes = [
         path: 'movements',
         loadComponent: () =>
           import('./modules/movements/movements.component').then(m => m.MovementsComponent),
+      },
+      {
+        path:'config',
+        loadComponent:() =>
+          import('./modules/config/config.component').then(m => m.ConfigComponent),
       },
       {
         path: 'subscriptions',

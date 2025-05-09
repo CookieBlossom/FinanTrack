@@ -10,22 +10,37 @@
     <div class="contenedor">
         <div class="contImg">
             <img src="assets/images/perfil.webp" alt="">
+            <div class="BotonIcons">
+                <button mat-fab>
+                    <mat-icon  >delete</mat-icon>
+                </button>
+                <button mat-fab>
+                    <mat-icon >edit</mat-icon>
+                </button>
+            </div>
             <div class="container">
                 <h4>Nombre:</h4>
                 <label for="">Marcela</label>
+
                 <h4>Correo Electronico:</h4>
                 <Label>marce.gonzalez&#64;gmail.com</Label>
-                <h4>Numero Celular:</h4>
-                <label for="">+56987412356</label>
-                <div class="containerButton">
-                    <button>Eliminar cuenta</button>
-                    <button>Cerrar Sesión</button>
-                </div>
-                <div class="BotonIcons">
-                    <button>
-                        <mat-icon></mat-icon>
+                <div class=buttonEdit>
+                    <button mat-fab style="width: 50px; height: 50px; border-radius: 30px;">
+                        <mat-icon style="font-size: small; margin-top: 9px; ">edit</mat-icon>
                     </button>
                 </div>
+                <h4>Numero Celular:</h4>
+                <label for="">+56987412356</label>
+                <div class=buttonEditc>
+                    <button mat-fab class="button-small" style="width: 50px; height: 50px; border-radius: 30px;">
+                        <mat-icon  style="font-size: small; margin-top: 9px; ">edit</mat-icon>
+                    </button>
+                </div>
+                <div class="containerButton">
+                    <button mat-button style="color: var(--color-text-inverse);">Eliminar cuenta</button>
+                    <button mat-button style="color: var(--color-text-inverse);">Cerrar Sesión</button>
+                </div>
+                
             </div>
         </div>
     </div>

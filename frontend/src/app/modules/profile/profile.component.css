@@ -3,32 +3,38 @@ body{
     overflow: hidden;
 }
 
-
 .container{
-    position: relative;
-    left: 300px;
-    top: -220px;
+    margin-top: -280px;
+    margin-left:240px;
+}
+
+
+.contImg{
+    margin-left: 30px;
+    margin-top:30px;
+  
 }
 
 
 
 img{
     width: 200px;
+    border-radius: 30px;
 }
 
 label{
-    border: 2px solid  #9b2949;
-    background-color: #9b2949;
+    border: none;
+    background-color: var(--color-accent);
     border-radius: 20px;
-    color: white;
-    padding: 10px;
+    color: var(--color-text-inverse);
+    padding: 5px;
 }
 
 button{
-    background-color: #6d2237;
-    color: white;
+    background-color: var(--color-accent);
+    color: var(--color-text-inverse);
     padding: 15px;
-    border: 2px solid ;
+    border: none;
     border-radius: 15px;
 }
 
@@ -41,3 +47,25 @@ button{
     
    
 }
+h4{
+    color:var(--color-text);
+}
+
+.BotonIcons{
+   display:flex;
+   margin-top:10px;
+   margin-left: 40px; ;
+   gap:10px;
+    
+}
+
+.buttonEdit{
+    margin-left: 220px;
+    margin-top: -30px;
+}
+
+.buttonEditc{
+    margin-left: 130px;
+    margin-top: -35px;
+}
+

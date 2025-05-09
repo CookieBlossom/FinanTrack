@@ -1,0 +1,37 @@
+body{
+    background-color: var(--color-accent);
+}
+
+.container{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+
+    
+}
+.imgInicio{
+    display: flex;
+    justify-content:flex-start;
+    transform: rotate(90deg);
+    margin-top: 200px;
+    margin-right:60%;
+}
+.imgInicio img{
+    width:60%;
+}
+
+.imgInicio h1{
+    font-family:var(--font-family-normal);
+    color: var(--color-text-inverse);
+    position: relative;
+    right: 20px;
+    top: 60px;
+
+}
+
+.titulo h1 {
+    font-family:var(--font-family-normal);
+    color: var(--color-text-inverse);
+    display:flex-inline;
+    justify-content: center;
+}
