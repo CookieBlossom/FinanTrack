@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="container">
+        <div class="titulo">
+            <h1>Consultas</h1>
+
+        </div>
+        <div class="select">
+            <span>Motivo:</span>
+            <mat-form-field>
+                <mat-label>Selecionar opcion</mat-label>
+                <mat-select>
+                  @for (opcion of opcion; track opcion) {
+                    <mat-option [value]="opcion.value">{{opcion.value}}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+        </div>
+        <div class="textComent">
+            <span>Comentarios:</span>
+            <mat-form-field class="example-full-width">
+                <mat-label>Ingresa comentarios</mat-label>
+                <textarea matInput placeholder="Ex. It makes me feel..."></textarea>
+              </mat-form-field>
+        </div>
+        <div class="buttons">
+            <button mat-fab>Enviar</button>
+            <button mat-fab>Cancelar</button>
+        </div>
+    </div>
+</body>
+</html>

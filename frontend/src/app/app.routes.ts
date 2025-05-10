@@ -31,6 +31,12 @@ export const routes: Routes = [
       import('./modules/new-password/new-password.component').then(m => m.NewPasswordComponent),
 
   },
+  {
+    path:'send-mail',
+    loadComponent:() =>
+      import('./modules/send-mail/send-mail.component').then(m => m.SendMailComponent),
+  },
+  
 
   // Rutas privadas (con layout u otra propiedad)
   {
@@ -72,6 +78,16 @@ export const routes: Routes = [
         path:'config',
         loadComponent:() =>
           import('./modules/config/config.component').then(m => m.ConfigComponent),
+      },
+      {
+        path:'condicones',
+        loadComponent:() =>
+          import('./modules/condicones/condicones.component').then(m=>m.CondiconesComponent),
+      },
+      {
+        path:'help',
+        loadComponent:()=>
+          import('./modules/help/help.component').then(m =>m.HelpComponent),
       },
       {
         path: 'subscriptions',

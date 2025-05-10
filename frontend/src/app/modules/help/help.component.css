@@ -1,0 +1,38 @@
+body{
+    background-color: var(--clr-surface-a20);
+}
+
+.container{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.select {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem; /* espacio entre texto y selector */
+  }
+
+  .select  mat-form-field{
+    border-radius: 30px;
+    
+  }
+ 
+  
+  .select span {
+    white-space: nowrap; /* evita salto de línea */
+    font-weight: 500;
+  }
+  
+.textComent{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    text-align: start;
+   
+
+}
