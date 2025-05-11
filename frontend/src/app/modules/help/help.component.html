@@ -13,7 +13,7 @@
         </div>
         <div class="select">
             <span>Motivo:</span>
-            <mat-form-field>
+            <mat-form-field appearance="outline" class="custom-form-field" >
                 <mat-label>Selecionar opcion</mat-label>
                 <mat-select>
                   @for (opcion of opcion; track opcion) {
@@ -24,13 +24,14 @@
         </div>
         <div class="textComent">
             <span>Comentarios:</span>
-            <mat-form-field class="example-full-width">
+            <mat-form-field class="example-full-width" appearance="outline" style="border-color:var(--color-primary)">
                 <mat-label>Ingresa comentarios</mat-label>
-                <textarea matInput placeholder="Ex. It makes me feel..."></textarea>
+                <textarea matInput placeholder="Aqui cuentanos tu inquietud"></textarea>
               </mat-form-field>
         </div>
         <div class="buttons">
-            <button mat-fab>Enviar</button>
+            <button mat-raised-button  (click)="openDialog('0ms', '0ms')">Enviar
+            </button>
             <button mat-fab>Cancelar</button>
         </div>
     </div>

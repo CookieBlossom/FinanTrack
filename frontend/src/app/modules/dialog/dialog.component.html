@@ -1,0 +1,19 @@
+<mat-dialog-content>
+  <ng-container >
+    ¿Está seguro de enviar esta solicitud?
+  </ng-container>
+ 
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <ng-container>
+    <button mat-button (click)="enviarSolicitud()">Aceptar
+      
+    </button>
+    <ng-container *ngIf="data?.exito">
+      Se ha enviado tu solicitud con éxito.
+    </ng-container>
+    <button mat-button mat-dialog-close>Cancelar</button>
+  </ng-container>
+</mat-dialog-actions>
+

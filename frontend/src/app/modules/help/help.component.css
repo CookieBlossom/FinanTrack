@@ -1,5 +1,5 @@
 body{
-    background-color: var(--clr-surface-a20);
+    background-color: var(--clr-surface-a0);
 }
 
 .container{
@@ -7,7 +7,6 @@ body{
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    text-align: center;
 }
 
 .select {
@@ -18,7 +17,7 @@ body{
   }
 
   .select  mat-form-field{
-    border-radius: 30px;
+    width: 400px;
     
   }
  
@@ -33,6 +32,54 @@ body{
     flex-direction: column;
     justify-content: flex-start;
     text-align: start;
-   
+    width: 400px;
+}
+
+.titulo{
+  display: flex;
+  justify-content:center;
+  text-align:center;
+}
+
+.titulo h1{
+  font-family:var(--font-family-normal);
+  color: var(--color-primary);
+}
+.custom-form-field{
+  font-family:var(--font-family-normal) !important;
+  color:var(--color-primary)
+}
+
+mat-label{
+  font-family: var(--font-family-normal);
+  color:var(--color-primary);
+  border-color: var(--color-primary);
+  border-radius: 30px !important;
+}
+
+mat-option{
+  font-family: var(--font-family-normal);
+}
+
+
+.buttons{
+  display:flex;
+  justify-content:center;
+  flex-direction:row;
+  gap:10px;
+}
+
+button{
+  width: 200px;
+  height: 30px;
+  border-radius: 30px;
+  border: none;
+  background-color: var(--color-primary);
+  color: var(--clr-surface-a0);
 
 }
+
+
+
+
+
