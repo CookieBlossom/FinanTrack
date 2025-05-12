@@ -9,14 +9,14 @@
     </nav>
     <div class="container">
         <div class="mb-3">
-            <input type="text" placeholder="Ingrese su nombre" class="input-form" id="nombre">
-            <input type="email" placeholder="Ingrese su correo electronico" class="input-form" id="email">
-            <input type="tel" placeholder="Ingrese su telefono" class="input-form" id="telefono">
-            <input type="password" placeholder="Ingrese su contraseña" class="input-form" id="password">
-            <input type="password" placeholder="Vuelva a ingresar su contraseña" class="input-form" id="passwordConf">
+            <input type="text" placeholder="Ingrese su nombre" class="input-form" id="nombre" required>
+            <input type="email" placeholder="Ingrese su correo electronico" class="input-form" id="email" required>
+            <input type="tel" placeholder="Ingrese su telefono" class="input-form" id="telefono" required>
+            <input type="password" placeholder="Ingrese su contraseña" class="input-form" id="password" required>
+            <input type="password" placeholder="Vuelva a ingresar su contraseña" class="input-form" id="passwordConf" required>
             <div class="contchecklist">
                 <input  type="checkbox" value="" id="checkDefault" class="checklist">
-                <label class="textCondiciones" for="defaultCheck1" >He leido y acepto las condiciones</label>
+                <label class="textCondiciones" for="defaultCheck1" routerLink="/condicones" >He leido y acepto las condiciones</label>
             </div>
             <div class="contbutton">
                 <button type="button" class="btn">Ingresar</button>
