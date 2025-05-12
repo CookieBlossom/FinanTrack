@@ -11,7 +11,6 @@ import {
   MatDialogTitle,
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { DialogAnimationsExampleDialog } from './DialogAnimationsExampleDialog.component';
 @Component({
   selector: 'app-dialog',
   imports: [MatButtonModule, MatDialogActions,  MatDialogClose, MatDialogTitle, MatDialogContent],
@@ -23,34 +22,41 @@ export class DialogComponent {
   constructor(private dialogRef:MatDialogRef<DialogComponent>, private dialog: MatDialog, @Inject(MAT_DIALOG_DATA) public data: {exito:boolean}){}
  
 
-  openDialog(enterAnimationDuration: string, exitAnimationDuration: string): void {
-    const dialogRef = this.dialog.open(DialogAnimationsExampleDialog, {
-      width: '250px',
-      enterAnimationDuration,
-      exitAnimationDuration,
-    });
+  confirmar(){
+    this.dialogRef.close();
+    this.dialog.open(DialogExampleDialog,{
+      width:'300px'
+
+    })
+  }
+
+
 
   
-  }
+  
 
-  mostrar:boolean = false;
 
-  enviarSolicitud(){
-   this.dialogRef.close();
-   this.dialog.open(DialogComponent,{
-    width:'300px',
-    data: {exito:true}
-   })
-    
-  }
-
-  cerrarDialogo(){
-    this.mostrar = false;
-  }
  
 
   
 
+}
+
+@Component({
+  selector: 'dialog-example-dialog',
+  imports: [MatButtonModule, MatDialogActions, MatDialogClose, MatDialogTitle, MatDialogContent],
+  template: ` 
+  <h2 mat-dialog-title>Éxito</h2>
+  <mat-dialog-content>Su solicitud se ha enviado con éxito</mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Aceptar</button>
+  </mat-dialog-actions>
+`,
+  
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class DialogExampleDialog {
+  
 }
 
 

@@ -3,7 +3,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
 import {MatSelectModule} from '@angular/material/select';
-import { DialogAnimationsExampleDialog } from '../dialog/DialogAnimationsExampleDialog.component';
+
 interface Opcion{
   value:string
 }
@@ -40,7 +40,7 @@ export class HelpComponent {
   readonly dialog = inject(MatDialog);
 
   openDialog(enterAnimationDuration: string, exitAnimationDuration: string): void {
-     this.dialog.open(DialogAnimationsExampleDialog, {
+     this.dialog.open(DialogComponent, {
       width: '250px',
       enterAnimationDuration,
       exitAnimationDuration,

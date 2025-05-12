@@ -1,71 +1,110 @@
-
 body{
+    background-color: var(  --clr-surface-a0);
     overflow: hidden;
+    font-family:var(--font-family-normal);
 }
 
-.container{
-    margin-top: -280px;
-    margin-left:240px;
-}
-
-
-.contImg{
-    margin-left: 30px;
-    margin-top:30px;
-  
-}
-
-
-
-img{
-    width: 200px;
-    border-radius: 30px;
-}
-
-label{
-    border: none;
-    background-color: var(--color-accent);
-    border-radius: 20px;
-    color: var(--color-text-inverse);
-    padding: 5px;
-}
-
-button{
-    background-color: var(--color-accent);
-    color: var(--color-text-inverse);
-    padding: 15px;
-    border: none;
-    border-radius: 15px;
-}
-
-.containerButton{
-    margin: 30px;
+.contenedor {
     display: flex;
+    justify-content: center;
+    padding: 2rem;
+    background-color: var(--clr-surface-a0);
+  }
+  
+  .contImg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 400px;
+    width: 100%;
+  }
+  
+  .contImg img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+  }
+  
+  .BotonIcons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    color: var( --color-text-inverse);
+  }
+  
+  .BotonIcons button {
+    background-color: var(--color-accent)!important;
+    color: var( --color-text-inverse) !important;
+  }
+  
+  .container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .container h4 {
+    margin: 0;
+    font-weight: bold;
+    color: var(--color-text);
+    text-align: center;
+  }
+  
+  .container label {
+    background-color: var(--color-accent);
+    color: var( --color-text-inverse);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    display: inline-block;
+    text-align: center;
+  }
+  
+  .buttonEdit, .buttonEditc {
+    display: inline-block;
+    margin-left: 410px;
+    margin-top:-60px;
+  }
+  
+  .buttonEdit button, .buttonEditc button {
+    background-color: var(--color-accent) !important;
+    color: var( --color-text-inverse) !important;
+  }
+  
+  .containerButton {
+    display: flex;
+    justify-content: center;
     gap: 10px;
-    position: relative;
-    right: 30px;
-    
    
-}
-h4{
-    color:var(--color-text);
-}
+  }
+  
+  .containerButton button {
+    background-color: var(--color-accent) !important;
+    color:var( --color-text-inverse) !important;
+    border-radius: 20px;
+   
+  }
+  
 
-.BotonIcons{
-   display:flex;
-   margin-top:10px;
-   margin-left: 40px; ;
-   gap:10px;
-    
-}
-
-.buttonEdit{
-    margin-left: 220px;
-    margin-top: -30px;
-}
-
-.buttonEditc{
-    margin-left: 130px;
-    margin-top: -35px;
-}
+  @media (max-width: 600px) {
+    .containerButton {
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    .containerButton button {
+      width: 100%;
+    }
+  
+    .contImg {
+      max-width: 100%;
+    }
+  
+    .BotonIcons {
+      gap: 0.5rem;
+    }
+  }
+  
 

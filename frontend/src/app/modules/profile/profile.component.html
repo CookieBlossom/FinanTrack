@@ -9,7 +9,7 @@
 
     <div class="contenedor">
         <div class="contImg">
-            <img src="assets/images/perfil.webp" alt="">
+            <img src="https://i.pinimg.com/236x/90/d1/ac/90d1ac48711f63c6a290238c8382632f.jpg" alt="">
             <div class="BotonIcons">
                 <button mat-fab>
                     <mat-icon  >delete</mat-icon>
@@ -37,8 +37,8 @@
                     </button>
                 </div>
                 <div class="containerButton">
-                    <button mat-button style="color: var(--color-text-inverse);">Eliminar cuenta</button>
-                    <button mat-button style="color: var(--color-text-inverse);">Cerrar Sesión</button>
+                    <button mat-button style="color: var(--color-text-inverse);" (click)="openDialog('0ms','0ms')">Eliminar cuenta</button>
+                    <button mat-button style="color: var(--color-text-inverse);" routerLink="/login">Cerrar Sesión</button>
                 </div>
                 
             </div>
