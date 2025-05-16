@@ -3,8 +3,6 @@
       <h3 class="title-container">Tarjetas</h3>
   
       <div class="card-carousel">
-        <button *ngIf="mostrarBotonArriba()" class="top-card-btn" (click)="irArriba()">Arriba</button>
-  
         <div class="card-item" *ngFor="let tarjeta of tarjetasVisibles">
           <div class="card-visual">
             <label class="switch">
@@ -12,11 +10,8 @@
             </label>
           </div>
           <div class="card-saldo">Saldo: {{ tarjeta.saldo | currency:'CLP' }}</div>
-        </div>
-  
-        <button *ngIf="mostrarBotonAbajo()" class="down-card-btn" (click)="irAbajo()">Abajo</button>
+        </div>  
       </div>
-  
       <button class="add-card-btn" (click)="agregarTarjeta()">Agregar Tarjeta</button>
     </div>
   
@@ -52,7 +47,7 @@
             <div class="graph-b">
                 <div class="graph-header">
                     <h3>Comparación de Ingresos / Costos</h3>
-                    <mat-slide-toggle [(ngModel)]="mostrarIngresos" color="primary">
+                    <mat-slide-toggle class="toggle-graph"  [(ngModel)]="mostrarIngresos" color="primary">
                       {{ mostrarIngresos ? 'Ingresos' : 'Costos' }}
                     </mat-slide-toggle>
                 </div>

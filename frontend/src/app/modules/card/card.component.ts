@@ -75,25 +75,4 @@ dataCostos = [
     this.tarjetas.push({ saldo: 0, activa: true });
   }
   
-  mostrarBotonArriba(): boolean {
-    return this.tarjetas.length > this.visibleCardCount && this.visibleStartIndex > 0;
-  }
-  
-  mostrarBotonAbajo(): boolean {
-    return this.tarjetas.length > this.visibleCardCount &&
-           this.visibleStartIndex + this.visibleCardCount < this.tarjetas.length;
-  }
-  
-  irArriba() {
-    if (this.mostrarBotonArriba()) {
-      this.visibleStartIndex--;
-    }
-  }
-  
-  irAbajo() {
-    if (this.mostrarBotonAbajo()) {
-      this.visibleStartIndex++;
-    }
-  }
-  
 }
