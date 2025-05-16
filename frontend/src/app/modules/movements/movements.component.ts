@@ -43,7 +43,6 @@ ModuleRegistry.registerModules([
     RouterModule,
     NgxChartsModule,
     AgGridModule,
-    AddMovementComponent,
   ]
 })
 export class MovementsComponent {

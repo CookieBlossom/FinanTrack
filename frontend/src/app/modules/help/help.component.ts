@@ -9,18 +9,13 @@ interface Opcion{
 }
 import {
   MatDialog,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle,
 } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog/dialog.component';
 
 @Component({
   selector: 'app-help',
   standalone:true,
-  imports: [MatInputModule,DialogComponent, MatFormFieldModule, FormsModule,MatSelectModule],
+  imports: [MatInputModule, MatFormFieldModule, FormsModule,MatSelectModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './help.component.html',
   styleUrl: './help.component.css'

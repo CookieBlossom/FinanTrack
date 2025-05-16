@@ -5,15 +5,13 @@ import {
   MAT_DIALOG_DATA,
   MatDialog,
   MatDialogActions,
-  MatDialogClose,
   MatDialogContent,
   MatDialogRef,
-  MatDialogTitle,
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-dialog',
-  imports: [MatButtonModule, MatDialogActions,  MatDialogClose, MatDialogTitle, MatDialogContent],
+  imports: [MatButtonModule, MatDialogActions, MatDialogContent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dialog.component.html',
   styleUrl: './dialog.component.css'
@@ -44,7 +42,7 @@ export class DialogComponent {
 
 @Component({
   selector: 'dialog-example-dialog',
-  imports: [MatButtonModule, MatDialogActions, MatDialogClose, MatDialogTitle, MatDialogContent],
+  imports: [MatButtonModule, MatDialogActions, MatDialogContent],
   template: ` 
   <h2 mat-dialog-title>Éxito</h2>
   <mat-dialog-content>Su solicitud se ha enviado con éxito</mat-dialog-content>
