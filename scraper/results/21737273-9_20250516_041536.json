@@ -1,0 +1,749 @@
+{
+  "success": true,
+  "cuentas": [
+    {
+      "nombre": "CuentaRUT",
+      "numero": "00021737273",
+      "saldo": "$94.107",
+      "movimientos": [
+        {
+          "fecha": "14/05/2025",
+          "descripcion": "ABONO CONVENIO TGR DEVOLUCION OPERA - Bancoestado",
+          "monto": 72980.0
+        },
+        {
+          "fecha": "10/05/2025",
+          "descripcion": "TRANSFERENCIA DESDE MIS CUENTAS - App",
+          "monto": 11000.0
+        },
+        {
+          "fecha": "10/05/2025",
+          "descripcion": "TEF A NICOLAS ALTABAN ARAMIZ CARRAS - App",
+          "monto": -2000.0
+        },
+        {
+          "fecha": "09/05/2025",
+          "descripcion": "COMPRA WEB PEDIDOSYA CL FACTU CL - Débito nacional",
+          "monto": -6640.0
+        },
+        {
+          "fecha": "09/05/2025",
+          "descripcion": "TEF A NICOLAS ALTABAN ARAMIZ CARRAS - App",
+          "monto": -15000.0
+        },
+        {
+          "fecha": "08/05/2025",
+          "descripcion": "COMPRA WEB PAYU UBER EATS CL - Débito nacional",
+          "monto": -11887.0
+        },
+        {
+          "fecha": "07/05/2025",
+          "descripcion": "PAGO AUTOMATICO PASAJE QR - Convenio (bpac)",
+          "monto": -770.0
+        },
+        {
+          "fecha": "06/05/2025",
+          "descripcion": "COMPRA NACIONAL FALABELLA PZ CL - Débito nacional",
+          "monto": -51990.0
+        },
+        {
+          "fecha": "06/05/2025",
+          "descripcion": "COMPRA NACIONAL PARIS PLAZA CL - Débito nacional",
+          "monto": -29990.0
+        },
+        {
+          "fecha": "06/05/2025",
+          "descripcion": "COMPRA NACIONAL PARADISO CAF CL - Débito nacional",
+          "monto": -2190.0
+        },
+        {
+          "fecha": "02/05/2025",
+          "descripcion": "COMPRA NACIONAL PARADISO CAF CL - Débito nacional",
+          "monto": -2190.0
+        },
+        {
+          "fecha": "01/05/2025",
+          "descripcion": "COMPRA WEB PEDIDOSYA CL FACTU CL - Débito nacional",
+          "monto": -6640.0
+        },
+        {
+          "fecha": "01/05/2025",
+          "descripcion": "TEF DE JHONATHAN FELIPE GUTIERREZ S - Otro banco",
+          "monto": 50000.0
+        },
+        {
+          "fecha": "30/04/2025",
+          "descripcion": "COMPRA WEB GOOGLE PLAY YOUTUB CL - Débito nacional",
+          "monto": -5500.0
+        },
+        {
+          "fecha": "30/04/2025",
+          "descripcion": "AHORRO MENSUAL AUTOMATICO CUENTA AH - App",
+          "monto": -1000.0
+        },
+        {
+          "fecha": "29/04/2025",
+          "descripcion": "Débito nacional - -  $45.016",
+          "monto": -468.0
+        },
+        {
+          "fecha": "29/04/2025",
+          "descripcion": "COMPRA NACIONAL OP SCHILLING CL - Débito nacional",
+          "monto": -110160.0
+        },
+        {
+          "fecha": "29/04/2025",
+          "descripcion": "COMPRA NACIONAL OP SCHILLING CL - Débito nacional",
+          "monto": -3900.0
+        },
+        {
+          "fecha": "29/04/2025",
+          "descripcion": "COMPRA NACIONAL PARADISO CAF CL - Débito nacional",
+          "monto": -3680.0
+        },
+        {
+          "fecha": "28/04/2025",
+          "descripcion": "TEF DESDE BANCO DE CREDITOS E INVER - Otro banco",
+          "monto": 247950.0
+        },
+        {
+          "fecha": "26/04/2025",
+          "descripcion": "PAGO AUTOMATICO PASAJE QR - Convenio (bpac)",
+          "monto": -770.0
+        },
+        {
+          "fecha": "25/04/2025",
+          "descripcion": "COMPRA NACIONAL PARADISO CAF CL - Débito nacional",
+          "monto": -2190.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "COMPRA WEB PAYU UBER TRIP CL - Débito nacional",
+          "monto": -2096.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "COMPRA WEB PAYU UBER EATS CL - Débito nacional",
+          "monto": -24857.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "TRANSFERENCIA DE VEGA SOTO MARIA JE - App",
+          "monto": 30000.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "COMPRA WEB PAYU UBER EATS CL - Débito nacional",
+          "monto": -10939.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "TRANSFERENCIA DE VEGA SOTO MARIA JE - App",
+          "monto": 20000.0
+        },
+        {
+          "fecha": "23/04/2025",
+          "descripcion": "COMPRA WEB PAYU UBER EATS CL - Débito nacional",
+          "monto": -19046.0
+        },
+        {
+          "fecha": "23/04/2025",
+          "descripcion": "TRANSFERENCIA DE VEGA SOTO MARIA JE - App",
+          "monto": 7030.0
+        },
+        {
+          "fecha": "23/04/2025",
+          "descripcion": "TRANSFERENCIA DE VEGA SOTO MARIA JE - App",
+          "monto": 10000.0
+        },
+        {
+          "fecha": "22/04/2025",
+          "descripcion": "COMISION TRANSACCION INTERNACIONAL - Débito internacional",
+          "monto": -494.0
+        },
+        {
+          "fecha": "22/04/2025",
+          "descripcion": "COMPRA WEB INTERN. KOCOWA - Débito internacional",
+          "monto": -3995.0
+        },
+        {
+          "fecha": "19/04/2025",
+          "descripcion": "TEF A NICOLAS ALTABAN ARAMIZ CARRAS - App",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "19/04/2025",
+          "descripcion": "COMPRA WEB GOOGLE PLAY YOUTUB CL - Débito nacional",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "19/04/2025",
+          "descripcion": "COMPRA WEB MERPAGO MCDONALDSE CL - Débito nacional",
+          "monto": -19580.0
+        },
+        {
+          "fecha": "19/04/2025",
+          "descripcion": "TRANSFERENCIA DE VEGA SOTO MARIA JE - App",
+          "monto": 40000.0
+        },
+        {
+          "fecha": "19/04/2025",
+          "descripcion": "COMPRA NACIONAL MINIMARKET Y CL - Débito nacional",
+          "monto": -3600.0
+        },
+        {
+          "fecha": "17/04/2025",
+          "descripcion": "COMPRA WEB PEDIDOSYA CL FACTU CL - Débito nacional",
+          "monto": -5357.0
+        },
+        {
+          "fecha": "15/04/2025",
+          "descripcion": "COMPRA WEB PEDIDOSYA CL FACTU CL - Débito nacional",
+          "monto": -8590.0
+        },
+        {
+          "fecha": "12/04/2025",
+          "descripcion": "COMPRA NACIONAL MAICAO MALL CL - Débito nacional",
+          "monto": -2500.0
+        },
+        {
+          "fecha": "12/04/2025",
+          "descripcion": "PAGO AUTOMATICO PASAJE QR - Convenio (bpac)",
+          "monto": -770.0
+        },
+        {
+          "fecha": "11/04/2025",
+          "descripcion": "COMPRA NACIONAL MERPAGO NORM CL - Débito nacional",
+          "monto": -1500.0
+        },
+        {
+          "fecha": "11/04/2025",
+          "descripcion": "COMPRA WEB PAYU UBER TRIP CL - Débito nacional",
+          "monto": -5494.0
+        },
+        {
+          "fecha": "08/04/2025",
+          "descripcion": "Débito nacional - -  $30.490",
+          "monto": -1.0
+        },
+        {
+          "fecha": "08/04/2025",
+          "descripcion": "COMISION TRANSACCION INTERNACIONAL - Débito internacional",
+          "monto": -844.0
+        },
+        {
+          "fecha": "08/04/2025",
+          "descripcion": "Débito internacional - -  $44.405",
+          "monto": -855.0
+        },
+        {
+          "fecha": "07/04/2025",
+          "descripcion": "COMPRA WEB PEDIDOSYA CL FACTU CL - Débito nacional",
+          "monto": -5865.0
+        },
+        {
+          "fecha": "07/04/2025",
+          "descripcion": "TEF DE JHONATHAN FELIPE GUTIERREZ S - Otro banco",
+          "monto": 13333.0
+        },
+        {
+          "fecha": "05/04/2025",
+          "descripcion": "COMPRA WEB PAYU UBER TRIP CL - Débito nacional",
+          "monto": -1917.0
+        },
+        {
+          "fecha": "05/04/2025",
+          "descripcion": "COMPRA WEB PAYU UBER EATS CL - Débito nacional",
+          "monto": -12741.0
+        }
+      ]
+    },
+    {
+      "nombre": "AHORRO PREMIUM",
+      "numero": "36461363274",
+      "saldo": "$0",
+      "movimientos": [
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -20000.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -30000.0
+        },
+        {
+          "fecha": "23/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "19/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -40000.0
+        },
+        {
+          "fecha": "14/03/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 100000.0
+        },
+        {
+          "fecha": "28/02/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -30109.0
+        },
+        {
+          "fecha": "26/02/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "20/01/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "18/01/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "03/01/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 70000.0
+        },
+        {
+          "fecha": "31/05/2024",
+          "descripcion": "INTERESES",
+          "monto": 65.0
+        },
+        {
+          "fecha": "31/05/2024",
+          "descripcion": "ABONO",
+          "monto": 44.0
+        },
+        {
+          "fecha": "27/08/2023",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "25/08/2023",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "29/07/2023",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 10000.0
+        },
+        {
+          "fecha": "16/05/2023",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 5000.0
+        },
+        {
+          "fecha": "05/05/2023",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 5000.0
+        }
+      ]
+    },
+    {
+      "nombre": "Plazo Vivienda Giro Diferido",
+      "numero": "36461436620",
+      "saldo": "$90.000",
+      "movimientos": [
+        {
+          "fecha": "10/05/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -11000.0
+        },
+        {
+          "fecha": "30/04/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "23/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -7030.0
+        },
+        {
+          "fecha": "30/03/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "14/03/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 100000.0
+        },
+        {
+          "fecha": "02/03/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -40970.0
+        },
+        {
+          "fecha": "01/03/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -14000.0
+        },
+        {
+          "fecha": "30/01/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "03/01/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 20000.0
+        },
+        {
+          "fecha": "23/12/2024",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -6000.0
+        },
+        {
+          "fecha": "09/12/2024",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -5000.0
+        },
+        {
+          "fecha": "04/11/2024",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "01/10/2024",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 10000.0
+        },
+        {
+          "fecha": "30/08/2024",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 10000.0
+        },
+        {
+          "fecha": "31/07/2024",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 10000.0
+        },
+        {
+          "fecha": "30/06/2024",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 10000.0
+        },
+        {
+          "fecha": "16/05/2024",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 10000.0
+        }
+      ]
+    }
+  ],
+  "ultimos_movimientos": [
+    {
+      "fecha": "14/05/2025",
+      "descripcion": "Abono Convenio Tgr Devolucion Opera.",
+      "monto": 72980.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "12/05/2025",
+      "descripcion": "Transferencia Desde Mis Cuentas.",
+      "monto": 11000.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "12/05/2025",
+      "descripcion": "Tef A Nicolas Altaban Aramiz Carras.",
+      "monto": -2000.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "12/05/2025",
+      "descripcion": "Compra Web Pedidosya Cl Factu Cl.",
+      "monto": -6640.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "12/05/2025",
+      "descripcion": "Tef A Nicolas Altaban Aramiz Carras.",
+      "monto": -15000.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "09/05/2025",
+      "descripcion": "Compra Web Payu Uber Eats Cl.",
+      "monto": -11887.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "07/05/2025",
+      "descripcion": "Pago Automatico Pasaje Qr.",
+      "monto": -770.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "07/05/2025",
+      "descripcion": "Compra Nacional Falabella Pz Cl.",
+      "monto": -51990.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "07/05/2025",
+      "descripcion": "Compra Nacional Paris Plaza Cl.",
+      "monto": -29990.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "07/05/2025",
+      "descripcion": "Compra Nacional Paradiso Caf Cl.",
+      "monto": -2190.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "05/05/2025",
+      "descripcion": "Compra Nacional Paradiso Caf Cl.",
+      "monto": -2190.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "02/05/2025",
+      "descripcion": "Compra Web Pedidosya Cl Factu Cl.",
+      "monto": -6640.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "02/05/2025",
+      "descripcion": "Tef De Jhonathan Felipe Gutierrez S.",
+      "monto": 50000.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "30/04/2025",
+      "descripcion": "Compra Web Google Play Youtub Cl.",
+      "monto": -5500.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "30/04/2025",
+      "descripcion": "Ahorro Mensual Automatico Cuenta Ah.",
+      "monto": -1000.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "30/04/2025",
+      "descripcion": "Compra Nacional Cv 468 Cl.",
+      "monto": -45016.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "30/04/2025",
+      "descripcion": "Compra Nacional Op Schilling Cl.",
+      "monto": -110160.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "30/04/2025",
+      "descripcion": "Compra Nacional Op Schilling Cl.",
+      "monto": -3900.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "30/04/2025",
+      "descripcion": "Compra Nacional Paradiso Caf Cl.",
+      "monto": -3680.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "29/04/2025",
+      "descripcion": "Tef Desde Banco De Creditos E Inver.",
+      "monto": 247950.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "28/04/2025",
+      "descripcion": "Pago Automatico Pasaje Qr.",
+      "monto": -770.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "28/04/2025",
+      "descripcion": "Compra Nacional Paradiso Caf Cl.",
+      "monto": -2190.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "25/04/2025",
+      "descripcion": "Compra Web Payu Uber Trip Cl.",
+      "monto": -2096.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "25/04/2025",
+      "descripcion": "Compra Web Payu Uber Eats Cl.",
+      "monto": -24857.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "25/04/2025",
+      "descripcion": "Transferencia De Vega Soto Maria Je.",
+      "monto": 30000.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "24/04/2025",
+      "descripcion": "Compra Web Payu Uber Eats Cl.",
+      "monto": -10939.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "24/04/2025",
+      "descripcion": "Transferencia De Vega Soto Maria Je.",
+      "monto": 20000.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "24/04/2025",
+      "descripcion": "Compra Web Payu Uber Eats Cl.",
+      "monto": -19046.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "24/04/2025",
+      "descripcion": "Transferencia De Vega Soto Maria Je.",
+      "monto": 7030.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "24/04/2025",
+      "descripcion": "Transferencia De Vega Soto Maria Je.",
+      "monto": 10000.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "23/04/2025",
+      "descripcion": "Comision Transaccion Internacional.",
+      "monto": -494.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "23/04/2025",
+      "descripcion": "Compra Web Intern. Kocowa.",
+      "monto": -3995.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "21/04/2025",
+      "descripcion": "Tef A Nicolas Altaban Aramiz Carras.",
+      "monto": -10000.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "21/04/2025",
+      "descripcion": "Compra Web Google Play Youtub Cl.",
+      "monto": -10000.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "21/04/2025",
+      "descripcion": "Compra Web Merpago Mcdonaldse Cl.",
+      "monto": -19580.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "21/04/2025",
+      "descripcion": "Transferencia De Vega Soto Maria Je.",
+      "monto": 40000.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "21/04/2025",
+      "descripcion": "Compra Nacional Minimarket Y Cl.",
+      "monto": -3600.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "21/04/2025",
+      "descripcion": "Compra Web Pedidosya Cl Factu Cl.",
+      "monto": -5357.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "16/04/2025",
+      "descripcion": "Compra Web Pedidosya Cl Factu Cl.",
+      "monto": -8590.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "14/04/2025",
+      "descripcion": "Compra Nacional Maicao Mall Cl.",
+      "monto": -2500.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "14/04/2025",
+      "descripcion": "Pago Automatico Pasaje Qr.",
+      "monto": -770.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "14/04/2025",
+      "descripcion": "Compra Nacional Merpago Norm Cl.",
+      "monto": -1500.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "14/04/2025",
+      "descripcion": "Compra Web Payu Uber Trip Cl.",
+      "monto": -5494.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "08/04/2025",
+      "descripcion": "Compra Web Pre Unic Web 1 Cl.",
+      "monto": -30490.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "08/04/2025",
+      "descripcion": "Comision Transaccion Internacional.",
+      "monto": -844.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "08/04/2025",
+      "descripcion": "Compra Web Intern. Rch-yesstyle 855.",
+      "monto": -44405.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "08/04/2025",
+      "descripcion": "Compra Web Pedidosya Cl Factu Cl.",
+      "monto": -5865.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "07/04/2025",
+      "descripcion": "Tef De Jhonathan Felipe Gutierrez S.",
+      "monto": 13333.0,
+      "tipo": "abono"
+    },
+    {
+      "fecha": "07/04/2025",
+      "descripcion": "Compra Web Payu Uber Trip Cl.",
+      "monto": -1917.0,
+      "tipo": "cargo"
+    },
+    {
+      "fecha": "07/04/2025",
+      "descripcion": "Compra Web Payu Uber Eats Cl.",
+      "monto": -12741.0,
+      "tipo": "cargo"
+    }
+  ],
+  "fecha_extraccion": "2025-05-16 04:15:36"
+}

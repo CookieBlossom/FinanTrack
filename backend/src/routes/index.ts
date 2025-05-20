@@ -6,6 +6,7 @@ import projectedMovementRoutes from './projectedMovementRoutes';
 import subscriptionRoutes from './subscriptionRoutes';
 import goalRoutes from './goalRoutes';
 import budgetRoutes from './budgetRoutes';
+import scraperRoutes from './scraperRoutes';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/projected-movements', projectedMovementRoutes);
 router.use('/subscriptions', subscriptionRoutes);
 router.use('/goals', goalRoutes);
 router.use('/budgets', budgetRoutes);
+router.use('/scraper', scraperRoutes);
 
 export default router; 

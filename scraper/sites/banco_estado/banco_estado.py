@@ -66,8 +66,8 @@ class BancoEstadoScraper:
                 print(f"\n📨 Nueva tarea recibida para RUT: {credentials.rut}")
 
                 async with async_playwright() as p:
-                    # Configuración del navegador
-                    browser = await p.chromium.launch(headless=False, slow_mo=300)
+                    # Configuración del navegador (headless=True para ejecutar sin interfaz visible)
+                    browser = await p.chromium.launch(headless=True, slow_mo=150)
                     context = await browser.new_context(
                         accept_downloads=True,
                         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -111,7 +111,7 @@ class BancoEstadoScraper:
                     # 3. Extraer información de cuentas y mostrar saldos
                     print("🔍 Extrayendo información de cuentas...")
                     await self.mostrar_saldos(page)
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(1000)
                     cuentas = await self.extract_cuentas(page)
                     
                     # 4. Extraer últimos movimientos
@@ -153,8 +153,8 @@ class BancoEstadoScraper:
                     store_result(self.redis_client, f"scraper:response:{credentials.rut}", error_result)
 
     async def espera_aleatoria(self, page):
-        base_time = random.randint(800, 1200)
-        jitter = random.randint(-200, 200)
+        base_time = random.randint(400, 600)
+        jitter = random.randint(-100, 100)
         await page.wait_for_timeout(base_time + jitter)
 
     async def cerrar_modal_infobar(self, page):
@@ -168,7 +168,7 @@ class BancoEstadoScraper:
                     }
                 }
             """)
-            await page.wait_for_timeout(1000)
+            await page.wait_for_timeout(500)
             
             # Si aún existe el botón, intentar el método tradicional
             modal_btn = page.locator("button.evg-btn-dismissal[aria-label*='Close']")
@@ -241,17 +241,17 @@ class BancoEstadoScraper:
 
     async def type_like_human(self, page, selector, text):
         for char in text:
-            await page.type(selector, char, delay=random.randint(50, 150))
-            if random.random() < 0.1:  # 10% de probabilidad de pausa
-                await page.wait_for_timeout(random.randint(100, 300))
+            await page.type(selector, char, delay=random.randint(20, 70))
+            if random.random() < 0.06:  # 5% de probabilidad de pausa
+                await page.wait_for_timeout(random.randint(50, 150))
 
     async def simular_comportamiento_humano(self, page):
-        # Movimientos aleatorios del mouse
-        for _ in range(3):
+        # Movimientos aleatorios del mouse (solo uno en modo headless para mantener algo de aleatoriedad)
+        for _ in range(1):
             x = random.randint(100, 800)
             y = random.randint(100, 600)
-            await page.mouse.move(x, y, steps=random.randint(5, 10))
-            await page.wait_for_timeout(random.randint(100, 300))
+            await page.mouse.move(x, y, steps=random.randint(3, 5))
+            await page.wait_for_timeout(random.randint(50, 150))
         # Scroll aleatorio
         await page.evaluate("""
             window.scrollTo({
