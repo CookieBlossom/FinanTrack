@@ -4,7 +4,9 @@ import argparse
 import importlib
 import os
 import sys
+from dotenv import load_dotenv
 
+load_dotenv()
 # Función para listar los scrapers disponibles
 def list_available_scrapers():
     scrapers = []
@@ -20,8 +22,9 @@ async def main():
     parser = argparse.ArgumentParser(description='Ejecuta scrapers específicos de BancoEstado')
     parser.add_argument('--list', action='store_true', help='Listar los scrapers disponibles')
     parser.add_argument('--scraper', type=str, help='Nombre del scraper a ejecutar (ej: banco_estado_saldos)')
-    parser.add_argument('--redis-host', type=str, default='localhost', help='Host de Redis')
-    parser.add_argument('--redis-port', type=int, default=6379, help='Puerto de Redis')
+    parser.add_argument('--redis-host', type=str, default=os.environ.get('REDIS_HOST', 'localhost'), help='Host de Redis')
+    parser.add_argument('--redis-password', type=str, default=os.environ.get('REDIS_PASSWORD'), help='Contraseña de Redis')
+    parser.add_argument('--redis-port', type=int, default=int(os.environ.get('REDIS_PORT', 6379)), help='Puerto de Redis')
     parser.add_argument('--results-dir', type=str, default='results', help='Directorio para guardar resultados')
     
     args = parser.parse_args()
