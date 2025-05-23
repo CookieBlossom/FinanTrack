@@ -2,8 +2,8 @@ export interface IUser {
   id?: number;
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string | null;
+  lastName?: string | null;
   role: 'user' | 'admin';
   isActive?: boolean;
   createdAt?: Date;
@@ -20,15 +20,22 @@ export interface IUserLogin {
   password: string;
 }
 
-export interface IUserRegister extends IUserLogin {
-  firstName: string;
-  lastName: string;
+export interface IUserRegister {
+  email: string;
+  password: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  // Soporte para snake_case
+  first_name?: string | null;
+  last_name?: string | null;
 }
 
 // Para actualizaciones de perfil (no permite email, role, password)
 export interface IUserProfileUpdate {
-  firstName?: string;
-  lastName?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
 }
 
 // Para cambio de contraseña

@@ -7,16 +7,25 @@ import subscriptionRoutes from './subscriptionRoutes';
 import goalRoutes from './goalRoutes';
 import budgetRoutes from './budgetRoutes';
 import scraperRoutes from './scraperRoutes';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
+// Rutas públicas (no requieren autenticación)
 router.use('/users', userRoutes);
-router.use('/card-types', cardTypeRoutes);
-router.use('/cards', cardRoutes);
-router.use('/projected-movements', projectedMovementRoutes);
-router.use('/subscriptions', subscriptionRoutes);
-router.use('/goals', goalRoutes);
-router.use('/budgets', budgetRoutes);
-router.use('/scraper', scraperRoutes);
+
+// Rutas protegidas (requieren autenticación)
+router.use('/cards', cardRoutes, authMiddleware);
+router.use('/card-types', cardTypeRoutes, authMiddleware);
+router.use('/projected-movements', projectedMovementRoutes, authMiddleware);
+router.use('/subscriptions', subscriptionRoutes, authMiddleware);
+router.use('/goals', goalRoutes, authMiddleware);
+router.use('/budgets', budgetRoutes, authMiddleware);
+router.use('/scraper', scraperRoutes, authMiddleware);
+
+// Ruta de prueba para verificar que el router está funcionando
+router.get('/test', (req, res) => {
+    res.json({ message: 'Router API funcionando correctamente' });
+});
 
 export default router; 

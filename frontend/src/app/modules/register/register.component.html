@@ -1,27 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 </head>
 <body>
     <nav class="navbar">
         <img src="assets/images/logoVino.png" alt="logo">
-        <a class="navbar-brand" >FinanTrack</a>
+        <a class="navbar-brand">FinanTrack</a>
     </nav>
     <div class="container">
-        <div class="mb-3">
-            <input type="text" placeholder="Ingrese su nombre" class="input-form" id="nombre" required>
-            <input type="email" placeholder="Ingrese su correo electronico" class="input-form" id="email" required>
-            <input type="tel" placeholder="Ingrese su telefono" class="input-form" id="telefono" required>
-            <input type="password" placeholder="Ingrese su contraseña" class="input-form" id="password" required>
-            <input type="password" placeholder="Vuelva a ingresar su contraseña" class="input-form" id="passwordConf" required>
-            <div class="contchecklist">
-                <input  type="checkbox" value="" id="checkDefault" class="checklist">
-                <label class="textCondiciones" for="defaultCheck1" routerLink="/condicones" >He leido y acepto las condiciones</label>
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="mb-3">
+            <input type="email" 
+                   placeholder="Ingrese su correo electrónico" 
+                   class="input-form" 
+                   formControlName="email"
+                   [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            <div class="error-message" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                <span *ngIf="registerForm.get('email')?.errors?.['required']">El correo electrónico es requerido</span>
+                <span *ngIf="registerForm.get('email')?.errors?.['email']">Ingrese un correo electrónico válido</span>
             </div>
+
+            <input type="password" 
+                   placeholder="Ingrese su contraseña" 
+                   class="input-form" 
+                   formControlName="password"
+                   [class.is-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            <div class="error-message" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                <span *ngIf="registerForm.get('password')?.errors?.['required']">La contraseña es requerida</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
+            </div>
+
+            <input type="password" 
+                   placeholder="Confirme su contraseña" 
+                   class="input-form" 
+                   formControlName="passwordConfirm"
+                   [class.is-invalid]="registerForm.get('passwordConfirm')?.invalid && registerForm.get('passwordConfirm')?.touched">
+            <div class="error-message" *ngIf="registerForm.get('passwordConfirm')?.errors?.['passwordMismatch']">
+                Las contraseñas no coinciden
+            </div>
+
+            <div class="error-message text-center" *ngIf="registerError">
+                {{ registerError }}
+            </div>
+
             <div class="contbutton">
-                <button type="button" class="btn">Ingresar</button>
+                <button type="submit" 
+                        class="btn" 
+                        [disabled]="registerForm.invalid || isLoading">
+                    {{ isLoading ? 'Registrando...' : 'Registrarse' }}
+                </button>
+                <p class="login-link">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
             </div>
-        </div>
+        </form>
     </div>
 </body>
 </html>

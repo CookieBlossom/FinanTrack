@@ -13,14 +13,30 @@ export class UserController {
 
   public register = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
+      console.log('Recibida petición de registro con body:', req.body);
       const userData: IUserRegister = req.body;
+      console.log('Datos procesados para registro:', userData);
+      
       const user = await this.userService.register(userData);
-      return res.status(201).json(user);
+      console.log('Usuario registrado exitosamente:', user);
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Usuario registrado exitosamente',
+        data: user
+      });
     } catch (error: unknown) {
+      console.error('Error en el controlador durante el registro:', error);
       if (error instanceof DatabaseError) {
-        return res.status(400).json({ message: error.message });
+        return res.status(400).json({
+          success: false,
+          message: error.message
+        });
       }
-      return res.status(500).json({ message: 'Internal server error' });
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
     }
   };
 

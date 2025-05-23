@@ -7,7 +7,10 @@
     "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "start:dev": "nodemon",
+    "test": "jest",
+    "db:reset": "ts-node src/config/database/reset-database.ts"
   },
   "keywords": [],
   "author": "",

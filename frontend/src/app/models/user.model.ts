@@ -1,13 +1,12 @@
 export interface User {
   id?: number;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   role?: 'user' | 'admin';
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
-  deletedAt?: Date;
 }
 
 export interface UserLogin {
@@ -15,9 +14,9 @@ export interface UserLogin {
   password: string;
 }
 
-export interface UserRegister extends UserLogin {
-  firstName: string;
-  lastName: string;
+export interface UserRegister {
+  email: string;
+  password: string;
 }
 
 export interface UserProfileUpdate {
@@ -33,4 +32,10 @@ export interface UserPasswordChange {
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
 } 

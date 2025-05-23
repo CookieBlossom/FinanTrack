@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const pool: Pool = new Pool({
+export const pool: Pool = new Pool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD,
@@ -11,19 +11,18 @@ const pool: Pool = new Pool({
     port: parseInt(process.env.DB_PORT || '5432')
 });
 
-async function initializeDatabase(): Promise<boolean> {
+export async function initializeDatabase(): Promise<boolean> {
+    let client: PoolClient | null = null;
     try {
-        const client: PoolClient = await pool.connect();
+        client = await pool.connect();
         console.log('Conexión a PostgreSQL establecida correctamente');
-        client.release();
         return true;
     } catch (error) {
         console.error('Error al conectar con PostgreSQL:', error);
         throw error;
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
-}
-
-export {
-    pool,
-    initializeDatabase
-}; 
+} 

@@ -1,22 +1,32 @@
 -- Independent tables
 -- Users Table
-CREATE TABLE IF NOT EXISTS user (
+DROP TABLE IF EXISTS "user" CASCADE;
+DROP TABLE IF EXISTS "categories" CASCADE;
+DROP TABLE IF EXISTS "card_types" CASCADE;
+DROP TABLE IF EXISTS "cards" CASCADE;
+DROP TABLE IF EXISTS "movements" CASCADE;
+DROP TABLE IF EXISTS "projected_movements" CASCADE;
+DROP TABLE IF EXISTS "subscriptions" CASCADE;
+DROP TABLE IF EXISTS "movement_patterns" CASCADE;
+DROP TABLE IF EXISTS "goals" CASCADE;
+DROP TABLE IF EXISTS "budgets" CASCADE;
+CREATE TABLE "user" (
     id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    role VARCHAR(50) NOT NULL DEFAULT 'user', -- user, admin
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    role VARCHAR(20) NOT NULL DEFAULT 'user',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Categories Table
-CREATE TABLE IF NOT EXISTS categories (
+CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
-    name_category VARCHAR(100) NOT NULL,
+    name_category VARCHAR(100) NOT NULL UNIQUE,
     keywords TEXT[], -- Keywords para categorización automática
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP
@@ -34,7 +44,7 @@ INSERT INTO categories (name_category, keywords) VALUES
 ON CONFLICT (name_category) DO NOTHING;
 
 -- Card Types Table
-CREATE TABLE IF NOT EXISTS card_types (
+CREATE TABLE card_types (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -55,7 +65,7 @@ ON CONFLICT (name) DO NOTHING;
 -- Cards Table
 CREATE TABLE IF NOT EXISTS cards (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES user(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
     name_account VARCHAR(100) NOT NULL,
     card_type_id INTEGER REFERENCES card_types(id),
     balance DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -84,7 +94,7 @@ CREATE TABLE IF NOT EXISTS movements (
 -- Projected Movements Table
 CREATE TABLE IF NOT EXISTS projected_movements (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES user(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
     category_id INTEGER REFERENCES categories(id),
     card_id INTEGER REFERENCES cards(id),
     amount DECIMAL(12,2) NOT NULL,
@@ -102,7 +112,7 @@ CREATE TABLE IF NOT EXISTS projected_movements (
 -- Subscriptions Table
 CREATE TABLE IF NOT EXISTS subscriptions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES user(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
     category_id INTEGER REFERENCES categories(id),
     name VARCHAR(100) NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
@@ -129,7 +139,7 @@ CREATE TABLE IF NOT EXISTS movement_patterns (
 -- Goals Table
 CREATE TABLE IF NOT EXISTS goals (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES user(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
     category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
     amount_expected DECIMAL(12,2) NOT NULL,
     amount_actual DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -143,7 +153,7 @@ CREATE TABLE IF NOT EXISTS goals (
 -- Budgets Table
 CREATE TABLE IF NOT EXISTS budgets (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES user(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
     category_id INTEGER REFERENCES categories(id),
     amount_limit DECIMAL(12,2) NOT NULL,
     period VARCHAR(50) NOT NULL, -- monthly, yearly, weekly
@@ -157,8 +167,10 @@ CREATE TABLE IF NOT EXISTS budgets (
 
 -- Índices para optimización de consultas
 -- Users: búsqueda por email (login)
-CREATE INDEX idx_users_email ON user(email);
-
+CREATE INDEX idx_users_email ON "user"(email);
+-- Crear índices
+CREATE INDEX idx_user_role ON "user"(role);
+CREATE INDEX idx_user_is_active ON "user"(is_active);
 -- Categories: búsqueda por nombre
 CREATE INDEX idx_categories_name ON categories(name_category);
 

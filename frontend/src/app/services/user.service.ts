@@ -1,34 +1,34 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ApiBaseService } from './api-base.service';
 import { DatabaseService } from './database.service';
 import { User, UserProfileUpdate } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
-export class UserService extends ApiBaseService<User> {
-  
+export class UserService {
+  private apiUrl: string;
+
   constructor(
-    protected override http: HttpClient,
-    protected override database: DatabaseService
+    private http: HttpClient,
+    private database: DatabaseService
   ) {
-    super(http, database, 'users');
+    this.apiUrl = `${this.database.getApiUrl()}/users`;
   }
 
   /**
    * Obtener todos los usuarios (solo para administradores)
    */
-  override getAll(): Observable<User[]> {
-    return super.getAll();
+  getAll(): Observable<User[]> {
+    return this.http.get<User[]>(this.apiUrl);
   }
 
   /**
    * Obtener un usuario específico por ID (solo para administradores)
    */
-  override getById(id: number): Observable<User> {
-    return super.getById(id);
+  getById(id: number): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/${id}`);
   }
 
   /**
@@ -41,7 +41,14 @@ export class UserService extends ApiBaseService<User> {
   /**
    * Actualizar un usuario (solo para administradores)
    */
-  override update(id: number, data: Partial<User>): Observable<User> {
-    return super.update(id, data);
+  update(id: number, data: Partial<User>): Observable<User> {
+    return this.http.put<User>(`${this.apiUrl}/${id}`, data);
+  }
+
+  /**
+   * Eliminar un usuario (solo para administradores)
+   */
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 } 

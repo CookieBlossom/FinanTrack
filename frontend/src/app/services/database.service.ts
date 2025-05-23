@@ -6,21 +6,15 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class DatabaseService {
-  private apiUrl = 'http://localhost:3000'; // URL del backend
+  private apiUrl = 'http://localhost:3000';
 
-  constructor(private http: HttpClient) {}
-  
-  /**
-   * Devuelve la URL base de la API
-   */
+  constructor(private http: HttpClient) {
+    // Si estamos en producción, usaríamos la URL de producción
+    // this.apiUrl = environment.apiUrl;
+  }
   getApiUrl(): string {
     return this.apiUrl;
   }
-
-  /**
-   * Método de ejemplo para obtener usuarios
-   * Este método podría moverse a un UserService específico
-   */
   getUsers(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users`);
   }

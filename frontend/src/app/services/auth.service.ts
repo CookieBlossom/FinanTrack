@@ -2,13 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { DatabaseService } from './database.service';
-import { UserLogin, UserRegister, AuthResponse, User, UserPasswordChange } from '../models/user.model';
+import { User, UserLogin, UserRegister, AuthResponse, ApiResponse } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl: string;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
@@ -16,15 +15,29 @@ export class AuthService {
     private http: HttpClient,
     private database: DatabaseService
   ) {
-    this.apiUrl = database.getApiUrl();
     this.loadCurrentUser();
   }
 
-  /**
-   * Login de usuario
-   */
+  register(userData: UserRegister): Observable<ApiResponse<User>> {
+    console.log('AuthService - Iniciando registro con datos:', userData);
+    const apiUrl = `${this.database.getApiUrl()}/users/register`;
+    console.log('AuthService - URL de registro:', apiUrl);
+
+    return this.http.post<ApiResponse<User>>(apiUrl, userData)
+      .pipe(
+        tap({
+          next: (response) => {
+            console.log('AuthService - Registro exitoso:', response);
+          },
+          error: (error) => {
+            console.error('AuthService - Error en el registro:', error);
+          }
+        })
+      );
+  }
+
   login(credentials: UserLogin): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/users/login`, credentials)
+    return this.http.post<AuthResponse>(`${this.database.getApiUrl()}/users/login`, credentials)
       .pipe(
         tap(response => {
           if (response && response.token) {
@@ -35,27 +48,14 @@ export class AuthService {
       );
   }
 
-  /**
-   * Registro de usuario
-   */
-  register(userData: UserRegister): Observable<User> {
-    return this.http.post<User>(`${this.apiUrl}/users/register`, userData);
-  }
-
-  /**
-   * Cierre de sesión
-   */
   logout(): void {
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
     this.currentUserSubject.next(null);
   }
 
-  /**
-   * Obtener el perfil del usuario actual
-   */
   getProfile(): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/users/profile`)
+    return this.http.get<User>(`${this.database.getApiUrl()}/users/profile`)
       .pipe(
         tap(user => {
           this.currentUserSubject.next(user);
@@ -64,11 +64,8 @@ export class AuthService {
       );
   }
 
-  /**
-   * Actualizar el perfil del usuario
-   */
   updateProfile(data: any): Observable<User> {
-    return this.http.put<User>(`${this.apiUrl}/users/profile`, data)
+    return this.http.put<User>(`${this.database.getApiUrl()}/users/profile`, data)
       .pipe(
         tap(user => {
           this.currentUserSubject.next(user);
@@ -77,38 +74,19 @@ export class AuthService {
       );
   }
 
-  /**
-   * Cambiar contraseña
-   */
-  changePassword(data: UserPasswordChange): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/users/change-password`, data);
-  }
-
-  /**
-   * Comprobar si el usuario está autenticado
-   */
   isAuthenticated(): boolean {
     return !!localStorage.getItem('authToken');
   }
 
-  /**
-   * Obtener el token de autenticación
-   */
   getToken(): string | null {
     return localStorage.getItem('authToken');
   }
 
-  /**
-   * Almacenar datos de sesión tras login exitoso
-   */
   private setSession(authResult: AuthResponse): void {
     localStorage.setItem('authToken', authResult.token);
     localStorage.setItem('currentUser', JSON.stringify(authResult.user));
   }
 
-  /**
-   * Cargar usuario guardado en localStorage (para persistencia entre recargas)
-   */
   private loadCurrentUser(): void {
     const userStr = localStorage.getItem('currentUser');
     if (userStr) {
@@ -116,7 +94,7 @@ export class AuthService {
         const user = JSON.parse(userStr);
         this.currentUserSubject.next(user);
       } catch (e) {
-        console.error('Error parsing current user from localStorage', e);
+        console.error('Error al parsear usuario del localStorage:', e);
         this.logout();
       }
     }
