@@ -1,102 +1,99 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { DatabaseService } from './database.service';
-import { User, UserLogin, UserRegister, AuthResponse, ApiResponse } from '../models/user.model';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+import { AuthResponse } from '../models/user.model';
+import { AuthTokenService } from './auth-token.service';
+import { Router } from '@angular/router';
+import { CardCreate } from '../models/card.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable();
+  private apiUrl = environment.apiUrl;
+  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor(
     private http: HttpClient,
-    private database: DatabaseService
+    private authTokenService: AuthTokenService,
+    private router: Router
   ) {
-    this.loadCurrentUser();
+    // Verificar el estado inicial de autenticación
+    this.isAuthenticatedSubject.next(this.authTokenService.isTokenValid());
   }
 
-  register(userData: UserRegister): Observable<ApiResponse<User>> {
-    console.log('AuthService - Iniciando registro con datos:', userData);
-    const apiUrl = `${this.database.getApiUrl()}/users/register`;
-    console.log('AuthService - URL de registro:', apiUrl);
-
-    return this.http.post<ApiResponse<User>>(apiUrl, userData)
-      .pipe(
-        tap({
-          next: (response) => {
-            console.log('AuthService - Registro exitoso:', response);
-          },
-          error: (error) => {
-            console.error('AuthService - Error en el registro:', error);
-          }
-        })
-      );
+  register(userData: { email: string; password: string }): Observable<AuthResponse> {
+    console.log('Enviando datos de registro:', userData);
+    const url = `${this.apiUrl}/users/register`;
+    console.log('URL de registro:', url);
+    
+    return this.http.post<AuthResponse>(url, userData).pipe(
+      tap(response => {
+        console.log('Respuesta del servidor:', response);
+        if (response.token) {
+          this.authTokenService.setToken(response.token);
+          this.isAuthenticatedSubject.next(true);
+        }
+      }),
+      catchError(this.handleError)
+    );
   }
 
-  login(credentials: UserLogin): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.database.getApiUrl()}/users/login`, credentials)
-      .pipe(
-        tap(response => {
-          if (response && response.token) {
-            this.setSession(response);
-            this.currentUserSubject.next(response.user);
-          }
-        })
-      );
+  login(credentials: { email: string; password: string }): Observable<AuthResponse> {
+    console.log('Enviando datos de login:', credentials);
+    const url = `${this.apiUrl}/users/login`;
+    console.log('URL de login:', url);
+    
+    return this.http.post<AuthResponse>(url, credentials).pipe(
+      tap(response => {
+        console.log('Respuesta del servidor:', response);
+        if (response.token) {
+          this.authTokenService.setToken(response.token);
+          this.isAuthenticatedSubject.next(true);
+        }
+      }),
+      catchError(this.handleError)
+    );
   }
 
   logout(): void {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('currentUser');
-    this.currentUserSubject.next(null);
-  }
-
-  getProfile(): Observable<User> {
-    return this.http.get<User>(`${this.database.getApiUrl()}/users/profile`)
-      .pipe(
-        tap(user => {
-          this.currentUserSubject.next(user);
-          localStorage.setItem('currentUser', JSON.stringify(user));
-        })
-      );
-  }
-
-  updateProfile(data: any): Observable<User> {
-    return this.http.put<User>(`${this.database.getApiUrl()}/users/profile`, data)
-      .pipe(
-        tap(user => {
-          this.currentUserSubject.next(user);
-          localStorage.setItem('currentUser', JSON.stringify(user));
-        })
-      );
+    console.log('Cerrando sesión...');
+    this.authTokenService.removeToken();
+    this.isAuthenticatedSubject.next(false);
+    this.router.navigate(['/login']);
   }
 
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('authToken');
+    const isAuth = this.authTokenService.isTokenValid();
+    this.isAuthenticatedSubject.next(isAuth);
+    return isAuth;
   }
 
   getToken(): string | null {
-    return localStorage.getItem('authToken');
+    return this.authTokenService.getToken();
   }
 
-  private setSession(authResult: AuthResponse): void {
-    localStorage.setItem('authToken', authResult.token);
-    localStorage.setItem('currentUser', JSON.stringify(authResult.user));
-  }
-
-  private loadCurrentUser(): void {
-    const userStr = localStorage.getItem('currentUser');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        this.currentUserSubject.next(user);
-      } catch (e) {
-        console.error('Error al parsear usuario del localStorage:', e);
-        this.logout();
+  private handleError(error: HttpErrorResponse) {
+    console.error('Error en la petición:', error);
+    let errorMessage = 'Ha ocurrido un error en el servidor';
+    
+    if (error.error instanceof ErrorEvent) {
+      // Error del lado del cliente
+      errorMessage = `Error: ${error.error.message}`;
+    } else {
+      // Error del lado del servidor
+      if (error.status === 404) {
+        errorMessage = 'El servicio no está disponible en este momento';
+      } else if (error.status === 400) {
+        errorMessage = 'Datos de entrada inválidos';
+      } else if (error.status === 401) {
+        errorMessage = 'Credenciales inválidas';
       }
     }
+    
+    return throwError(() => new Error(errorMessage));
   }
 } 

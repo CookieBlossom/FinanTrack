@@ -7,7 +7,6 @@
     position: relative;
     top: 150px;
     right: 100px;
-
 }
 .card {
     border: 3px solid var(--color-accent);
@@ -52,6 +51,48 @@ img{
     left: 30px;
 }
 
+.input-form.is-invalid {
+    border-color: #dc3545;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 14px;
+    margin: -5px 0 10px 35px;
+    text-align: left;
+}
+
+.error-message.text-center {
+    text-align: center;
+    margin: 10px 0;
+}
+
+/* Estilos para la alerta de error */
+.alert {
+    padding: 12px;
+    margin: 0 auto 20px auto;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+    width: 90%;
+    max-width: 280px;
+    position: relative;
+    z-index: 1;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.alert i {
+    margin-right: 8px;
+    color: #dc3545;
+}
+
 .contButton{
     position: relative;
     left: 80px;
@@ -65,7 +106,13 @@ button{
     background-color: var(--color-accent);
     border-color: var(--color-accent);
     color: white;
+    cursor: pointer;
+}
 
+button:disabled {
+    background-color: #cccccc;
+    border-color: #cccccc;
+    cursor: not-allowed;
 }
 
 .contButton a {

@@ -18,44 +18,20 @@
       </ag-grid-angular>
       <button class="btn-add">+ Agregar Movimiento</button>
     </div>
-    <!-- Derecha: Tarjetas y gráficas -->
-    <div class="section-graphs">
-        <div class="section-percentage">
-            <div class="card-summary a">
-                <h3>% de cumplimiento mensual</h3>
-                <p>85%</p>
-            </div>
-            <div class="card-summary b">
-                <h3>Gastos esperados (próximo mes)</h3>
-                <p>$450.000</p>
-            </div>
-        </div>
-      <div class="sub-table">
-        <h3>Siguientes gastos</h3>
-        <ag-grid-angular
-          class="ag-theme-alpine"
-          [columnDefs]="nextExpensesCols"
-          [rowData]="nextExpenses"
-          [theme]="myTheme"
-          rowModelType="clientSide"
-          (gridReady)="onGridReady($event)"
-          (gridSizeChanged)="onGridSizeChanged($event)">
-        </ag-grid-angular>
-      </div>
-      <div class="chart-wrapper" #chartContainer>
-        <ngx-charts-pie-chart
-          [results]="categoriasPorGasto"
-          [scheme]="colorScheme"
-          [legend]="true"
-          [legendTitle]="'Leyenda'"
-          [explodeSlices]="false"
-          [labels]="true"
-          [legendPosition]="below"
-          [animations]="true"
-          [doughnut]="true"
-          [view]="chartView">
-        </ngx-charts-pie-chart>
-      </div>
+    <!-- Grafico gastos -->
+    <div class="chart-wrapper" #chartContainer>
+      <ngx-charts-pie-chart
+        [results]="categoriasPorGasto"
+        [scheme]="colorScheme"
+        [legend]="true"
+        [legendTitle]="'Leyenda'"
+        [explodeSlices]="false"
+        [labels]="true"
+        [legendPosition]="below"
+        [animations]="true"
+        [doughnut]="true"
+        [view]="chartView">
+      </ngx-charts-pie-chart>
     </div>
   </div>
   

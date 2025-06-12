@@ -7,8 +7,8 @@
 
   .container-movements {
     display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 0.2fr 0.8fr;
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 1fr;
     height: 100%;
     max-height: 98%;
     max-width: 100%;
@@ -17,76 +17,6 @@
     padding: 1rem;
     background-color: var(--clr-surface-a0);
     
-  }
-  .container-cards{
-    background-color: var(--clr-surface-a10);
-    border-radius: 500px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-  .cards{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    height: 50%;
-    width: 95%;
-    border-radius: 20px;
-    justify-content: space-around;
-  }
-  .card-summary-a{
-    background-color: var(--color-primary-darkest);
-    color: var(--color-text-inverse);
-    padding: 1rem;
-    width: 30%;
-  }
-  .card-summary-b{
-    background-color: var(--color-primary-darker);
-    color: var(--color-text-inverse);
-    padding: 1rem;
-    width: 30%;
-  }
-  .card-summary-c{
-    background-color: var(--color-primary-dark);
-    color: var(--color-text-inverse);
-    padding: 1rem;
-    width: 30%;
-  }
-  .card-summary-a, .card-summary-b, .card-summary-c{
-    border-radius: 10px;
-    h3{
-        font-size: var(--font-size-md);
-        font-family: var(--font-family-bold);
-        margin: 0px;
-        color: var(--color-text-inverse);
-        text-align: center;
-    }
-  }
-  .text-card{
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    p{
-        font-size: var(--font-size-xl);
-        font-family: var(--font-family-bold);
-        text-align: center;
-        margin: 0px;
-        color: var(--color-text-inverse);
-        font-weight: bold;
-    }
-    h3{
-        font-size: var(--font-size-xxl);
-        font-family: var(--font-family-bold);
-        margin: 0px;
-        color: var(--color-text-inverse);
-        text-align: center;
-    }
-  }
-
-  .container-tables {
-    display: grid;
-    grid-template-columns: 40% 60%;
   }
   .table{
     display: flex;
@@ -113,6 +43,24 @@
     font-size: var(--font-size-md);
     cursor: pointer;
     width: 97%;
+  }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .btn-upload {
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 4px;
+    cursor: pointer;
   }
   ag-grid-angular {
     display: block;

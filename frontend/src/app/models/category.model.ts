@@ -1,23 +1,41 @@
-export interface Category {
-  id?: number;
-  nameCategory: string;
-  keywords?: string[];
-  icon?: string;
-  color?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+export type CategoryType =
+  | 'Comida'
+  | 'Entretenimiento'
+  | 'Transporte'
+  | 'Vivienda'
+  | 'Salud'
+  | 'Compras'
+  | 'Educación'
+  | 'Otros';
 
-export interface CategoryCreate {
-  nameCategory: string;
-  keywords?: string[];
-  icon?: string;
-  color?: string;
-}
+  export interface Category {
+    id: number;
+    name_category: string;
+    icon: string;
+    color: string;
+    is_system: boolean;
+    created_at: Date;
+    updated_at: Date | null;
+    keywords?: string[];
+  }
 
-export interface CategoryUpdate {
-  nameCategory?: string;
-  keywords?: string[];
-  icon?: string;
-  color?: string;
-} 
+  export interface CategoryExpense {
+    id: number;
+    name_category: string;
+    total_amount: number;
+    transaction_count: number;
+    payment_type: 'card' | 'cash';
+  }
+  
+
+  export interface CategoryUpdate {
+    nameCategory?: string;
+    icon?: string;
+    color?: string;
+  }
+  export interface UserCategoryKeyword {
+    user_id: number;
+    category_id: number;
+    keywords: string[];
+    updated_at: Date;
+  }

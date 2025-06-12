@@ -1,0 +1,45 @@
+<h2>Agregar Movimiento en Efectivo</h2>
+
+<form [formGroup]="cashForm" (ngSubmit)="submit()">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Categoría</mat-label>
+    <mat-select formControlName="categoryId">
+        <mat-option *ngFor="let cat of categories" [value]="cat.id">
+            {{ cat.name_category }}
+            </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Método de Pago</mat-label>
+    <mat-select formControlName="description">
+      <mat-option *ngFor="let method of methodOptions" [value]="method">
+        {{ method }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Monto</mat-label>
+    <input matInput type="number" formControlName="amount" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Fecha</mat-label>
+    <input matInput type="date" formControlName="transactionDate" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Tipo</mat-label>
+    <mat-select formControlName="movementType">
+      <mat-option *ngFor="let type of typeOptions" [value]="type">
+        {{ type === 'income' ? 'Ingreso' : 'Gasto' }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <div class="actions">
+    <button mat-flat-button color="primary" type="submit" [disabled]="isLoading">Guardar</button>
+    <button mat-flat-button color="warn" type="button" (click)="cancel()">Cancelar</button>
+  </div>
+</form>

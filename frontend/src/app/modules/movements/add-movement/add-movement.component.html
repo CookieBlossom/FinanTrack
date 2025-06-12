@@ -1,0 +1,106 @@
+<h2 mat-dialog-title align="center">Agregar Movimiento</h2>
+
+<mat-tab-group>
+  <!-- Pestaña de Ingreso Manual -->
+  <mat-tab label="Manual">
+    <div mat-dialog-content>
+      <form [formGroup]="manualForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Tarjeta</mat-label>
+          <mat-select formControlName="cardId" required>
+            <mat-option *ngFor="let card of cards" [value]="card.id">
+              {{card.nameAccount}} {{card.aliasAccount ? '(' + card.aliasAccount + ')' : ''}}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="manualForm.get('cardId')?.hasError('required')">
+            Debes seleccionar una tarjeta
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Fecha</mat-label>
+          <input matInput formControlName="fecha" type="date" required />
+          <mat-error *ngIf="manualForm.get('fecha')?.hasError('required')">
+            La fecha es requerida
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="nombre" required />
+          <mat-error *ngIf="manualForm.get('nombre')?.hasError('required')">
+            El nombre es requerido
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Monto</mat-label>
+          <input matInput type="number" formControlName="monto" required />
+          <mat-error *ngIf="manualForm.get('monto')?.hasError('required')">
+            El monto es requerido
+          </mat-error>
+          <mat-error *ngIf="manualForm.get('monto')?.hasError('min')">
+            El monto debe ser mayor a 0
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Tipo de Movimiento</mat-label>
+          <mat-select formControlName="tipoMovimiento" required>
+            <mat-option value="income">Ingreso</mat-option>
+            <mat-option value="expense">Gasto</mat-option>
+          </mat-select>
+          <mat-error *ngIf="manualForm.get('tipoMovimiento')?.hasError('required')">
+            El tipo de movimiento es requerido
+          </mat-error>
+        </mat-form-field>
+
+        <div mat-dialog-actions align="end">
+          <button mat-button type="button" (click)="onCancel()">Cancelar</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="!manualForm.valid">
+            Agregar
+          </button>
+        </div>
+      </form>
+    </div>
+  </mat-tab>
+
+  <!-- Pestaña de Carga de Cartola -->
+  <mat-tab label="Cartola">
+    <div mat-dialog-content>
+      <div class="file-upload-container">
+        <button mat-stroked-button type="button" (click)="fileInput.click()">
+          <mat-icon>upload_file</mat-icon>
+          Subir Cartola (PDF)
+        </button>
+        <input #fileInput type="file" 
+               accept=".pdf"
+               style="display: none"
+               (change)="onFileSelected($event)">
+        <span class="file-name" *ngIf="selectedFile">
+          {{selectedFile.name}}
+          <button mat-icon-button (click)="removeFile()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </span>
+      </div>
+
+      <div *ngIf="uploadError" class="error-message">
+        <mat-icon color="warn">error</mat-icon>
+        <span>{{uploadError}}</span>
+      </div>
+
+      <div mat-dialog-actions align="end">
+        <button mat-button type="button" (click)="onCancel()">Cancelar</button>
+        <button mat-raised-button
+                color="primary"
+                type="button"
+                (click)="onUploadCartola()"
+                [disabled]="!selectedFile || isUploading">
+          <mat-spinner diameter="20" *ngIf="isUploading"></mat-spinner>
+          <span *ngIf="!isUploading">Procesar Cartola</span>
+        </button>
+      </div>
+    </div>
+  </mat-tab>
+</mat-tab-group>

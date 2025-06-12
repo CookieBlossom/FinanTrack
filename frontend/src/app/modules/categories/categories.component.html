@@ -1,43 +1,47 @@
 <div class="container-categories">
-    <div class="left-panel">
-      <div class="summary-box">
-        <h3>Categorías</h3>
-        <p>Resumen y opciones</p>
-      </div>
-      <div class="table-section">
-        <ag-grid-angular
-          class="ag-theme-alpine"
-          [rowData]="rowData"
-          [columnDefs]="columnDefs"
-          [pagination]="true"
-          [theme]="myTheme"
-          [paginationPageSize]="5"
-          [defaultColDef]="defaultColDef"
-          rowModelType="clientSide"
-          (gridReady)="onGridReady($event)"
-          (gridSizeChanged)="onGridSizeChanged($event)">
-        </ag-grid-angular>
-      </div>
-    </div>
-  
-    <div class="right-panel">
-      <div class="chart-box">
-        <h3>Gastos por Tarjeta</h3>
-        <ngx-charts-pie-grid
-        [results]="gastoTarjeta"
-        [scheme]="'cool'"
-        [view]="chartView"
-        [animations]="true">
-      </ngx-charts-pie-grid>
-      </div>
-      <div class="chart-box">
-        <h3>Gastos en Efectivo</h3>
-        <ngx-charts-pie-grid
-          [results]="gastoEfectivo"
-          [scheme]="'vivid'"
-          [view]="chartView"
-          [animations]="true">
-        </ngx-charts-pie-grid>
-      </div>
+  <div class="left-panel">
+    <div class="table-section">
+      <ag-grid-angular
+        style="width: 100%; height: 500px;"
+        [rowData]="categories"
+        [columnDefs]="columnDefs"
+        [defaultColDef]="defaultColDef"
+        [theme]="myTheme"
+        (gridReady)="onGridReady($event)"
+        (gridSizeChanged)="onGridSizeChanged($event)"
+        (cellValueChanged)="onCellValueChanged($event)"
+        (cellClicked)="onCellClicked($event)"
+        [animateRows]="true"
+        [enableCellTextSelection]="true"
+        [ensureDomOrder]="true"
+        [context]="gridContext"
+        [rowHeight]="100"
+        [rowSelection]="'single'"
+        [pagination]="true"
+        [paginationPageSize]="paginationPageSize"
+        [paginationPageSizeSelector]="paginationPageSizeSelector">
+      </ag-grid-angular>    
     </div>
   </div>
+
+  <div class="right-panel">
+    <div class="chart-section">
+      <ngx-charts-pie-grid
+        [view]="chartView"
+        [results]="gastoTarjeta"
+        [scheme]="'cool'"
+        [animations]="true"
+        [tooltipText]="formatTooltip">
+      </ngx-charts-pie-grid>
+    </div>
+    <div class="chart-section">
+      <ngx-charts-pie-grid
+        [view]="chartView"
+        [results]="gastoEfectivo"
+        [scheme]="'vivid'"
+        [animations]="true"
+        [tooltipText]="formatTooltip">
+      </ngx-charts-pie-grid>
+    </div>
+  </div>
+</div>

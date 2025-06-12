@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ProjectedMovementController } from '../controllers/projectedMovementController';
+import { ProjectedMovementController } from '../controllers/ProjectedMovementController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();

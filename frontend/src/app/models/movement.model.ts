@@ -1,17 +1,24 @@
 export interface Movement {
-  id?: number;
+  id: number;
   cardId: number;
   categoryId?: number;
   amount: number;
-  description?: string;
+  description: string;
   movementType: 'income' | 'expense';
-  movementSource: 'manual' | 'scrapper' | 'subscription' | 'projected';
+  movementSource: 'manual' | 'scraper' | 'subscription' | 'projected' | 'cartola';
   transactionDate: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
-  metadata?: Record<string, any>;
-  
-  // Propiedades expandidas para la UI
+  createdAt: Date;
+  updatedAt: Date;
+  metadata?: {
+    originalData?: any;
+    cuenta?: string;
+    referencia?: string;
+    estado?: string;
+    tipo?: string;
+    [key: string]: any;
+  };
+
+  // Datos expandidos opcionales
   card?: {
     id: number;
     nameAccount: string;
@@ -29,9 +36,9 @@ export interface MovementCreate {
   cardId: number;
   categoryId?: number;
   amount: number;
-  description?: string;
+  description: string;
   movementType: 'income' | 'expense';
-  movementSource: 'manual' | 'scrapper' | 'subscription' | 'projected';
+  movementSource: 'manual' | 'scraper' | 'subscription' | 'projected' | 'cartola';
   transactionDate: Date;
   metadata?: Record<string, any>;
 }
@@ -42,18 +49,23 @@ export interface MovementUpdate {
   amount?: number;
   description?: string;
   movementType?: 'income' | 'expense';
-  movementSource?: 'manual' | 'scrapper' | 'subscription' | 'projected';
+  movementSource?: 'manual' | 'scraper' | 'subscription' | 'projected' | 'cartola';
   transactionDate?: Date;
   metadata?: Record<string, any>;
 }
 
 export interface MovementFilters {
+  userId?: number; // requerido en backend
   cardId?: number;
   categoryId?: number;
   movementType?: 'income' | 'expense';
-  movementSource?: 'manual' | 'scrapper' | 'subscription' | 'projected';
+  movementSource?: 'manual' | 'scraper' | 'subscription' | 'projected' | 'cartola';
   startDate?: Date;
   endDate?: Date;
   minAmount?: number;
   maxAmount?: number;
-} 
+  limit?: number;
+  offset?: number;
+  orderBy?: string;
+  orderDirection?: 'ASC' | 'DESC';
+}

@@ -5,6 +5,11 @@ import { LayoutComponent } from './shared/components/layout/layout.component';
 export const routes: Routes = [
   // Rutas públicas (sin layout)
   {
+    path: '',
+    redirectTo: 'login',
+    pathMatch: 'full'
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./modules/login/login.component').then(m => m.LoginComponent),
@@ -18,46 +23,34 @@ export const routes: Routes = [
     path:'about-company',
     loadComponent:() =>
       import('./modules/about-company/about-company.component').then(m => m.AboutCompanyComponent),
-
   },
   {
-    path:'reset-pasword',
-    loadComponent:() =>
-      import('./modules/reset-pasword/reset-pasword.component').then(m => m.ResetPaswordComponent),
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./modules/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),
   },
   {
-    path:'new-password',
-    loadComponent:()=>
-      import('./modules/new-password/new-password.component').then(m => m.NewPasswordComponent),
-
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./modules/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
   },
-  {
-    path:'send-mail',
-    loadComponent:() =>
-      import('./modules/send-mail/send-mail.component').then(m => m.SendMailComponent),
-  },
-  
-
-  // Rutas privadas (con layout u otra propiedad)
+  // Rutas privadas (con layout)
   {
     path: '',
-    loadComponent: () =>
-      import('./shared/components/layout/layout.component').then(m => m.LayoutComponent),
+    component: LayoutComponent,
     children: [
       {
         path: 'dashboard',
-        loadComponent: () =>
-          import('./modules/dashboard/dashboard.component').then(m => m.DashboardComponent),
+        loadComponent: () => import('./modules/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+      {
+        path: 'cards',
+        loadComponent: () => import('./modules/card/card.component').then(m => m.CardComponent)
       },
       {
         path: 'profile',
         loadComponent: () =>
           import('./modules/profile/profile.component').then(m => m.ProfileComponent),
-      },
-      {
-        path: 'card',
-        loadComponent: () =>
-          import('./modules/card/card.component').then(m => m.CardComponent),
       },
       {
         path: 'analytics',
@@ -80,9 +73,9 @@ export const routes: Routes = [
           import('./modules/config/config.component').then(m => m.ConfigComponent),
       },
       {
-        path:'condicones',
+        path:'condiciones',
         loadComponent:() =>
-          import('./modules/condicones/condicones.component').then(m=>m.CondiconesComponent),
+          import('./modules/condiciones/condiciones.component').then(m=>m.CondicionesComponent),
       },
       {
         path:'help',
@@ -90,23 +83,11 @@ export const routes: Routes = [
           import('./modules/help/help.component').then(m =>m.HelpComponent),
       },
       {
-        path: 'subscriptions',
-        loadComponent: () =>
-          import('./modules/subscriptions/subscriptions.component').then(m => m.SubscriptionsComponent),
-      },
-      {
         path: 'upcoming-transactions',
         loadComponent: () =>
           import('./modules/upcoming-transactions/upcoming-transactions.component').then(m => m.UpcomingTransactionsComponent),
       },
-      
-      {
-        path: '',
-        redirectTo: 'dashboard',
-        pathMatch: 'full',
-      },
     ],
-
   },
   // Ruta para no encontradas
   {

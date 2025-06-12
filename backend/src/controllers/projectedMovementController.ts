@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { ProjectedMovementService } from '../services/projectedMovementService';
+import { ProjectedMovementService } from '../services/projectedMovement.service';
 import { IProjectedMovementCreate, IProjectedMovementUpdate, IProjectedMovementFilters } from '../interfaces/IProjectedMovement';
 import { IAuthRequest } from '../interfaces/IRequest';
 

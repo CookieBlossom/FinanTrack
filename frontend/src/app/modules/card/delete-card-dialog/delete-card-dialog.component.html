@@ -1,0 +1,11 @@
+<div class="confirm-delete-container">
+  <h2 mat-dialog-title>¿Eliminar tarjeta?</h2>
+  <mat-dialog-content>
+    <p>¿Estás seguro de eliminar esta tarjeta?<br>
+    <b>Se eliminarán todos sus movimientos asociados.</b></p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">Cancelar</button>
+    <button mat-raised-button color="warn" (click)="onConfirm()">Eliminar</button>
+  </mat-dialog-actions>
+</div>

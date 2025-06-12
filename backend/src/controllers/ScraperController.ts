@@ -1,152 +1,89 @@
 import { Request, Response } from 'express';
-import { ScraperService } from '../services/ScraperService';
-import { IScraperTaskCreate } from '../interfaces/IScraper';
-import { AuthRequest } from '../interfaces/IAuth';
-import { DatabaseError } from '../utils/errors';
+import { AuthRequest } from '../interfaces/AuthRequest';
+import { validateRut } from '../utils/validators';
+import { BancoEstadoService } from '../services/scrapers/banco-estado/banco-estado.service';
+import { RedisService } from '../services/redis.service';
+import { ScraperService } from '../services/scrapers/scraper.service';
+
+// Cargar dotenv para asegurar que process.env esté poblado
+import dotenv from 'dotenv';
+dotenv.config();
 
 export class ScraperController {
-  private scraperService: ScraperService;
+  private bancoEstadoService: BancoEstadoService;
 
   constructor() {
-    this.scraperService = new ScraperService();
+    const redisService = new RedisService();
+    const scraperService = new ScraperService(redisService);
+    this.bancoEstadoService = new BancoEstadoService(redisService, scraperService);
   }
 
   /**
-   * Inicia una nueva tarea de scraping
+   * Crea una nueva tarea de scraping para Banco Estado
    */
-  public startScraping = async (req: AuthRequest, res: Response): Promise<Response> => {
+  public createTask = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
-      // Verificar que el usuario está autenticado
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ success: false, message: 'Usuario no autorizado' });
       }
 
-      // Obtener datos del cuerpo de la solicitud
-      const taskData: IScraperTaskCreate = req.body;
-
-      // Validar datos básicos
-      if (!taskData.credentials || (!taskData.credentials.rut && !taskData.credentials.username) || !taskData.credentials.password) {
-        return res.status(400).json({ 
-          message: 'Se requieren credenciales válidas (rut/username y password)' 
-        });
-      }
-
-      // Crear tarea de scraping
-      const task = await this.scraperService.createTask(taskData);
-
-      return res.status(202).json({
-        message: 'Tarea de scraping iniciada',
-        task: {
-          id: task.id,
-          status: task.status,
-          createdAt: task.createdAt,
-          type: task.type,
-          site: task.site
-        }
+      console.log('Body recibido:', {
+        ...req.body,
+        password: '****'
       });
-    } catch (error) {
-      if (error instanceof DatabaseError) {
-        return res.status(400).json({ message: error.message });
+
+      const { rut, password, site } = req.body;
+
+      // Validaciones
+      if (!rut || typeof rut !== 'string') {
+        console.log('Error: RUT inválido o faltante', { rut });
+        return res.status(400).json({ success: false, message: 'El campo rut es requerido y debe ser un string.' });
       }
-      console.error('Error en startScraping:', error);
-      return res.status(500).json({ message: 'Error interno del servidor' });
-    }
-  };
-
-  /**
-   * Inicia una tarea específica para obtener saldos
-   */
-  public startSaldosScraping = async (req: AuthRequest, res: Response): Promise<Response> => {
-    try {
-      // Verificar que el usuario está autenticado
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+      if (!password || typeof password !== 'string') {
+        console.log('Error: Password inválido o faltante');
+        return res.status(400).json({ success: false, message: 'El campo password es requerido y debe ser un string.' });
+      }
+      if (!site || typeof site !== 'string') {
+        console.log('Error: Site inválido o faltante', { site });
+        return res.status(400).json({ success: false, message: 'El campo site es requerido y debe ser un string.' });
+      }
+      if (!validateRut(rut)) {
+        console.log('Error: Formato de RUT inválido', { rut });
+        return res.status(400).json({ success: false, message: 'El formato del RUT es inválido.' });
+      }
+      if (password.length < 4) { 
+        console.log('Error: Contraseña muy corta');
+        return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 4 caracteres.' });
+      }
+      
+      const supportedSites = ['banco-estado'];
+      if (!supportedSites.includes(site.toLowerCase())) {
+        console.log('Error: Sitio no soportado', { site });
+        return res.status(400).json({ success: false, message: `El sitio '${site}' no está soportado. Sitios soportados: ${supportedSites.join(', ')}` });
       }
 
-      // Obtener datos del cuerpo de la solicitud
-      const credentials = req.body;
-
-      // Validar datos básicos
-      if ((!credentials.rut && !credentials.username) || !credentials.password) {
-        return res.status(400).json({ 
-          message: 'Se requieren credenciales válidas (rut/username y password)' 
-        });
+      let taskResponse;
+      if (site.toLowerCase() === 'banco-estado') {
+        console.log('Ejecutando tarea para Banco Estado');
+        taskResponse = await this.bancoEstadoService.executeScraperTask(userId, { rut, password });
+        console.log('Respuesta de la tarea:', { taskId: taskResponse?.taskId });
+      } else {
+        console.warn(`[ScraperController] Intento de crear tarea para sitio no implementado: ${site}`);
+        return res.status(501).json({ success: false, message: `El scraping para el sitio '${site}' no está implementado.` });
       }
-
-      // Crear tarea de scraping específica para saldos
-      const taskData: IScraperTaskCreate = {
-        credentials,
-        type: 'saldos',
-        site: 'banco_estado'
-      };
-
-      const task = await this.scraperService.createTask(taskData);
-
-      return res.status(202).json({
-        message: 'Tarea de obtención de saldos iniciada',
-        task: {
-          id: task.id,
-          status: task.status,
-          createdAt: task.createdAt,
-          type: task.type
-        }
+      
+      return res.status(201).json({
+        success: true,
+        message: `Tarea de scraping para ${site} iniciada exitosamente.`,
+        data: taskResponse,
       });
+
     } catch (error) {
-      if (error instanceof DatabaseError) {
-        return res.status(400).json({ message: error.message });
-      }
-      console.error('Error en startSaldosScraping:', error);
-      return res.status(500).json({ message: 'Error interno del servidor' });
-    }
-  };
-
-  /**
-   * Inicia una tarea específica para obtener movimientos recientes
-   */
-  public startMovimientosRecientesScraping = async (req: AuthRequest, res: Response): Promise<Response> => {
-    try {
-      // Verificar que el usuario está autenticado
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      // Obtener datos del cuerpo de la solicitud
-      const credentials = req.body;
-
-      // Validar datos básicos
-      if ((!credentials.rut && !credentials.username) || !credentials.password) {
-        return res.status(400).json({ 
-          message: 'Se requieren credenciales válidas (rut/username y password)' 
-        });
-      }
-
-      // Crear tarea de scraping específica para movimientos recientes
-      const taskData: IScraperTaskCreate = {
-        credentials,
-        type: 'movimientos_recientes',
-        site: 'banco_estado'
-      };
-
-      const task = await this.scraperService.createTask(taskData);
-
-      return res.status(202).json({
-        message: 'Tarea de obtención de movimientos recientes iniciada',
-        task: {
-          id: task.id,
-          status: task.status,
-          createdAt: task.createdAt,
-          type: task.type
-        }
-      });
-    } catch (error) {
-      if (error instanceof DatabaseError) {
-        return res.status(400).json({ message: error.message });
-      }
-      console.error('Error en startMovimientosRecientesScraping:', error);
-      return res.status(500).json({ message: 'Error interno del servidor' });
+      console.error('[ScraperController] Error en createTask:', error);
+      const message = error instanceof Error ? error.message : 'Error interno del servidor al crear la tarea.';
+      const statusCode = error instanceof Error && 'status' in error ? (error as any).status : 500;
+      return res.status(statusCode).json({ success: false, message });
     }
   };
 
@@ -155,121 +92,62 @@ export class ScraperController {
    */
   public getTaskStatus = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
-      // Verificar que el usuario está autenticado
-      const userId = req.user?.id;
+      const userId = req.user?.id; 
       if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ success: false, message: 'Usuario no autorizado' });
       }
-
-      const taskId = req.params.taskId;
+      const { taskId } = req.params;
       if (!taskId) {
-        return res.status(400).json({ message: 'Se requiere ID de tarea' });
+        return res.status(400).json({ success: false, message: 'El taskId es requerido en los parámetros de la URL.' });
       }
 
-      // Obtener tarea
-      const task = this.scraperService.getTask(taskId);
+      const task = await this.bancoEstadoService.getTaskStatus(taskId);
       if (!task) {
-        return res.status(404).json({ message: 'Tarea no encontrada' });
+        return res.status(404).json({ success: false, message: 'Tarea no encontrada.' });
       }
 
-      // Si la tarea está completada, devolver también el resultado
-      if (task.status === 'completed' || task.status === 'failed') {
-        return res.status(200).json({
-          id: task.id,
-          status: task.status,
-          createdAt: task.createdAt,
-          result: task.result || null,
-          error: task.error || null,
-          type: task.type
-        });
-      }
+      return res.json({ success: true, data: task });
 
-      // Si la tarea está en proceso, devolver solo el estado
-      return res.status(200).json({
-        id: task.id,
-        status: task.status,
-        createdAt: task.createdAt,
-        type: task.type
-      });
     } catch (error) {
-      console.error('Error en getTaskStatus:', error);
-      return res.status(500).json({ message: 'Error interno del servidor' });
+      console.error('[ScraperController] Error en getTaskStatus:', error);
+      const message = error instanceof Error ? error.message : 'Error interno del servidor al obtener la tarea.';
+      const statusCode = error instanceof Error && 'status' in error ? (error as any).status : 500;
+      return res.status(statusCode).json({ success: false, message });
     }
   };
 
   /**
-   * Obtiene el estado general del scraper
+   * Cancela una tarea específica
    */
-  public getScraperStatus = async (req: AuthRequest, res: Response): Promise<Response> => {
+  public cancelTask = async (req: AuthRequest, res: Response): Promise<Response> => {
     try {
-      // Verificar que el usuario está autenticado
-      const userId = req.user?.id;
+      const userId = req.user?.id; 
       if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ success: false, message: 'Usuario no autorizado' });
+      }
+      const { taskId } = req.params;
+      if (!taskId) {
+        return res.status(400).json({ success: false, message: 'El taskId es requerido en los parámetros de la URL.' });
       }
 
-      const status = this.scraperService.getStatus();
-      return res.status(200).json(status);
-    } catch (error) {
-      console.error('Error en getScraperStatus:', error);
-      return res.status(500).json({ message: 'Error interno del servidor' });
-    }
-  };
-
-  /**
-   * Obtiene todas las tareas activas
-   */
-  public getAllTasks = async (req: AuthRequest, res: Response): Promise<Response> => {
-    try {
-      // Verificar que el usuario está autenticado
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      const tasks = this.scraperService.getAllTasks();
-      // No devolver las credenciales por seguridad
-      const sanitizedTasks = tasks.map(task => ({
-        id: task.id,
-        status: task.status,
-        createdAt: task.createdAt,
-        hasResult: task.status === 'completed' || task.status === 'failed',
-        type: task.type || 'default',
-        site: task.site || 'banco_estado'
-      }));
-
-      return res.status(200).json(sanitizedTasks);
-    } catch (error) {
-      console.error('Error en getAllTasks:', error);
-      return res.status(500).json({ message: 'Error interno del servidor' });
-    }
-  };
-
-  /**
-   * Limpia las tareas antiguas
-   */
-  public cleanupTasks = async (req: AuthRequest, res: Response): Promise<Response> => {
-    try {
-      // Verificar que el usuario está autenticado y es admin
-      const userId = req.user?.id;
-      const userRole = req.user?.role;
+      const result = await this.bancoEstadoService.cancelTask(taskId);
       
-      if (!userId || userRole !== 'admin') {
-        return res.status(401).json({ message: 'Unauthorized' });
+      if (!result.success) {
+        const statusCode = result.message === 'Tarea no encontrada' ? 404 : 400;
+        return res.status(statusCode).json({ success: false, message: result.message, taskId: result.taskId });
       }
 
-      // Obtener edad máxima de tareas (en horas)
-      const maxAgeHours = req.body.maxAgeHours || 24;
-      const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
-      
-      const cleanedCount = this.scraperService.cleanupOldTasks(maxAgeMs);
-      return res.status(200).json({ 
-        message: `Se eliminaron ${cleanedCount} tareas antiguas`,
-        cleanedCount
+      return res.json({ 
+        success: true, 
+        message: result.message || 'Solicitud de cancelación procesada.', 
+        data: { taskId: result.taskId } 
       });
+
     } catch (error) {
-      console.error('Error en cleanupTasks:', error);
-      return res.status(500).json({ message: 'Error interno del servidor' });
+      console.error('[ScraperController] Error en cancelTask:', error);
+      const message = error instanceof Error ? error.message : 'Error interno del servidor al cancelar la tarea.';
+      const statusCode = error instanceof Error && 'status' in error ? (error as any).status : 500;
+      return res.status(statusCode).json({ success: false, message });
     }
   };
 } 

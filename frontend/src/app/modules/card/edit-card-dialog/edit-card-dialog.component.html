@@ -1,0 +1,34 @@
+<div class="dialog-form-container">
+  <h2 mat-dialog-title>Editar Tarjeta</h2>
+  <form [formGroup]="editCardForm" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Alias</mat-label>
+      <input matInput formControlName="aliasAccount" maxlength="100">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Saldo</mat-label>
+      <input matInput type="number" formControlName="balance">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Estado</mat-label>
+      <mat-select formControlName="statusAccount">
+        <mat-option value="active">Activa</mat-option>
+        <mat-option value="inactive">Inactiva</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div *ngIf="error" class="error-message">
+      <mat-icon color="warn">error</mat-icon> {{ error }}
+    </div>
+
+    <div mat-dialog-actions align="end">
+      <button mat-button type="button" (click)="onCancel()">Cancelar</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="editCardForm.invalid || isLoading">
+        <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+        <span *ngIf="!isLoading">Guardar Cambios</span>
+      </button>
+    </div>
+  </form>
+</div>

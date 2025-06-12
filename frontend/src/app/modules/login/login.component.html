@@ -6,14 +6,37 @@
           <img src="assets/images/logoVino.png" alt="">
           <h4>FinanTrack</h4>
         </div>
-        <input type="text" placeholder="Ingrese su correo electronico" class="input-form">
-        <input type="text" placeholder="Ingrese su contraseña" class="input-form">
-        <div class="contButton">
-        <button routerLink="/dashboard">Iniciar sesión</button>
-        <a>¿Olvido su contraseña?</a>
-        <button routerLink='/register'>Registrarse</button>
-        </div>
-        
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+          <input 
+            type="email" 
+            placeholder="Ingrese su correo electrónico" 
+            class="input-form"
+            formControlName="email"
+            [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+          <div class="error-message" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+            <span *ngIf="loginForm.get('email')?.errors?.['required']">El correo electrónico es requerido</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['email']">Ingrese un correo electrónico válido</span>
+          </div>
+
+          <input 
+            type="password" 
+            placeholder="Ingrese su contraseña" 
+            class="input-form"
+            formControlName="password"
+            [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+          <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            <span *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es requerida</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
+          </div>
+
+          <div class="contButton">
+            <button type="submit" [disabled]="loginForm.invalid || loginForm.disabled">
+              {{ loginForm.disabled ? 'Iniciando sesión...' : 'Iniciar sesión' }}
+            </button>
+            <a routerLink="/forgot-password">¿Olvidó su contraseña?</a>
+            <a [routerLink]="['/register']">Registrarse</a>
+          </div>
+        </form>
       </div>
     </div>
   </div>

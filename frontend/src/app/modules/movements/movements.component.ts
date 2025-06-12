@@ -1,27 +1,31 @@
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { AgGridModule } from 'ag-grid-angular';
-import { MatDialog } from '@angular/material/dialog';
-import { AddMovementComponent } from './add-movement.component';
-
+import { HttpClientModule } from '@angular/common/http';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MovementService} from '../../services/movement.service';
+import { Movement } from '../../models/movement.model';
+import { AddMovementComponent } from './add-movement/add-movement.component';
 import {
-  AllCommunityModule,
   ClientSideRowModelApiModule,
   ClientSideRowModelModule,
   ColDef,
-  ColGroupDef,
   ColumnApiModule,
   ColumnAutoSizeModule,
+  GridApi,
   GridReadyEvent,
   GridSizeChangedEvent,
   ModuleRegistry,
-  PaginationModule,
-  RowSelectionModule,
   themeQuartz,
   ValidationModule,
+  PaginationModule,
 } from 'ag-grid-community';
+import { AddCashComponent } from './add-cash/add-cash.component';
+import { UploadStatementComponent } from './upload-statement/upload-statement.component';
+import { MatIconModule } from '@angular/material/icon';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -30,8 +34,6 @@ ModuleRegistry.registerModules([
   ClientSideRowModelApiModule,
   ValidationModule,
   PaginationModule,
-  RowSelectionModule,
-  AllCommunityModule,
 ]);
 @Component({
   selector: 'app-movements',
@@ -43,66 +45,144 @@ ModuleRegistry.registerModules([
     RouterModule,
     NgxChartsModule,
     AgGridModule,
+    HttpClientModule,
+    MatProgressSpinnerModule,
+    MatDialogModule,
+    MatIconModule
   ]
 })
-export class MovementsComponent {
-  constructor(private dialog: MatDialog) {}
+export class MovementsComponent implements OnInit {
+  historyCard: Movement[] = [];
+  historyCash: Movement[] = [];
+
+  constructor(
+    private movementService: MovementService,
+    private dialog: MatDialog
+  ) {}
+
+  ngOnInit() {
+    this.loadMovements();
+    this.movementService.getCashMovements().subscribe(
+      movements => this.historyCash = movements,
+      error => console.error('Error al cargar movimientos en efectivo:', error)
+    );
+  }
+
+  loadMovements() {
+    this.movementService.getMovements('cartola').subscribe(
+      movements => {
+        this.historyCard = movements;
+      },
+      error => {
+        console.error('Error al cargar movimientos de cartola:', error);
+      }
+    );
+
+    this.movementService.getMovements('manual').subscribe(
+      movements => {
+        this.historyCash = movements;
+      },
+      error => {
+        console.error('Error al cargar movimientos manuales:', error);
+      }
+    );
+  }
+
   openAddMovementDialog() {
     const dialogRef = this.dialog.open(AddMovementComponent);
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.historyCash.push(result);
+        if (result === true) {
+          this.loadMovements();
+        } else {
+          this.movementService.addMovement({
+            ...result,
+            movementSource: 'manual'
+          }).subscribe(
+            newMovement => {
+              this.historyCash.push(newMovement);
+            },
+            error => {
+              console.error('Error al agregar movimiento:', error);
+            }
+          );
+        }
+      }
+    });
+  }
+  openAddCashMovementDialog() {
+    const dialogRef = this.dialog.open(AddCashComponent, {
+      data: { isCash: true }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        if (result === true) {
+          this.loadMovements();
+        } else {
+          this.movementService.addMovement({
+            ...result,
+            movementSource: 'manual',
+          }).subscribe(
+            newMovement => {
+              this.historyCash.push(newMovement);
+            },
+            error => {
+              console.error('Error al agregar movimiento en efectivo:', error);
+            }
+          );
+        }
+      }
+    });
+  }
+  openUploadStatementDialog(): void {
+    const dialogRef = this.dialog.open(UploadStatementComponent, {
+      width: '500px'
+    });
+  
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === true) {
+        this.loadMovements(); // Recarga si se subió correctamente
       }
     });
   }
   columnDefsCard: ColDef[] = [
-    { field: 'fecha' },
-    { field: 'nameCompany' },
-    { field: 'monto' },
+    { field: 'transactionDate', headerName: 'Fecha' },
+    { field: 'description', headerName: 'Descripción' },
+    {
+      field: 'amount',
+      headerName: 'Monto',
+      valueFormatter: params => {
+        return new Intl.NumberFormat('es-CL', {
+          style: 'currency',
+          currency: 'CLP'
+        }).format(params.value);
+      }
+    },
+    { field: 'category.name', headerName: 'Categoría' },
+    { field: 'card.nameAccount', headerName: 'Método de Pago' }
   ];
 
   columnDefsCash: ColDef[] = [
-    { field: 'fecha' },
-    { field: 'nombre' },
-    { field: 'monto' },
-    { field: 'tipoMovimiento' }
+    { field: 'transactionDate', headerName: 'Fecha' },
+    { field: 'description', headerName: 'Método de Pago' }, // caja chica, banca, etc.
+    {
+      field: 'amount',
+      headerName: 'Monto',
+      valueFormatter: params => new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP'
+      }).format(params.value)
+    },
+    { field: 'category.name', headerName: 'Categoría' },
+    { field: 'card.nameAccount', headerName: 'Tarjeta Asociada' }
   ];
+
   defaultColDef: ColDef = {
     editable: false,
     filter: true,
     resizable: true,
+    sortable: true
   };
-  historyCard = [
-    { fecha: '2024-04-01', nameCompany: 'Supermercado', monto: -42000 },
-    { fecha: '2024-04-05', nameCompany: 'Sueldo', monto: 850000 },
-    { fecha: '2024-04-10', nameCompany: 'Netflix', monto: -8500 },
-    { fecha: '2024-04-10', nameCompany: 'PedidosYa', monto: -8500 },
-    { fecha: '2024-04-10', nameCompany: 'MercadoLibre', monto: -8500 },
-    { fecha: '2024-04-10', nameCompany: 'PayPal', monto: -8500 },
-    { fecha: '2024-04-10', nameCompany: 'Luz', monto: -8500 },
-    { fecha: '2024-04-10', nameCompany: 'Agua', monto: -8500 },
-    { fecha: '2024-04-10', nameCompany: 'Lider', monto: -8500 },
-    { fecha: '2024-04-10', nameCompany: 'Santa Isabel', monto: -8500 }
-  ];
-
-  historyCash = [
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Vale vista' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Giro postal' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Giro postal' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Giro postal' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Giro postal' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Giro postal' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-    { fecha: '2024-04-01', nombre: 'Recibo de dinero', monto: 42000, tipoMovimiento: 'Pago en efectivo' },
-  ];
 
   myTheme = themeQuartz.withParams({
     backgroundColor: 'var(--clr-surface-a10)',
@@ -115,6 +195,7 @@ export class MovementsComponent {
     headerColumnResizeHandleColor: 'var(--color-highlight)',
     textColor: 'var(--color-text)',
   });
+
   onGridSizeChanged(params: GridSizeChangedEvent) {
     params.api.sizeColumnsToFit();
   }

@@ -1,47 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Perfil de Usuario</title>
 </head>
 <body>
-
-    <div class="contenedor">
-        <div class="contImg">
-            <img src="https://i.pinimg.com/236x/90/d1/ac/90d1ac48711f63c6a290238c8382632f.jpg" alt="">
-            <div class="BotonIcons">
-                <button mat-fab>
-                    <mat-icon  >delete</mat-icon>
-                </button>
-                <button mat-fab>
-                    <mat-icon >edit</mat-icon>
+    <div class="container-profile">
+        <div class="profile-card">
+            <div class="profile-header">
+                <h2>Mi Perfil</h2>
+                <button mat-icon-button (click)="logout()" class="logout-button">
+                    <mat-icon>exit_to_app</mat-icon>
                 </button>
             </div>
-            <div class="container">
-                <h4>Nombre:</h4>
-                <label for="">Marcela</label>
 
-                <h4>Correo Electronico:</h4>
-                <Label>marce.gonzalez&#64;gmail.com</Label>
-                <div class=buttonEdit>
-                    <button mat-fab style="width: 50px; height: 50px; border-radius: 30px;">
-                        <mat-icon style="font-size: small; margin-top: 9px; ">edit</mat-icon>
+            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
+                <div class="form-group">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Nombre *</mat-label>
+                        <input matInput formControlName="firstName" placeholder="Ingrese su nombre">
+                        <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
+                            El nombre es requerido
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+
+                <div class="form-group">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Apellido</mat-label>
+                        <input matInput formControlName="lastName" placeholder="Ingrese su apellido">
+                    </mat-form-field>
+                </div>
+
+                <div class="form-group">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Correo electrónico</mat-label>
+                        <input matInput [value]="userData?.email" readonly>
+                    </mat-form-field>
+                </div>
+
+                <div class="phone-input-container">
+                    <mat-form-field appearance="outline" class="country-code">
+                        <mat-label>Código de área</mat-label>
+                        <input matInput formControlName="countryCode" placeholder="+XX">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="phone-number">
+                        <mat-label>Teléfono</mat-label>
+                        <input matInput formControlName="phone" placeholder="Ingrese su teléfono">
+                        <mat-error *ngIf="profileForm.get('phone')?.hasError('pattern')">
+                            Ingrese un número de teléfono válido
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+
+                <div class="form-actions">
+                    <button mat-raised-button color="primary" type="submit" [disabled]="!profileForm.get('firstName')?.valid || isLoading">
+                        {{ isLoading ? 'Guardando...' : 'Guardar cambios' }}
+                    </button>
+                    <button mat-button type="button" (click)="openChangePasswordDialog()">
+                        Cambiar contraseña
                     </button>
                 </div>
-                <h4>Numero Celular:</h4>
-                <label for="">+56987412356</label>
-                <div class=buttonEditc>
-                    <button mat-fab class="button-small" style="width: 50px; height: 50px; border-radius: 30px;">
-                        <mat-icon  style="font-size: small; margin-top: 9px; ">edit</mat-icon>
-                    </button>
-                </div>
-                <div class="containerButton">
-                    <button mat-button style="color: var(--color-text-inverse);" (click)="openDialog('0ms','0ms')">Eliminar cuenta</button>
-                    <button mat-button style="color: var(--color-text-inverse);" routerLink="/login">Cerrar Sesión</button>
-                </div>
-                
-            </div>
+            </form>
         </div>
     </div>
 </body>

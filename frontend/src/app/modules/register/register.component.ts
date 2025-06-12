@@ -1,93 +1,124 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../services/auth.service';
+import { AuthResponse } from '../../models/user.model';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule
+  ],
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css']
 })
-export class RegisterComponent implements OnInit {
-  registerForm!: FormGroup;
-  registerError: string | null = null;
-  isLoading: boolean = false;
+export class RegisterComponent {
+  registerForm: FormGroup;
+  hidePassword = true;
+  hideConfirmPassword = true;
+  isLoading = false;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
-  ) {}
-
-  ngOnInit(): void {
+    private router: Router,
+    private snackBar: MatSnackBar
+  ) {
     this.registerForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      passwordConfirm: ['', Validators.required]
+      confirmPassword: ['', [Validators.required]]
     }, {
       validators: this.passwordMatchValidator
     });
-
-    // Log para verificar la inicialización del formulario
-    console.log('Formulario inicializado:', this.registerForm.value);
   }
 
   passwordMatchValidator(form: FormGroup) {
     const password = form.get('password');
-    const passwordConfirm = form.get('passwordConfirm');
-    
-    if (password && passwordConfirm && password.value !== passwordConfirm.value) {
-      passwordConfirm.setErrors({ passwordMismatch: true });
+    const confirmPassword = form.get('confirmPassword');
+
+    if (password && confirmPassword && password.value !== confirmPassword.value) {
+      confirmPassword.setErrors({ passwordMismatch: true });
       return { passwordMismatch: true };
     }
-    
     return null;
   }
 
-  onSubmit(): void {
-    this.registerError = null;
+  onSubmit() {
     if (this.registerForm.invalid) {
-      console.log('Formulario inválido:', this.registerForm.errors);
-      this.registerForm.markAllAsTouched();
+      Object.keys(this.registerForm.controls).forEach(key => {
+        const control = this.registerForm.get(key);
+        if (control?.invalid) {
+          control.markAsTouched();
+        }
+      });
       return;
     }
 
     this.isLoading = true;
-    const { passwordConfirm, ...userData } = this.registerForm.value;
-    
-    console.log('Enviando datos de registro:', userData);
+    this.registerForm.disable();
+
+    const userData = {
+      email: this.registerForm.get('email')?.value,
+      password: this.registerForm.get('password')?.value
+    };
+
+    console.log('Intentando registrar usuario:', userData);
 
     this.authService.register(userData).subscribe({
-      next: (response) => {
-        console.log('Registro exitoso:', response);
+      next: (response: AuthResponse) => {
+        console.log('Respuesta del servidor:', response);
         if (response.success) {
-          this.router.navigate(['/login'], { 
-            queryParams: { 
-              registered: 'true',
-              email: userData.email 
-            }
+          this.snackBar.open('Registro exitoso', 'Cerrar', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top'
           });
+          this.router.navigate(['/login']);
         } else {
-          this.registerError = response.message || 'Error desconocido en el registro';
+          this.snackBar.open(response.message || 'Error en el registro', 'Cerrar', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top'
+          });
         }
       },
       error: (error) => {
-        console.error('Error en el registro:', error);
-        if (error.status === 0) {
-          this.registerError = 'No se pudo conectar con el servidor. Por favor, verifica tu conexión.';
-        } else if (error.status === 400) {
-          this.registerError = error.error?.message || 'Datos de registro inválidos';
-        } else if (error.status === 409) {
-          this.registerError = 'El correo electrónico ya está registrado';
-        } else {
-          this.registerError = 'Error al intentar registrarse. Por favor, inténtelo de nuevo más tarde.';
+        if(error.status === 409){
+          this.snackBar.open('Ese correo ya está registrado', 'Cerrar', 
+            {               
+              duration: 5000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top' 
+          });
+        }else{
+          this.snackBar.open(
+            error.error?.message || 'Error al registrar usuario. Por favor, intente nuevamente.',
+            'Cerrar',
+            {
+              duration: 5000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top'
+            }
+          );
         }
       },
       complete: () => {
         this.isLoading = false;
+        this.registerForm.enable();
       }
     });
   }

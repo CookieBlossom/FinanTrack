@@ -4,6 +4,8 @@ export interface IUser {
   password: string;
   firstName?: string | null;
   lastName?: string | null;
+  countryCode?: string | null;
+  phone?: string | null;
   role: 'user' | 'admin';
   isActive?: boolean;
   createdAt?: Date;
@@ -25,17 +27,24 @@ export interface IUserRegister {
   password: string;
   firstName?: string | null;
   lastName?: string | null;
+  countryCode?: string | null;
+  phone?: string | null;
   // Soporte para snake_case
   first_name?: string | null;
   last_name?: string | null;
+  country_code?: string | null;
 }
 
 // Para actualizaciones de perfil (no permite email, role, password)
 export interface IUserProfileUpdate {
   firstName?: string | null;
   lastName?: string | null;
+  countryCode?: string | null;
+  phone?: string | null;
+  // Soporte para snake_case
   first_name?: string | null;
   last_name?: string | null;
+  country_code?: string | null;
 }
 
 // Para cambio de contraseña

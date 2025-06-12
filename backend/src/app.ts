@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { initializeDatabase, pool } from './config/database/connection';
-import router from './routes';
+import router from './routes/index';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -13,7 +13,12 @@ console.log('Base de datos:', process.env.DB_NAME || 'finantrack');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 app.use(express.json());
 
 // Rutas de la API

@@ -9,6 +9,10 @@ yarn-error.log*
 backend/node_modules/
 frontend/node_modules/
 node_modules
+
+# Scraper data
+scraper/sites/banco_estado/user_data/
+
 # Environment files
 backend/.env
 *.env

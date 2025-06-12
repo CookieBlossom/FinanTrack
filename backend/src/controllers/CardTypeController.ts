@@ -1,26 +1,21 @@
 import { Request, Response } from 'express';
-import { CardTypeService } from '../services/CardTypeService';
+import { CardTypeService } from '../services/cardType.service';
 import { DatabaseError } from '../utils/errors';
 import { cardTypeSchema, cardTypeUpdateSchema } from '../validators/cardTypeSchema';
 import { ZodError } from 'zod';
 
 export class CardTypeController {
   private cardTypeService: CardTypeService;
-
   constructor() {
     this.cardTypeService = new CardTypeService();
   }
 
-  public getAllCardTypes = async (_req: Request, res: Response): Promise<void> => {
+  public getAllCardTypes = async (req: Request, res: Response) => {
     try {
-      const cardTypes = await this.cardTypeService.getAllCardTypes();
-      res.json(cardTypes);
+      const types = await this.cardTypeService.getAllCardTypes();
+      res.json(types);
     } catch (error) {
-      if (error instanceof DatabaseError) {
-        res.status(400).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Error interno del servidor' });
-      }
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
     }
   };
 

@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>Cargar Cartola PDF</h2>
+<form [formGroup]="form">
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Banco</mat-label>
+    <input matInput formControlName="bank" placeholder="Ej: Banco Estado">
+  </mat-form-field>
+
+  <div class="file-upload">
+    <button mat-stroked-button type="button" (click)="fileInput.click()">
+      <mat-icon>upload</mat-icon> Seleccionar Cartola
+    </button>
+    <input #fileInput type="file" accept=".pdf" (change)="onFileSelected($event)" hidden>
+    <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+  </div>
+
+  <div *ngIf="uploadError" class="error">{{ uploadError }}</div>
+</form>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancelar</button>
+  <button mat-raised-button color="primary" (click)="upload()" [disabled]="isUploading">
+    Cargar
+  </button>
+</mat-dialog-actions>

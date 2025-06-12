@@ -1,0 +1,4 @@
+playwright==1.42.0
+redis==5.0.1
+python-dotenv==1.0.1
+pygetwindow==0.0.9  # Para manipular ventanas del sistema 

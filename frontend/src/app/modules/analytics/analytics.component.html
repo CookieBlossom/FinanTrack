@@ -1,26 +1,56 @@
 <div class="container-analytics">
-  <div class="analytics">
-    <div class="chart-wrapper" #chart>
-      <ngx-charts-line-chart
-        [results]="chartData"
-        [xAxis]="true"
-        [yAxis]="true"
-        [legend]="true"
-        [legendTitle]="'Leyenda'"
-        [showXAxisLabel]="true"
-        [showYAxisLabel]="true"
-        [xAxisLabel]="'Mes'"
-        [yAxisLabel]="'Monto ($)'"
-        [animations]="false"
-        [autoScale]="true">
-      </ngx-charts-line-chart>
+    <div class="chart-wrapper" #chartWrapper>
+      <h2>Análisis de Ingresos y Costos</h2>
+      <div class="chart-container" #chartContainer>
+        <!-- Estado de carga -->
+        <div *ngIf="isLoading" class="loading-state">
+          <div class="spinner"></div>
+          <p>Cargando datos...</p>
+        </div>
+
+        <!-- Estado de error -->
+        <div *ngIf="error" class="error-state">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button class="btn-retry" (click)="loadAnalyticsData()">
+            Reintentar
+          </button>
+        </div>
+
+        <!-- Estado sin datos -->
+        <div *ngIf="!isLoading && !error && !hasData" class="no-data-state">
+          <i class="fas fa-chart-line"></i>
+          <p>No hay datos disponibles para mostrar</p>
+          <p class="sub-text">Los datos aparecerán cuando registres movimientos o configures suscripciones</p>
+        </div>
+
+        <!-- Gráfico con datos -->
+        <ngx-charts-line-chart
+          *ngIf="!isLoading && !error && hasData"
+          [view]="chartView"
+          [results]="chartData"
+          [gradient]="true"
+          [xAxis]="true"
+          [yAxis]="true"
+          [legend]="true"
+          [showXAxisLabel]="true"
+          [showYAxisLabel]="true"
+          [xAxisLabel]="'Mes'"
+          [yAxisLabel]="'Monto'"
+          [autoScale]="true"
+          [timeline]="false"
+          [legendPosition]="legendPosition"
+          [scheme]="colorScheme"
+          [curve]="curve"
+          [animations]="true"
+        >
+        </ngx-charts-line-chart>
+      </div>
     </div>
 
-    <div *ngIf="selectedMonth" class="summary">
-      <h3 class="summary-title">Resumen de {{ selectedMonth }}</h3>
-
+    <div class="summary">
+      <h3 class="summary-title">{{ selectedMonth ? 'Resumen de ' + selectedMonth : 'Resumen General' }}</h3>
       <div class="summary-content">
-        <!-- Summary Left -->
         <div class="summary-left">
           <div class="summary-item">
             <div class="summary-label">Mayor Gasto</div>
@@ -29,25 +59,25 @@
               <div class="grid-header">Monto</div>
               <div class="grid-header">% del gasto</div>
             
-              <div class="grid-cell">Alimentación</div>
-              <div class="grid-cell">$20.000</div>
-              <div class="grid-cell">29%</div>
+              <div class="grid-cell">{{ monthlySummary?.highestExpense?.category?.name || 'No hay datos' }}</div>
+              <div class="grid-cell">{{ formatAmount(monthlySummary?.highestExpense?.category?.amount) }}</div>
+              <div class="grid-cell">{{ formatPercentage(monthlySummary?.highestExpense?.category?.percentage) }}</div>
             
               <div class="grid-header">Método de Pago</div>
               <div class="grid-header">Monto</div>
               <div class="grid-header">% del gasto</div>
             
-              <div class="grid-cell">Débito</div>
-              <div class="grid-cell">$20.000</div>
-              <div class="grid-cell">10%</div>
+              <div class="grid-cell">{{ monthlySummary?.highestExpense?.paymentMethod?.name || 'No hay datos' }}</div>
+              <div class="grid-cell">{{ formatAmount(monthlySummary?.highestExpense?.paymentMethod?.amount) }}</div>
+              <div class="grid-cell">{{ formatPercentage(monthlySummary?.highestExpense?.paymentMethod?.percentage) }}</div>
             
               <div class="grid-header">Fecha</div>
               <div class="grid-header">Monto</div>
               <div class="grid-header">% del gasto</div>
             
-              <div class="grid-cell">20/12/2004</div>
-              <div class="grid-cell">$20.000</div>
-              <div class="grid-cell">20%</div>
+              <div class="grid-cell">{{ formatDate(monthlySummary?.highestExpense?.date?.date) }}</div>
+              <div class="grid-cell">{{ formatAmount(monthlySummary?.highestExpense?.date?.amount) }}</div>
+              <div class="grid-cell">{{ formatPercentage(monthlySummary?.highestExpense?.date?.percentage) }}</div>
             </div>
           </div>
           <div class="summary-item">
@@ -57,35 +87,28 @@
               <div class="grid-header">Monto</div>
               <div class="grid-header">% del gasto</div>
             
-              <div class="grid-cell">Alimentación</div>
-              <div class="grid-cell">$20.000</div>
-              <div class="grid-cell">29%</div>
+              <div class="grid-cell">{{ monthlySummary?.lowestExpense?.category?.name || 'No hay datos' }}</div>
+              <div class="grid-cell">{{ formatAmount(monthlySummary?.lowestExpense?.category?.amount) }}</div>
+              <div class="grid-cell">{{ formatPercentage(monthlySummary?.lowestExpense?.category?.percentage) }}</div>
             
               <div class="grid-header">Método de Pago</div>
               <div class="grid-header">Monto</div>
               <div class="grid-header">% del gasto</div>
             
-              <div class="grid-cell">Débito</div>
-              <div class="grid-cell">$20.000</div>
-              <div class="grid-cell">10%</div>
+              <div class="grid-cell">{{ monthlySummary?.lowestExpense?.paymentMethod?.name || 'No hay datos' }}</div>
+              <div class="grid-cell">{{ formatAmount(monthlySummary?.lowestExpense?.paymentMethod?.amount) }}</div>
+              <div class="grid-cell">{{ formatPercentage(monthlySummary?.lowestExpense?.paymentMethod?.percentage) }}</div>
             
               <div class="grid-header">Fecha</div>
               <div class="grid-header">Monto</div>
               <div class="grid-header">% del gasto</div>
             
-              <div class="grid-cell">20/12/2004</div>
-              <div class="grid-cell">$20.000</div>
-              <div class="grid-cell">20%</div>
+              <div class="grid-cell">{{ formatDate(monthlySummary?.lowestExpense?.date?.date) }}</div>
+              <div class="grid-cell">{{ formatAmount(monthlySummary?.lowestExpense?.date?.amount) }}</div>
+              <div class="grid-cell">{{ formatPercentage(monthlySummary?.lowestExpense?.date?.percentage) }}</div>
             </div>
           </div>
         </div>
-
-        <!-- Summary Right -->
-        <div class="summary-right">
-          <p>Resumen general, gráficos menores o contenido complementario aquí.</p>
-        </div>
       </div>
     </div>
-  </div>
-  <div class="cards"></div>
 </div>

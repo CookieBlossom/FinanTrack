@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgxChartsModule, ScaleType } from '@swimlane/ngx-charts';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
@@ -14,14 +14,21 @@ import {
   ModuleRegistry,
   themeQuartz,
   ValidationModule,
+  PaginationModule,
 } from 'ag-grid-community';
 import { curveLinear } from 'd3-shape';
+import { DashboardService, IncomeVsExpenses, CategoryExpense, RecentMovement } from '../../services/dashboard.service';
+import { forkJoin, catchError, of, Subject } from 'rxjs';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { takeUntil, filter } from 'rxjs/operators';
+
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   ColumnApiModule,
   ColumnAutoSizeModule,
   ClientSideRowModelApiModule,
-  ValidationModule
+  ValidationModule,
+  PaginationModule
 ]);
 
 @Component({
@@ -30,27 +37,32 @@ ModuleRegistry.registerModules([
   imports: [
     CommonModule,
     NgxChartsModule,
-    AgGridModule
+    AgGridModule,
+    RouterModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent {
-  @ViewChild('chartContainer') chartContainerRef!: ElementRef<HTMLDivElement>;
+export class DashboardComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
 
-  chartView: [number, number] = [300, 300];
+  // Datos para los gráficos y tabla
+  ingresosVsCostos: IncomeVsExpenses[] = [];
+  gastosPorCategoria: CategoryExpense[] = [];
+  rowData: RecentMovement[] = [];
+  currentYear: number = new Date().getFullYear();
+
+  // Flags para controlar la visibilidad
+  showIngresosVsCostos = false;
+  showGastosPorCategoria = false;
+  showMovimientos = false;
+
+  // Configuración de la vista del gráfico
+  chartView: [number, number] = [800, 400];
+  pieChartView: [number, number] = [400, 400];
   curve = curveLinear;
-  ngAfterViewInit(): void {
-    const observer = new ResizeObserver(entries => {
-      for (let entry of entries) {
-        const width = entry.contentRect.width;
-        const height = entry.contentRect.height;
-        this.chartView = [width, height];
-      }
-    });
 
-    observer.observe(this.chartContainerRef.nativeElement);
-  }
+  // Configuración de colores
   colorScheme = {
     name: 'custom',
     selectable: true,
@@ -61,9 +73,9 @@ export class DashboardComponent {
       'var(--color-highlight)',
       'var(--color-primary-dark)',
       'var(--color-primary-darkest)',
-      
     ]
   };
+
   colorScheme2 = {
     name: 'custom',
     selectable: true,
@@ -73,6 +85,38 @@ export class DashboardComponent {
       '#F44336'  // rojo - Costos
     ]
   };
+
+  // Configuración de la tabla
+  columnDefs: ColDef[] = [
+    { 
+      field: 'transactionDate',
+      headerName: 'Fecha',
+      valueFormatter: params => {
+        return new Date(params.value).toLocaleDateString('es-CL');
+      }
+    },
+    { field: 'description', headerName: 'Descripción' },
+    { 
+      field: 'amount', 
+      headerName: 'Monto',
+      valueFormatter: params => {
+        return new Intl.NumberFormat('es-CL', {
+          style: 'currency',
+          currency: 'CLP'
+        }).format(params.value);
+      }
+    },
+    { 
+      field: 'movementType',
+      headerName: 'Tipo',
+      valueFormatter: params => {
+        return params.value === 'income' ? 'Ingreso' : 'Gasto';
+      }
+    },
+    { field: 'category', headerName: 'Categoría' }
+  ];
+
+  // Tema de la tabla
   myTheme = themeQuartz.withParams({
     backgroundColor: 'var(--clr-surface-a10)',
     spacing: 10,
@@ -84,73 +128,126 @@ export class DashboardComponent {
     headerColumnResizeHandleColor: 'var(--color-highlight)',
   });
 
-  ingresosVsCostos = [
-    {
-      name: 'Ingresos',
-      series: [
-        { name: 'Enero', value: 500000 },
-        { name: 'Febrero', value: 620000 },
-        { name: 'Marzo', value: 620000 },
-        { name: 'Abril', value: 620000 },
-        { name: 'Mayo', value: 620000 },
-        { name: 'Junio', value: 620000 },
-        { name: 'Julio', value: 620000 },
-        { name: 'Agosto', value: 620000 },
-        { name: 'Septiembre', value: 620000 },
-        { name: 'Octubre', value: 620000 },
-        { name: 'Noviembre', value: 620000 },
-        { name: 'Diciembre', value: 620000 },
-      ],
-    },
-    {
-      name: 'Costos',
-      series: [
-        { name: 'Enero', value: 550000 },
-        { name: 'Febrero', value: 626000 },
-        { name: 'Marzo', value: 620200 },
-        { name: 'Abril', value: 625000 },
-        { name: 'Mayo', value: 620600 },
-        { name: 'Junio', value: 620040 },
-        { name: 'Julio', value: 600200 },
-        { name: 'Agosto', value: 600000 },
-        { name: 'Septiembre', value: 600000 },
-        { name: 'Octubre', value: 630000 },
-        { name: 'Noviembre', value: 610000 },
-        { name: 'Diciembre', value: 700000 },
-      ],
-    },
-  ];
-  
-  columnDefs: ColDef[] = [
-    { field: 'fecha'},
-    { field: 'descripcion'},
-    { field: 'monto'},
-  ];
-  rowData = [
-    { fecha: '2024-04-01', descripcion: 'Supermercado', monto: -42000 },
-    { fecha: '2024-04-05', descripcion: 'Sueldo', monto: 850000 },
-    { fecha: '2024-04-10', descripcion: 'Netflix', monto: -8500 },
-    { fecha: '2024-04-10', descripcion: 'PedidosYa', monto: -8500 },
-    { fecha: '2024-04-10', descripcion: 'MercadoLibre', monto: -8500 },
-    { fecha: '2024-04-10', descripcion: 'PayPal', monto: -8500 },
-    { fecha: '2024-04-10', descripcion: 'Luz', monto: -8500 },
-    { fecha: '2024-04-10', descripcion: 'Agua', monto: -8500 },
-    { fecha: '2024-04-10', descripcion: 'Lider', monto: -8500 },
-    { fecha: '2024-04-10', descripcion: 'Santa Isabel', monto: -8500 },
-  ];
-  onGridSizeChanged(params: GridSizeChangedEvent) {
+  constructor(
+    private dashboardService: DashboardService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {
+    // Suscribirse a los eventos de navegación
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      takeUntil(this.destroy$)
+    ).subscribe((event: NavigationEnd) => {
+      // Solo limpiar si estamos saliendo del dashboard
+      if (!event.url.includes('/dashboard')) {
+        console.log('Saliendo del dashboard - Limpiando datos');
+        this.clearData();
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  ngOnInit() {
+    console.log('Inicializando dashboard');
+    this.loadDashboardData();
+  }
+
+  ngOnDestroy() {
+    console.log('Destruyendo dashboard - Limpieza final');
+    this.clearData();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private clearData() {
+    this.ingresosVsCostos = [];
+    this.gastosPorCategoria = [];
+    this.rowData = [];
+    this.showIngresosVsCostos = false;
+    this.showGastosPorCategoria = false;
+    this.showMovimientos = false;
+  }
+
+  loadDashboardData() {
+    console.log('Cargando datos del dashboard');
+    // Limpiar datos existentes
+    this.clearData();
+
+    forkJoin({
+      ingresos: this.dashboardService.getIncomeVsExpenses(this.currentYear).pipe(
+        catchError((error) => {
+          console.error('Error al obtener ingresos:', error);
+          return of([]);
+        })
+      ),
+      categorias: this.dashboardService.getCategoryExpenses().pipe(
+        catchError((error) => {
+          console.error('Error al obtener categorías:', error);
+          return of([]);
+        })
+      ),
+      movimientos: this.dashboardService.getRecentMovements(10).pipe(
+        catchError((error) => {
+          console.error('Error al obtener movimientos:', error);
+          return of([]);
+        })
+      )
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (data) => {
+        console.log('Datos recibidos:', data);
+        
+        // Validar que los datos de ingresos vs costos sean válidos
+        const ingresosValidos = data.ingresos?.length > 2 && 
+          data.ingresos.every(item => 
+            item.series?.length > 0 && 
+            item.series.every(serie => serie.value !== undefined)
+          );
+
+        this.ingresosVsCostos = ingresosValidos ? data.ingresos : [];
+        this.gastosPorCategoria = data.categorias;
+        this.rowData = data.movimientos;
+
+        // Mostrar los gráficos solo si hay datos válidos
+        this.showIngresosVsCostos = ingresosValidos;
+        this.showGastosPorCategoria = this.gastosPorCategoria.length > 0;
+        this.showMovimientos = this.rowData.length > 0;
+        
+        console.log('Estado después de cargar datos:', {
+          ingresosVsCostos: this.ingresosVsCostos,
+          showIngresosVsCostos: this.showIngresosVsCostos,
+          gastosPorCategoria: this.gastosPorCategoria,
+          showGastosPorCategoria: this.showGastosPorCategoria,
+          rowData: this.rowData,
+          showMovimientos: this.showMovimientos
+        });
+      },
+      error: (error) => {
+        console.error('Error al cargar datos del dashboard:', error);
+      }
+    });
+  }
+
+  formatCurrency(params: any) {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(params.value);
+  }
+
+  onGridReady(params: any) {
     params.api.sizeColumnsToFit();
   }
-  onGridReady(params: GridReadyEvent) {
-    setTimeout(() => {
-      params.api.sizeColumnsToFit();
-      params.api.resetRowHeights();
-    }, 0);
+
+  onGridSizeChanged(params: any) {
+    params.api.sizeColumnsToFit();
   }
-  gastosPorCategoria = [
-    { name: 'Alimentación', value: 150000 },
-    { name: 'Transporte', value: 75000 },
-    { name: 'Suscripciones', value: 25000 },
-    { name: 'Otros', value: 40000 },
-  ];
+
+  formatTooltip(item: any): string {
+    return `${item.name}: ${new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(item.value)}`;
+  }
 }
