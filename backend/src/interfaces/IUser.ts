@@ -21,6 +21,13 @@ export interface IUserLogin {
   email: string;
   password: string;
 }
+export interface IUserToken {
+  id: number;
+  email: string;
+  name: string;
+  role?: string; 
+}
+
 
 export interface IUserRegister {
   email: string;

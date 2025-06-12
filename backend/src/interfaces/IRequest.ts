@@ -1,11 +1,7 @@
 import { Request } from 'express';
+import { TokenPayload } from './AuthRequest';
+import { IUserToken } from '../interfaces/IUser';
 
-export interface IUser {
-    id: number;
-    email: string;
-    name: string;
-}
-
-export interface IAuthRequest extends Request {
-    user?: IUser;
-} 
+export interface AuthRequest extends Request {
+    user?: IUserToken;
+  }

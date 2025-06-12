@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { ProjectedMovementService } from '../services/projectedMovement.service';
 import { IProjectedMovementCreate, IProjectedMovementUpdate, IProjectedMovementFilters } from '../interfaces/IProjectedMovement';
-import { IAuthRequest } from '../interfaces/IRequest';
+import { AuthRequest } from '../interfaces/IRequest';
 
 export class ProjectedMovementController {
     private projectedMovementService: ProjectedMovementService;
@@ -10,7 +10,7 @@ export class ProjectedMovementController {
         this.projectedMovementService = new ProjectedMovementService();
     }
 
-    getAll = async (req: IAuthRequest, res: Response): Promise<void> => {
+    getAll = async (req: AuthRequest, res: Response): Promise<void> => {
         try {
             const userId = req.user?.id;
             if (!userId) {
@@ -29,7 +29,7 @@ export class ProjectedMovementController {
         }
     };
 
-    getById = async (req: IAuthRequest, res: Response): Promise<void> => {
+    getById = async (req: AuthRequest, res: Response): Promise<void> => {
         try {
             const userId = req.user?.id;
             if (!userId) {
@@ -55,7 +55,7 @@ export class ProjectedMovementController {
         }
     };
 
-    getByFilters = async (req: IAuthRequest, res: Response): Promise<void> => {
+    getByFilters = async (req: AuthRequest, res: Response): Promise<void> => {
         try {
             const userId = req.user?.id;
             if (!userId) {
@@ -89,7 +89,7 @@ export class ProjectedMovementController {
         }
     };
 
-    create = async (req: IAuthRequest, res: Response): Promise<void> => {
+    create = async (req: AuthRequest, res: Response): Promise<void> => {
         try {
             const userId = req.user?.id;
             if (!userId) {
@@ -119,7 +119,7 @@ export class ProjectedMovementController {
         }
     };
 
-    update = async (req: IAuthRequest, res: Response): Promise<void> => {
+    update = async (req: AuthRequest, res: Response): Promise<void> => {
         try {
             const userId = req.user?.id;
             if (!userId) {
@@ -159,7 +159,7 @@ export class ProjectedMovementController {
         }
     };
 
-    delete = async (req: IAuthRequest, res: Response): Promise<void> => {
+    delete = async (req: AuthRequest, res: Response): Promise<void> => {
         try {
             const userId = req.user?.id;
             if (!userId) {

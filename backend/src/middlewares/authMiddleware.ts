@@ -26,13 +26,17 @@ export const authMiddleware = async (
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET || 'your-secret-key'
-      ) as TokenPayload;
-
+      ) as TokenPayload & { firstName?: string; lastName?: string };
       // Asegurar que el token decodificado tenga un rol
       if (!decoded.role) {
         decoded.role = 'user'; // Rol por defecto
       }
-
+      if (!decoded.name) {
+        decoded.name =
+          [decoded.firstName, decoded.lastName].filter(Boolean).join(' ') ||
+          decoded.email;
+      }
+      
       req.user = decoded;
       next();
     } catch (error) {

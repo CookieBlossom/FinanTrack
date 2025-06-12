@@ -5,8 +5,8 @@ import { ParsedQs } from 'qs';
 export interface TokenPayload {
     id: number;
     email: string;
-    name: string;
     role?: string;
+    name: string;
 }
 
 export interface AuthRequest<
