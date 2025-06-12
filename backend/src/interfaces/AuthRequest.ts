@@ -5,8 +5,8 @@ import { ParsedQs } from 'qs';
 export interface TokenPayload {
     id: number;
     email: string;
+    name: string;      // ← Esto es obligatorio para Express.
     role?: string;
-    name: string;
 }
 
 export interface AuthRequest<

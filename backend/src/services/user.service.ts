@@ -145,6 +145,7 @@ export class UserService {
       const token = this.generateToken({
         id: user.id,
         email: user.email,
+        name: user.first_name + ' ' + user.last_name,
         role: user.role
       });
       const { password, ...userWithoutPassword } = user;
@@ -415,7 +416,7 @@ export class UserService {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
 
-  private generateToken(payload: { id: number; email: string; role: string }): string {
+  private generateToken(payload: { id: number; email: string; role: string; name: string }): string {
     const jwtSecret = process.env.JWT_SECRET || 'finantrack_dev_secret_2024';
     return jwt.sign(payload, jwtSecret, { expiresIn: '24h', algorithm: 'HS256' });
   }
