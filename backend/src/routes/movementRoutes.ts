@@ -24,26 +24,12 @@ const upload = multer({
 
 // Aplicar middleware de autenticación a todas las rutas de movimientos
 router.use(authMiddleware);
-
-// Obtener todos los movimientos
 router.get('/', movementController.getAll);
-
-// Obtener movimientos filtrados
 router.get('/filter', movementController.getByFilters);
-
-// Obtener un movimiento por ID
 router.get('/:id', movementController.getById);
-
-// Crear un nuevo movimiento
 router.post('/', movementController.create);
-
-// Actualizar un movimiento
 router.put('/:id', movementController.update);
-
-// Eliminar un movimiento
 router.delete('/:id', movementController.delete);
-
-// Nueva ruta para procesar cartolas
 router.post('/cartola', upload.single('cartola'), movementController.uploadCartola);
 
 export default router; 
