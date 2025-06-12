@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../interfaces/IAuth';
+import { AuthRequest } from '../interfaces/AuthRequest';
 
 export const adminMiddleware = async (
   req: AuthRequest,

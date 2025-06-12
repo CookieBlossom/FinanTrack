@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { ProjectedMovementService } from '../services/projectedMovement.service';
 import { IProjectedMovementCreate, IProjectedMovementUpdate, IProjectedMovementFilters } from '../interfaces/IProjectedMovement';
-import { AuthRequest } from '../interfaces/IRequest';
+import { AuthRequest } from '../interfaces/AuthRequest';
 
 export class ProjectedMovementController {
     private projectedMovementService: ProjectedMovementService;
