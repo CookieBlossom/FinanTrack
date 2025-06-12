@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { MovementController } from '../controllers/MovementController';
 import { authMiddleware } from '../middlewares/authMiddleware';
+import { MovementController } from '../controllers/MovementController';
 import multer from 'multer';
 
 const router = Router();
