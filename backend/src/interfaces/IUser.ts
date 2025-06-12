@@ -28,7 +28,6 @@ export interface IUserToken {
   role?: string; 
 }
 
-
 export interface IUserRegister {
   email: string;
   password: string;

@@ -142,10 +142,11 @@ export class UserService {
       if (!isPasswordValid) {
         throw new DatabaseError('La contraseña es incorrecta');
       }
+      const name =(user.firstName || user.first_name || '') + (user.lastName || user.last_name ? ' ' + (user.lastName || user.last_name) : '');
       const token = this.generateToken({
         id: user.id,
         email: user.email,
-        name: user.first_name + ' ' + user.last_name,
+        name:  name.trim() || user.email,
         role: user.role
       });
       const { password, ...userWithoutPassword } = user;
