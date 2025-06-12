@@ -1,6 +1,7 @@
 import { Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
-import { AuthRequest, TokenPayload } from '../interfaces/AuthRequest';
+import { AuthRequest } from '../interfaces/AuthRequest';
+import { IUserToken } from '../interfaces/IUser';
 import { DatabaseError } from '../utils/errors';
 
 export const authMiddleware = async (
@@ -26,15 +27,13 @@ export const authMiddleware = async (
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET || 'your-secret-key'
-      ) as TokenPayload & { firstName?: string; lastName?: string };
+      ) as IUserToken
       // Asegurar que el token decodificado tenga un rol
       if (!decoded.role) {
         decoded.role = 'user'; // Rol por defecto
       }
       if (!decoded.name) {
-        decoded.name =
-          [decoded.firstName, decoded.lastName].filter(Boolean).join(' ') ||
-          decoded.email;
+        decoded.name = decoded.email;
       }
       
       req.user = decoded;

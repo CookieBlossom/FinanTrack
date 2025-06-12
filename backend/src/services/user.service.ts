@@ -142,12 +142,14 @@ export class UserService {
       if (!isPasswordValid) {
         throw new DatabaseError('La contraseña es incorrecta');
       }
-      const name =(user.firstName || user.first_name || '') + (user.lastName || user.last_name ? ' ' + (user.lastName || user.last_name) : '');
+      const name = (user.first_name || user.firstName || '') +
+      ((user.last_name || user.lastName) ? ' ' + (user.last_name || user.lastName) : '');
+
       const token = this.generateToken({
-        id: user.id,
-        email: user.email,
-        name:  name.trim() || user.email,
-        role: user.role
+      id: user.id,
+      email: user.email,
+      name: name.trim() || user.email, // ¡Siempre envía un 'name'!
+      role: user.role
       });
       const { password, ...userWithoutPassword } = user;
 
