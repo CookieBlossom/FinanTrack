@@ -4,13 +4,14 @@ import { AuthTokenService } from '../services/auth-token.service';
 import { Router } from '@angular/router';
 import { catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authTokenService = inject(AuthTokenService);
   const router = inject(Router);
   
   // Solo interceptar peticiones a nuestra API
-  if (!req.url.startsWith('http://localhost:3000')) {
+  if (!req.url.startsWith(environment.apiUrl)) {
     return next(req);
   }
 

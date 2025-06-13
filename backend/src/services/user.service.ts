@@ -144,13 +144,6 @@ export class UserService {
       }
       const name = (user.first_name || user.firstName || '') +
       ((user.last_name || user.lastName) ? ' ' + (user.last_name || user.lastName) : '');
-
-      // const token = this.generateToken({
-      // id: user.id,
-      // email: user.email,
-      // name: name.trim() || user.email, // ¡Siempre envía un 'name'!
-      // role: user.role
-      // });
       const payload = {
         id: user.id,
         email: user.email,
