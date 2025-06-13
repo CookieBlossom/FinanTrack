@@ -1,6 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import dotenv from 'dotenv';
-
+import path from 'path';
+import fs from 'fs';
 dotenv.config();
 
 export const pool: Pool = new Pool({
@@ -15,7 +16,11 @@ export async function initializeDatabase(): Promise<boolean> {
     let client: PoolClient | null = null;
     try {
         client = await pool.connect();
-        console.log('Conexión a PostgreSQL establecida correctamente');
+        const schemaPath = path.join(__dirname, 'schema.sql'); // Ajusta la ruta si es necesario
+        const schema = fs.readFileSync(schemaPath, 'utf8');
+        await client.query(schema);
+        console.log('Esquema ejecutado correctamente');
+
         return true;
     } catch (error) {
         console.error('Error al conectar con PostgreSQL:', error);

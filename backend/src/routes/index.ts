@@ -14,13 +14,10 @@ import categoryRoutes from './categoryRoutes';
 
 const router = Router();
 const protectedRouter = Router();
-
-// Aplicar middleware de autenticación a todas las rutas protegidas
-protectedRouter.use(authMiddleware);
-
 // Rutas públicas (no requieren autenticación)
 router.use('/users', userRoutes);
-
+// Aplicar middleware de autenticación a todas las rutas protegidas
+protectedRouter.use(authMiddleware);
 // Ruta de prueba para verificar que el router está funcionando
 router.get('/', (req, res) => {
     res.json({ message: 'backend funcionando correctamente' });
@@ -40,7 +37,5 @@ protectedRouter.use('/dashboard', dashboardRoutes);
 protectedRouter.use('/analytics', analyticsRoutes);
 protectedRouter.use('/banks', bankRoutes);
 protectedRouter.use('/movements', movementRoutes);
-// Montar las rutas protegidas bajo /api
-router.use('/', protectedRouter);
 
 export default router; 

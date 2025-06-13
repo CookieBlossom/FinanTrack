@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { initializeDatabase, pool } from './config/database/connection';
@@ -49,17 +51,12 @@ app.get('/health', async (req: Request, res: Response) => {
         });
     }
 });
-
-// Inicializar la base de datos al arrancar
-console.log('Intentando conectar a la base de datos...');
 initializeDatabase()
     .then(() => {
         console.log('Base de datos inicializada correctamente');
         // Iniciar el servidor solo después de confirmar la conexión a la BD
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, () => {
-            console.log(`Servidor corriendo en http://localhost:${PORT}`);
-            console.log(`Ruta de salud: http://localhost:${PORT}/health`);
         });
     })
     .catch(error => {

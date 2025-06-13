@@ -43,6 +43,4 @@ router.put('/change-password', authMiddleware, (req: AuthRequest, res: Response,
     userController.changePassword(req, res).catch(next);
 });
 
-console.log('Rutas de usuarios configuradas');
-
 export default router; 
