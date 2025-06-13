@@ -83,7 +83,7 @@ export class CategoriesComponent implements OnInit {
       flex: 1,
       cellRenderer: (params: { value: any }) => {
         const iconName = params.value || 'more-horizontal';
-        return `<img src="assets/icons/${iconName}.svg" alt="${iconName}" width="24" height="24" style="vertical-align:middle;" />`;
+        return `<img src="/assets/icons/${iconName}.svg" alt="${iconName}" width="24" height="24" style="vertical-align:middle;" />`;
       }
     },
     {
