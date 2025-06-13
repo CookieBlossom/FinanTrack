@@ -25,7 +25,9 @@ router.use('/users', userRoutes);
 router.get('/', (req, res) => {
     res.json({ message: 'backend funcionando correctamente' });
 });
-
+router.get('/health', (req, res) => {
+    res.json({ message: 'backend funcionando correctamente' });
+});
 // Rutas protegidas (requieren autenticación)
 
 protectedRouter.use('/cards', cardRoutes);
