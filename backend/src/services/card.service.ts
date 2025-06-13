@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { DatabaseError } from '../utils/errors';
 import { ICard, ICardCreate, ICardUpdate } from '../interfaces/ICard';
 import dotenv from 'dotenv';
+import { pool } from '../config/database/connection';
 dotenv.config();
 
 // @Injectable() // No es necesario para una clase que se instanciará manualmente en Express
@@ -9,13 +10,7 @@ export class CardService {
   private pool: Pool;
 
   constructor() { // Ya no recibe ConfigService
-    this.pool = new Pool({
-      user: process.env.DB_USER,
-      host: process.env.DB_HOST,
-      database: process.env.DB_NAME,
-      password: process.env.DB_PASSWORD,
-      port: parseInt(process.env.DB_PORT || '5432'),
-    });
+    this.pool = pool
   }
   public async getTotalBalanceByUserId(userId: number): Promise<number> {
     const query = `

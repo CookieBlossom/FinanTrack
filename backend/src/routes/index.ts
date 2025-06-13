@@ -16,14 +16,9 @@ const router = Router();
 const protectedRouter = Router();
 // Rutas públicas (no requieren autenticación)
 router.use('/users', userRoutes);
-// Aplicar middleware de autenticación a todas las rutas protegidas
 protectedRouter.use(authMiddleware);
-// Ruta de prueba para verificar que el router está funcionando
 router.get('/', (req, res) => {
-    res.json({ message: 'backend funcionando correctamente' });
-});
-router.get('/health', (req, res) => {
-    res.json({ message: 'backend funcionando correctamente' });
+    res.json({ message: 'rutas publicas funcionando correctamente' });
 });
 // Rutas protegidas (requieren autenticación)
 
@@ -38,4 +33,10 @@ protectedRouter.use('/analytics', analyticsRoutes);
 protectedRouter.use('/banks', bankRoutes);
 protectedRouter.use('/movements', movementRoutes);
 
+// (opcional) ruta de prueba protegida  
+protectedRouter.get('/', (req, res) => {
+    res.json({ message: 'rutas protegidas funcionando correctamente' });
+  });
+  
+router.use('/', protectedRouter);
 export default router; 

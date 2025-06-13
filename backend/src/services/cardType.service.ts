@@ -4,6 +4,10 @@ import { DatabaseError } from '../utils/errors';
 import { pool } from '../config/database/connection';
 
 export class CardTypeService {
+  private pool: Pool;
+  constructor() {
+    this.pool = pool;
+  }
   public async getAllCardTypes(): Promise<ICardType[]> {
     const query = `SELECT id, name, created_at as "createdAt", updated_at as "updatedAt" FROM card_types ORDER BY name;`;
     const result = await pool.query(query);

@@ -3,19 +3,14 @@ import { DatabaseError } from '../utils/errors';
 import { Pool } from 'pg';
 import pdfParse from 'pdf-parse';
 import { CardTypeService } from './cardType.service';
+import { pool } from '../config/database/connection';
 export class CartolaService {
   private pool: Pool;
   private cardTypeService: CardTypeService = new CardTypeService();
   private cardTypes: { id: number; name: string }[] = [];
 
   constructor() {
-    this.pool = new Pool({
-      user: process.env.DB_USER,
-      host: process.env.DB_HOST,
-      database: process.env.DB_NAME,
-      password: process.env.DB_PASSWORD,
-      port: parseInt(process.env.DB_PORT || '5432'),
-    });
+    this.pool = pool;
   }
   private async loadCardTypes() {
     if (this.cardTypes.length > 0) return;

@@ -4,6 +4,7 @@ import { CardService } from './card.service';
 import { IMovement, IMovementCreate, IMovementFilters, IMovementUpdate } from '../interfaces/IMovement';
 import { CartolaService } from './cartola.service';
 import dotenv from 'dotenv';
+import { pool } from '../config/database/connection';
 dotenv.config();
 
 export class MovementService {
@@ -12,13 +13,7 @@ export class MovementService {
   private cartolaService: CartolaService;
 
   constructor() {
-    this.pool = new Pool({
-      user: process.env.DB_USER,
-      host: process.env.DB_HOST,
-      database: process.env.DB_NAME,
-      password: process.env.DB_PASSWORD,
-      port: parseInt(process.env.DB_PORT || '5432'),
-    });
+    this.pool = pool;
     this.cardService = new CardService();
     this.cartolaService = new CartolaService();
   }
