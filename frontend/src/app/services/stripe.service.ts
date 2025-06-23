@@ -35,11 +35,11 @@ export class StripeService {
   }
 
   verifyPaymentPublic(sessionId: string): Observable<PaymentVerificationResponse> {
-    return this.http.get<PaymentVerificationResponse>(`${this.apiUrl}/stripe/verify-payment-public?session_id=${sessionId}`);
+    return this.http.get<PaymentVerificationResponse>(`${this.apiUrl}/verify-payment-public?session_id=${sessionId}`);
   }
 
   simulateWebhookBySession(sessionId: string): Observable<PaymentVerificationResponse> {
-    return this.http.post<PaymentVerificationResponse>(`${this.apiUrl}/stripe/simulate-webhook-by-session`, { session_id: sessionId });
+    return this.http.post<PaymentVerificationResponse>(`${this.apiUrl}/simulate-webhook-by-session`, { session_id: sessionId });
   }
 
   handlePaymentSuccess(sessionId: string): Observable<PaymentVerificationResponse> {
