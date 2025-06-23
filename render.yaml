@@ -10,7 +10,7 @@ services:
     name: finantrack-backend
     env: node
     plan: free
-    buildCommand: cd backend && npm install && npm run build
+    buildCommand: cd backend && npm install && npm run build && cp src/config/database/schema.sql dist/config/database/
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
