@@ -1,10 +1,11 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { CategoryService } from '../services/category.service';
 import { AuthRequest } from '../interfaces/AuthRequest';
 
 export class CategoryController {
     private categoryService = new CategoryService();
-    async getAllCategories(req: Request, res: Response) {
+    
+    public async getAllCategories(req: Request, res: Response, next: NextFunction) {
       try {
         const categories = await this.categoryService.getAllCategories();
         res.json(categories);
@@ -14,9 +15,9 @@ export class CategoryController {
     }
   
     // Devuelve categorías + keywords para usuario autenticado
-    async getUserCategories(req: AuthRequest, res: Response) {
+    public async getUserCategories(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.user?.id;
+        const userId = (req as AuthRequest).user?.id;
         if (!userId) return res.status(401).json({ error: 'Usuario no autenticado' });
         const categories = await this.categoryService.getUserCategories(userId);
         res.json(categories);
@@ -26,23 +27,33 @@ export class CategoryController {
     }
   
     // Actualizar keywords personalizadas
-    async updateUserCategoryKeywords(req: AuthRequest, res: Response) {
+    public async updateUserCategoryKeywords(req: Request, res: Response, next: NextFunction) {
       try {
-        const userId = req.user?.id;
+        const user = (req as AuthRequest).user;
+        if (!user) {
+          return res.status(401).json({ error: 'Usuario no autenticado' });
+        }
+        
         const categoryId = parseInt(req.params.id);
         const { keywords } = req.body;
-        if (!userId || isNaN(categoryId)) {
+        
+        if (isNaN(categoryId) || !Array.isArray(keywords)) {
           return res.status(400).json({ error: 'Datos inválidos' });
         }
-        await this.categoryService.updateUserCategoryKeywords(userId, categoryId, keywords);
+        
+        await this.categoryService.updateUserCategoryKeywords(user.id, categoryId, keywords, user.planId);
         res.json({ message: 'Palabras clave actualizadas correctamente' });
       } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar las palabras clave' });
+        if (error instanceof Error && error.message.includes('límite')) {
+          res.status(403).json({ error: error.message });
+        } else {
+          res.status(500).json({ error: 'Error al actualizar las palabras clave' });
+        }
       }
     }
   
     // Actualizar color de categoría global
-    async updateCategoryColor(req: AuthRequest, res: Response) {
+    public async updateCategoryColor(req: Request, res: Response, next: NextFunction) {
       try {
         const categoryId = parseInt(req.params.id);
         const { color } = req.body;

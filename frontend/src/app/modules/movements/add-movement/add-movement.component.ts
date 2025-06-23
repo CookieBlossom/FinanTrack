@@ -13,6 +13,11 @@ import { MovementService } from '../../../services/movement.service';
 import { CardService } from '../../../services/card.service';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Card } from '../../../models/card.model';
+import { LimitNotificationsService } from '../../../services/limit-notifications.service';
+import { PlanLimitsService } from '../../../services/plan-limits.service';
+import { FeatureControlService } from '../../../services/feature-control.service';
+import { LimitNotificationComponent, LimitNotificationData } from '../../../shared/components/limit-notification/limit-notification.component';
+import { PLAN_LIMITS } from '../../../models/plan.model';
 
 @Component({
   selector: 'app-add-movement',
@@ -30,7 +35,8 @@ import { Card } from '../../../models/card.model';
     MatTabsModule,
     MatIconModule,
     MatSelectModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    LimitNotificationComponent
   ],
 })
 export class AddMovementComponent implements OnInit {
@@ -40,13 +46,28 @@ export class AddMovementComponent implements OnInit {
   isUploading = false;
   cards: Card[] = [];
 
+  // Variables para límites
+  limitsInfo: any = null;
+  showLimitNotification = false;
+  limitNotificationData: LimitNotificationData = {
+    type: 'warning',
+    title: '',
+    message: '',
+    limit: 0,
+    current: 0,
+    showUpgradeButton: false
+  };
+
   constructor(
     private fb: FormBuilder,
     public dialogRef: MatDialogRef<AddMovementComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
     private movementService: MovementService,
     private cardService: CardService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private limitNotificationsService: LimitNotificationsService,
+    private planLimitsService: PlanLimitsService,
+    private featureControlService: FeatureControlService
   ) {
     this.manualForm = this.fb.group({
       cardId: ['', Validators.required],
@@ -59,6 +80,34 @@ export class AddMovementComponent implements OnInit {
 
   ngOnInit() {
     this.loadCards();
+    this.loadLimitsInfo();
+  }
+
+  loadLimitsInfo(): void {
+    // Cargar información de límites
+    this.planLimitsService.currentUsage$.subscribe({
+      next: (usage) => {
+        this.limitsInfo = usage;
+      },
+      error: (error) => {
+        console.error('Error al cargar límites:', error);
+      }
+    });
+  }
+
+  getProgressPercentage(limitKey: string): number {
+    if (!this.limitsInfo || !this.limitsInfo[limitKey]) return 0;
+    const limit = this.limitsInfo[limitKey];
+    return Math.min((limit.used / limit.limit) * 100, 100);
+  }
+
+  displayLimitNotification(data: LimitNotificationData): void {
+    this.limitNotificationData = data;
+    this.showLimitNotification = true;
+  }
+
+  hideLimitNotification(): void {
+    this.showLimitNotification = false;
   }
 
   normalizeCardName(name: string): string {
@@ -115,27 +164,54 @@ export class AddMovementComponent implements OnInit {
 
   async onSubmit() {
     if (this.manualForm.valid) {
-      const isDuplicate = await this.isDuplicateMovement();
-      if (isDuplicate) {
-        this.snackBar.open('Ya existe un movimiento similar en esta fecha', 'Cerrar', { duration: 3000 });
-        return;
-      }
+      // Verificar límites antes de crear el movimiento
+      this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MANUAL_MOVEMENTS).subscribe({
+        next: (limitStatus) => {
+          if (limitStatus.currentUsage >= limitStatus.limit) {
+            this.displayLimitNotification({
+              type: 'error',
+              title: 'Límite de Movimientos Alcanzado',
+              message: `Has alcanzado el límite de ${limitStatus.limit} movimientos manuales por mes. Actualiza tu plan para agregar más movimientos.`,
+              limit: limitStatus.limit,
+              current: limitStatus.currentUsage,
+              showUpgradeButton: true
+            });
+            return;
+          }
 
-      const movementData = {
-        ...this.manualForm.value,
-        movementSource: 'manual'
-      };
-      this.movementService.addMovement(movementData).subscribe({
-        next: () => {
-          this.snackBar.open('Movimiento agregado exitosamente', 'Cerrar', { duration: 3000 });
-          this.dialogRef.close(true);
+          // Continuar con la creación del movimiento
+          this.createMovement();
         },
         error: (error) => {
-          console.error('Error al agregar movimiento:', error);
-          this.snackBar.open(error.message || 'Error al agregar el movimiento', 'Cerrar', { duration: 3000 });
+          console.error('Error al verificar límites:', error);
+          // Continuar sin verificación en caso de error
+          this.createMovement();
         }
       });
     }
+  }
+
+  private async createMovement() {
+    const isDuplicate = await this.isDuplicateMovement();
+    if (isDuplicate) {
+      this.snackBar.open('Ya existe un movimiento similar en esta fecha', 'Cerrar', { duration: 3000 });
+      return;
+    }
+
+    const movementData = {
+      ...this.manualForm.value,
+      movementSource: 'manual'
+    };
+    this.movementService.addMovement(movementData).subscribe({
+      next: () => {
+        this.snackBar.open('Movimiento agregado exitosamente', 'Cerrar', { duration: 3000 });
+        this.dialogRef.close(true);
+      },
+      error: (error) => {
+        console.error('Error al agregar movimiento:', error);
+        this.snackBar.open(error.message || 'Error al agregar el movimiento', 'Cerrar', { duration: 3000 });
+      }
+    });
   }
 
   onCancel(): void {
@@ -162,8 +238,21 @@ export class AddMovementComponent implements OnInit {
       return;
     }
 
+    // Verificar permisos antes de subir cartola
+    this.limitNotificationsService.checkLimitBeforeAction('upload_cartola').subscribe(result => {
+      if (!result.canProceed) {
+        this.uploadError = result.notification?.message || 'No puedes subir cartolas con tu plan actual';
+        return;
+      }
+
+      // Continuar con la subida de cartola
+      this.uploadCartola();
+    });
+  }
+
+  private uploadCartola(): void {
     const formData = new FormData();
-    formData.append('cartola', this.selectedFile);
+    formData.append('cartola', this.selectedFile!);
 
     this.isUploading = true;
     this.uploadError = null;

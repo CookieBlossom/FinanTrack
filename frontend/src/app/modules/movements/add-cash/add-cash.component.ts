@@ -6,9 +6,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MovementService } from '../../../services/movement.service';
 import { CategoryService } from '../../../services/category.service';
 import { Category } from '../../../models/category.model';
+import { PlanLimitsService } from '../../../services/plan-limits.service';
+import { LimitNotificationComponent, LimitNotificationData } from '../../../shared/components/limit-notification/limit-notification.component';
+import { PLAN_LIMITS } from '../../../models/plan.model';
 
 @Component({
   selector: 'app-add-cash',
@@ -22,7 +28,10 @@ import { Category } from '../../../models/category.model';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatSelectModule
+    MatSelectModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    LimitNotificationComponent
   ]
 })
 export class AddCashComponent {
@@ -32,12 +41,26 @@ export class AddCashComponent {
   typeOptions = ['income', 'expense'];
   isLoading = false;
 
+  // Variables para límites
+  limitsInfo: any = null;
+  showLimitNotification = false;
+  limitNotificationData: LimitNotificationData = {
+    type: 'warning',
+    title: '',
+    message: '',
+    limit: 0,
+    current: 0,
+    showUpgradeButton: false
+  };
+
   constructor(
     private fb: FormBuilder,
     private movementService: MovementService,
     private categoryService: CategoryService,
     public dialogRef: MatDialogRef<AddCashComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
+    @Inject(MAT_DIALOG_DATA) public data: any,
+    private snackBar: MatSnackBar,
+    private planLimitsService: PlanLimitsService
   ) {
     this.cashForm = this.fb.group({
       categoryId: ['', Validators.required],
@@ -48,6 +71,7 @@ export class AddCashComponent {
     });
 
     this.loadCategories();
+    this.loadLimitsInfo();
   }
 
   loadCategories(): void {
@@ -62,12 +86,66 @@ export class AddCashComponent {
     });
   }
 
+  loadLimitsInfo(): void {
+    // Cargar información de límites
+    this.planLimitsService.currentUsage$.subscribe({
+      next: (usage) => {
+        this.limitsInfo = usage;
+      },
+      error: (error) => {
+        console.error('Error al cargar límites:', error);
+      }
+    });
+  }
+
+  getProgressPercentage(limitKey: string): number {
+    if (!this.limitsInfo || !this.limitsInfo[limitKey]) return 0;
+    const limit = this.limitsInfo[limitKey];
+    return Math.min((limit.used / limit.limit) * 100, 100);
+  }
+
+  displayLimitNotification(data: LimitNotificationData): void {
+    this.limitNotificationData = data;
+    this.showLimitNotification = true;
+  }
+
+  hideLimitNotification(): void {
+    this.showLimitNotification = false;
+  }
+
   submit() {
     if (this.cashForm.invalid) {
       this.cashForm.markAllAsTouched();
       return;
     }
 
+    // Verificar límites antes de crear el movimiento
+    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MANUAL_MOVEMENTS).subscribe({
+      next: (limitStatus) => {
+        if (limitStatus.currentUsage >= limitStatus.limit) {
+          this.displayLimitNotification({
+            type: 'error',
+            title: 'Límite de Movimientos Alcanzado',
+            message: `Has alcanzado el límite de ${limitStatus.limit} movimientos manuales por mes. Actualiza tu plan para agregar más movimientos.`,
+            limit: limitStatus.limit,
+            current: limitStatus.currentUsage,
+            showUpgradeButton: true
+          });
+          return;
+        }
+
+        // Continuar con la creación del movimiento
+        this.createMovement();
+      },
+      error: (error) => {
+        console.error('Error al verificar límites:', error);
+        // Continuar sin verificación en caso de error
+        this.createMovement();
+      }
+    });
+  }
+
+  private createMovement() {
     const formValue = this.cashForm.value;
     const payload = {
       ...formValue,
@@ -78,9 +156,13 @@ export class AddCashComponent {
     this.isLoading = true;
 
     this.movementService.addMovement(payload).subscribe({
-      next: (res) => this.dialogRef.close(res),
+      next: (res) => {
+        this.snackBar.open('Movimiento en efectivo agregado exitosamente', 'Cerrar', { duration: 3000 });
+        this.dialogRef.close(res);
+      },
       error: (err) => {
         console.error('Error al agregar movimiento en efectivo:', err);
+        this.snackBar.open('Error al agregar el movimiento', 'Cerrar', { duration: 3000 });
         this.isLoading = false;
       }
     });

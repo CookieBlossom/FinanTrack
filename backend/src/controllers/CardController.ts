@@ -1,20 +1,23 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { CardService } from '../services/card.service';
 import { DatabaseError } from '../utils/errors';
 import { cardSchema, cardUpdateSchema } from '../validators/cardSchema';
 import { AuthRequest } from '../interfaces/AuthRequest';
 import { ZodError } from 'zod';
+import { PlanService } from '../services/plan.service';
 
 export class CardController {
   private cardService: CardService;
+  private planService: PlanService;
 
   constructor() {
     this.cardService = new CardService();
+    this.planService = new PlanService();
   }
 
-  public getAllCards = async (req: AuthRequest, res: Response): Promise<void> => {
+  public getAllCards = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
+      const userId = (req as AuthRequest).user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
@@ -31,9 +34,9 @@ export class CardController {
     }
   };
 
-  public getCardById = async (req: AuthRequest, res: Response): Promise<void> => {
+  public getCardById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
+      const userId = (req as AuthRequest).user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
@@ -55,9 +58,10 @@ export class CardController {
       }
     }
   };
-  public getTotalBalanceByUserId = async (req: AuthRequest, res: Response): Promise<void> => {
+
+  public getTotalBalanceByUserId = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
+      const userId = (req as AuthRequest).user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
@@ -69,32 +73,45 @@ export class CardController {
     }
   };
 
-  public createCard = async (req: AuthRequest, res: Response): Promise<void> => {
+  public createCard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const user = (req as AuthRequest).user;
+      if (!user) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
       }
-  
       const validatedData = cardSchema.parse(req.body);
-  
       // Prevenir tarjetas duplicadas
       const { nameAccount, cardTypeId, bankId } = validatedData;
       const safeBankId = typeof bankId === 'number' ? bankId : undefined;
   
-      if (await this.cardService.cardExists(userId, nameAccount, cardTypeId, bankId)) {
+      if (await this.cardService.cardExists(user.id, nameAccount, cardTypeId, bankId)) {
         res.status(409).json({
           error: 'Ya existe una tarjeta con este nombre, banco y tipo para este usuario.'
         });
         return;
       }
-      const card = await this.cardService.createCard({
-        ...validatedData,
-        userId,
-        bankId: safeBankId // para asegurarte que no va null
-      });
-      res.status(201).json(card);
+      try {
+        // 1) Límite de tarjetas
+        const limits = await this.planService.getLimitsForPlan(user.planId);
+        if (limits.max_cards !== -1) {
+          const used = await this.cardService.countManualCards(user.id);
+          if (used >= limits.max_cards) {
+            res.status(403).json({
+              error: `Has alcanzado el límite de ${limits.max_cards} tarjetas`
+            });
+            return;
+          }
+        }
+  
+        // 2) Crear tarjeta pasándole planId también
+        const card = await this.cardService.createCard(
+          { ...validatedData, userId: user.id, bankId: safeBankId },
+          user.id,
+          user.planId
+        );
+        res.status(201).json(card);
+      } catch (error) { /* … */ }
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({
@@ -112,9 +129,9 @@ export class CardController {
     }
   };
 
-  public updateCard = async (req: AuthRequest, res: Response): Promise<void> => {
+  public updateCard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
+      const userId = (req as AuthRequest).user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
@@ -146,10 +163,9 @@ export class CardController {
     }
   };
 
-
-  public deleteCard = async (req: AuthRequest, res: Response): Promise<void> => {
+  public deleteCard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
+      const userId = (req as AuthRequest).user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
@@ -172,9 +188,9 @@ export class CardController {
     }
   };
 
-  public syncCardsFromUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  public syncCardsFromUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
+      const userId = (req as AuthRequest).user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
@@ -186,9 +202,10 @@ export class CardController {
       res.status(500).json({ error: 'Error al sincronizar tarjetas del usuario' });
     }
   };
-  public updateBalance = async (req: AuthRequest, res: Response): Promise<void> => {
+
+  public updateBalance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
+      const userId = (req as AuthRequest).user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Usuario no autenticado' });
         return;
@@ -206,8 +223,8 @@ export class CardController {
         return;
       }
 
-      const card = await this.cardService.updateBalance(id, userId, amount);
-      res.json(card);
+      await this.cardService.updateBalance(id, userId, amount);
+      res.json({ message: 'Saldo actualizado correctamente' });
     } catch (error) {
       if (error instanceof DatabaseError) {
         res.status(400).json({ error: error.message });

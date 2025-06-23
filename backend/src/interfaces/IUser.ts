@@ -8,6 +8,7 @@ export interface IUser {
   phone?: string | null;
   role: 'user' | 'admin';
   isActive?: boolean;
+  plan_id: number;
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date;
@@ -25,7 +26,9 @@ export interface IUserToken {
   id: number;
   email: string;
   name: string;
-  role?: string; 
+  role: string; 
+  planId: number;
+  planName?: string;
 }
 
 export interface IUserRegister {

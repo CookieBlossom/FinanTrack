@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/authMiddleware';
 import { MovementController } from '../controllers/MovementController';
 import multer from 'multer';
 
@@ -22,9 +21,9 @@ const upload = multer({
   },
 });
 
-// Aplicar middleware de autenticación a todas las rutas de movimientos
-router.use(authMiddleware);
+// Las rutas aquí ya están protegidas por authMiddleware desde routes/index.ts
 router.get('/', movementController.getAll);
+router.get('/cash', movementController.getCashMovements);
 router.get('/filter', movementController.getByFilters);
 router.get('/:id', movementController.getById);
 router.post('/', movementController.create);

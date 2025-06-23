@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { LegendPosition, NgxChartsModule, ScaleType } from '@swimlane/ngx-charts';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   ClientSideRowModelApiModule,
   ClientSideRowModelModule,
@@ -17,6 +18,8 @@ import {
   themeQuartz,
   ValidationModule,
 } from 'ag-grid-community';
+import { AddUpcomingMovementComponent } from './add-upcoming-movement/add-upcoming-movement.component';
+
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   ColumnApiModule,
@@ -27,12 +30,13 @@ ModuleRegistry.registerModules([
   RowSelectionModule,
   ValidationModule,
 ]);
+
 @Component({
   selector: 'app-upcoming-transactions',
   standalone: true,
   templateUrl: './upcoming-transactions.component.html',
   styleUrl: './upcoming-transactions.component.css',
-  imports: [ NgxChartsModule, AgGridModule, CommonModule ],
+  imports: [ NgxChartsModule, AgGridModule, CommonModule, MatDialogModule ],
 })
 export class UpcomingTransactionsComponent {
   columnDefs: ColDef[] = [
@@ -63,15 +67,45 @@ export class UpcomingTransactionsComponent {
     { fecha: '2024-04-01', metodo: 'Tarjeta de debito', nombre: 'PedidosYa', monto: 100000, categoria: 'Compras', frecuencia: 'Mensual', estado: 'Pendiente' },
     { fecha: '2024-04-01', metodo: 'Tarjeta de debito', nombre: 'Pago de celular', monto: 100000, categoria: 'Servicios', frecuencia: 'Mensual', estado: 'Pendiente' },
   ];
+
+  constructor(private dialog: MatDialog) {}
+
+  // Abrir modal de agregar movimiento futuro
+  openAddUpcomingMovement(): void {
+    const dialogRef = this.dialog.open(AddUpcomingMovementComponent, {
+      width: '100vw',
+      height: '100vh',
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      panelClass: 'full-screen-dialog',
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Recargar datos si se agregó un movimiento
+        this.loadUpcomingMovements();
+      }
+    });
+  }
+
+  // Cargar movimientos futuros
+  loadUpcomingMovements(): void {
+    // TODO: Implementar carga de datos reales desde el servicio
+    console.log('Cargando movimientos futuros...');
+  }
+
   onGridSizeChanged(params: GridSizeChangedEvent) {
     params.api.sizeColumnsToFit();
   }
+  
   onGridReady(params: GridReadyEvent) {
     setTimeout(() => {
       params.api.sizeColumnsToFit();
       params.api.resetRowHeights();
     }, 0);
   }
+  
   nextExpensesCols: ColDef[] = [
     { field: 'nombre', headerName: 'Nombre', flex: 1 },
     { field: 'fecha', headerName: 'Fecha', flex: 1 },

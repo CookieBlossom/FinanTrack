@@ -3,14 +3,17 @@ import { DatabaseError } from '../utils/errors';
 import { ICard, ICardCreate, ICardUpdate } from '../interfaces/ICard';
 import dotenv from 'dotenv';
 import { pool } from '../config/database/connection';
+import { PlanService } from './plan.service';
 dotenv.config();
 
 // @Injectable() // No es necesario para una clase que se instanciará manualmente en Express
 export class CardService {
   private pool: Pool;
+  planService: PlanService;
 
   constructor() { // Ya no recibe ConfigService
     this.pool = pool
+    this.planService = new PlanService();
   }
   public async getTotalBalanceByUserId(userId: number): Promise<number> {
     const query = `
@@ -20,6 +23,15 @@ export class CardService {
     `;
     const result = await this.pool.query(query, [userId]);
     return Number(result.rows[0]?.total) || 0;
+  }
+  async countManualCards(userId: number): Promise<number> {
+    const res = await this.pool.query(
+      `SELECT COUNT(*) AS cnt
+       FROM cards
+       WHERE user_id = $1 AND source = 'manual' AND status_account = 'active'`,
+      [userId]
+    );
+    return Number(res.rows[0].cnt);
   }
 
   async getCardById(cardId: number, userId: number): Promise<ICard | null> {
@@ -99,55 +111,47 @@ export class CardService {
       throw new DatabaseError('Error al obtener las tarjetas');
     }
   }
-
-  async createCard(cardData: Partial<ICard>): Promise<ICard> {
-    try {
-      const query = `
-        INSERT INTO cards (
-          user_id,
-          name_account,
-          alias_account,
-          card_type_id,
-          bank_id,
-          balance,
-          currency,
-          source,
-          status_account,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, $9)
-        RETURNING id,
-          user_id as "userId",
-          name_account as "nameAccount",
-          alias_account as "aliasAccount",
-          card_type_id as "cardTypeId",
-          bank_id as "bankId",
-          balance,
-          currency,
-          source,
-          status_account as "statusAccount",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
-      `;
-
-      const values = [
-        cardData.userId,
-        cardData.nameAccount,
-        cardData.aliasAccount || null,
-        cardData.cardTypeId,
-        cardData.bankId || null,
-        cardData.balance ?? 0,
-        cardData.currency ?? 'CLP',
-        cardData.source ?? 'manual',
-        new Date()
-      ];
-
-      const result = await this.pool.query(query, values);
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error al crear tarjeta:', error);
-      throw new DatabaseError('Error al crear la tarjeta');
+  async createCard(
+    cardData: Partial<ICard>,
+    userId: number,
+    planId: number
+  ): Promise<ICard> {
+    const limits = await this.planService.getLimitsForPlan(planId);
+    if (limits.max_cards !== -1) {
+      const used = await this.countManualCards(userId);
+      if (used >= limits.max_cards) {
+        throw new DatabaseError(
+          `Has alcanzado el límite de ${limits.max_cards} tarjetas para tu plan`
+        );
+      }
     }
+
+    const query = `
+      INSERT INTO cards (
+        user_id, name_account, alias_account, card_type_id,
+        bank_id, balance, currency, source,
+        status_account, created_at, updated_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$9)
+      RETURNING
+        id, user_id AS "userId", name_account AS "nameAccount",
+        alias_account AS "aliasAccount", card_type_id AS "cardTypeId",
+        bank_id AS "bankId", balance, currency, source,
+        status_account AS "statusAccount", created_at AS "createdAt",
+        updated_at AS "updatedAt";
+    `;
+    const values = [
+      userId,
+      cardData.nameAccount!,
+      cardData.aliasAccount || null,
+      cardData.cardTypeId!,
+      cardData.bankId || null,
+      cardData.balance ?? 0,
+      cardData.currency ?? 'CLP',
+      cardData.source ?? 'manual',
+      new Date()
+    ];
+    const res = await this.pool.query(query, values);
+    return res.rows[0];
   }
 
   public async deleteCard(cardId: number, userId: number): Promise<void> {

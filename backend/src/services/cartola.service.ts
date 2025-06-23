@@ -3,15 +3,54 @@ import { DatabaseError } from '../utils/errors';
 import { Pool } from 'pg';
 import pdfParse from 'pdf-parse';
 import { CardTypeService } from './cardType.service';
+import { PlanService } from './plan.service';
 import { pool } from '../config/database/connection';
+
 export class CartolaService {
   private pool: Pool;
   private cardTypeService: CardTypeService = new CardTypeService();
+  private planService: PlanService = new PlanService();
   private cardTypes: { id: number; name: string }[] = [];
 
   constructor() {
     this.pool = pool;
   }
+
+  // Verificar límites de procesamiento de cartolas
+  private async checkCartolaLimits(userId: number, planId: number): Promise<void> {
+    const limits = await this.planService.getLimitsForPlan(planId);
+    const maxCartolas = limits.monthly_cartolas || 0; // Por defecto 0 si no está definido
+
+    if (maxCartolas === -1) {
+      return; // Ilimitado
+    }
+
+    const currentMonth = new Date();
+    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    
+    const cartolaCountQuery = `
+      SELECT COUNT(*) as count 
+      FROM movements 
+      WHERE movement_source = 'cartola' 
+      AND card_id IN (SELECT id FROM cards WHERE user_id = $1)
+      AND transaction_date >= $2
+    `;
+    const result = await this.pool.query(cartolaCountQuery, [userId, startOfMonth]);
+    const currentCount = parseInt(result.rows[0].count);
+
+    if (currentCount >= maxCartolas) {
+      throw new DatabaseError(`Has alcanzado el límite de ${maxCartolas} cartolas procesadas por mes para tu plan.`);
+    }
+  }
+
+  // Verificar permisos de importación de cartolas
+  private async checkCartolaPermission(planId: number): Promise<void> {
+    const hasPermission = await this.planService.hasPermission(planId, 'cartola_upload');
+    if (!hasPermission) {
+      throw new DatabaseError('Tu plan no incluye la funcionalidad de importación de cartolas.');
+    }
+  }
+
   private async loadCardTypes() {
     if (this.cardTypes.length > 0) return;
       await this.cardTypeService.getAllCardTypes();
@@ -421,7 +460,11 @@ export class CartolaService {
     if (descripcionUpper.includes('COMPRA NACIONAL')) return 'COMPRA_PRESENCIAL';
     return undefined;
   }
-  async guardarMovimientos(cardId: number, movimientos: IMovimiento[]): Promise<void> {
+  async guardarMovimientos(cardId: number, movimientos: IMovimiento[], userId: number, planId: number): Promise<void> {
+    // Verificar permisos y límites antes de procesar
+    await this.checkCartolaPermission(planId);
+    await this.checkCartolaLimits(userId, planId);
+
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');

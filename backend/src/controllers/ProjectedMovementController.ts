@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, Request, NextFunction } from 'express';
 import { ProjectedMovementService } from '../services/projectedMovement.service';
 import { IProjectedMovementCreate, IProjectedMovementUpdate, IProjectedMovementFilters } from '../interfaces/IProjectedMovement';
 import { AuthRequest } from '../interfaces/AuthRequest';
@@ -10,9 +10,9 @@ export class ProjectedMovementController {
         this.projectedMovementService = new ProjectedMovementService();
     }
 
-    getAll = async (req: AuthRequest, res: Response): Promise<void> => {
+    public getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
@@ -29,9 +29,9 @@ export class ProjectedMovementController {
         }
     };
 
-    getById = async (req: AuthRequest, res: Response): Promise<void> => {
+    public getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
@@ -55,9 +55,9 @@ export class ProjectedMovementController {
         }
     };
 
-    getByFilters = async (req: AuthRequest, res: Response): Promise<void> => {
+    public getByFilters = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
@@ -89,39 +89,37 @@ export class ProjectedMovementController {
         }
     };
 
-    create = async (req: AuthRequest, res: Response): Promise<void> => {
-        try {
-            const userId = req.user?.id;
-            if (!userId) {
-                res.status(401).json({ message: 'Usuario no autenticado' });
-                return;
-            }
-
-            const movementData: IProjectedMovementCreate = {
-                ...req.body,
-                userId,
-                expectedDate: new Date(req.body.expectedDate)
-            };
-            
-            if (!this.validateProjectedMovementData(movementData)) {
-                res.status(400).json({ message: 'Datos del movimiento proyectado incompletos o inválidos' });
-                return;
-            }
-
-            const newMovement = await this.projectedMovementService.createProjectedMovement(movementData);
-            res.status(201).json(newMovement);
-        } catch (error) {
-            console.error('Error al crear movimiento proyectado:', error);
-            res.status(500).json({
-                message: 'Error al crear el movimiento proyectado',
-                error: error instanceof Error ? error.message : 'Error desconocido'
-            });
+    public create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        const user = (req as AuthRequest).user;
+        if (!user) {
+          res.status(401).json({ message: 'Usuario no autenticado' });
+          return;
         }
-    };
-
-    update = async (req: AuthRequest, res: Response): Promise<void> => {
+        const body = req.body;
+    
         try {
-            const userId = req.user?.id;
+          const newMovement = await this.projectedMovementService.createProjectedMovement({
+            userId: user.id,
+            planId: user.planId,
+            categoryId: body.categoryId,
+            cardId: body.cardId,
+            amount: body.amount,
+            description: body.description,
+            movementType: body.movementType,
+            expectedDate: body.expectedDate,
+            probability: body.probability,
+            recurrenceType: body.recurrenceType
+          });
+          res.status(201).json(newMovement);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Error desconocido';
+          res.status(403).json({ message });
+        }
+      };
+
+    public update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
@@ -159,9 +157,9 @@ export class ProjectedMovementController {
         }
     };
 
-    delete = async (req: AuthRequest, res: Response): Promise<void> => {
+    public delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;

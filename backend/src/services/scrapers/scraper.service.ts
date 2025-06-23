@@ -1,5 +1,7 @@
 // import { Injectable } from '@nestjs/common'; // No es necesario para Express
 import { RedisService } from '../redis.service';
+import { PlanService } from '../plan.service';
+import { DatabaseError } from '../../utils/errors';
 // import { ConfigService } from '@nestjs/config'; // No se usa directamente, usamos process.env si es necesario
 import { v4 as uuidv4 } from 'uuid';
 
@@ -23,12 +25,50 @@ export interface ScraperTask {
 
 // @Injectable() // No es necesario para Express
 export class ScraperService {
+  private planService: PlanService;
+
   constructor(
     private readonly redisService: RedisService,
     // private readonly configService: ConfigService // Quitar si no se usa directamente aquí
-  ) {}
+  ) {
+    this.planService = new PlanService();
+  }
 
-  async createTask(data: { userId: number; type: string; data?: any }): Promise<ScraperTask> {
+  // Verificar límites de uso del scraper
+  private async checkScraperLimits(userId: number, planId: number): Promise<void> {
+    const limits = await this.planService.getLimitsForPlan(planId);
+    const maxScrapes = limits.monthly_scrapes || 0; // Por defecto 0 si no está definido
+
+    if (maxScrapes === -1) {
+      return; // Ilimitado
+    }
+
+    const currentMonth = new Date();
+    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    
+    const tasks = await this.getAllTasks(userId);
+    const monthlyTasks = tasks.filter(task => 
+      new Date(task.createdAt) >= startOfMonth
+    );
+
+    if (monthlyTasks.length >= maxScrapes) {
+      throw new DatabaseError(`Has alcanzado el límite de ${maxScrapes} sincronizaciones por mes para tu plan.`);
+    }
+  }
+
+  // Verificar permisos del scraper
+  private async checkScraperPermission(planId: number): Promise<void> {
+    const hasPermission = await this.planService.hasPermission(planId, 'scraper_access');
+    if (!hasPermission) {
+      throw new DatabaseError('Tu plan no incluye la funcionalidad de sincronización automática.');
+    }
+  }
+
+  async createTask(data: { userId: number; type: string; data?: any; planId: number }): Promise<ScraperTask> {
+    // Verificar permisos y límites antes de crear la tarea
+    await this.checkScraperPermission(data.planId);
+    await this.checkScraperLimits(data.userId, data.planId);
+
     const taskId = uuidv4();
     const task: ScraperTask = {
       id: taskId,

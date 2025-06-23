@@ -18,6 +18,7 @@ import {
   GridApi,
   GridReadyEvent,
   GridSizeChangedEvent,
+  RowSelectionModule,
   ModuleRegistry,
   themeQuartz,
   ValidationModule,
@@ -26,6 +27,7 @@ import {
 import { AddCashComponent } from './add-cash/add-cash.component';
 import { UploadStatementComponent } from './upload-statement/upload-statement.component';
 import { MatIconModule } from '@angular/material/icon';
+import { FeatureControlDirective } from '../../shared/directives/feature-control.directive';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -34,6 +36,7 @@ ModuleRegistry.registerModules([
   ClientSideRowModelApiModule,
   ValidationModule,
   PaginationModule,
+  RowSelectionModule,
 ]);
 @Component({
   selector: 'app-movements',
@@ -48,7 +51,8 @@ ModuleRegistry.registerModules([
     HttpClientModule,
     MatProgressSpinnerModule,
     MatDialogModule,
-    MatIconModule
+    MatIconModule,
+    FeatureControlDirective
   ]
 })
 export class MovementsComponent implements OnInit {

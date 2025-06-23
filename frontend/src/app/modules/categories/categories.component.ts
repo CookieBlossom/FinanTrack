@@ -3,9 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { CategoryService } from '../../services/category.service';
 import { Category, CategoryExpense } from '../../models/category.model';
 import { ColorPickerCellRendererComponent } from './color-picker-cell-editor.component.ts';
+import { PlanLimitsService } from '../../services/plan-limits.service';
+import { FeatureControlService } from '../../services/feature-control.service';
+import { PLAN_LIMITS } from '../../models/plan.model';
+import { LimitNotificationComponent, LimitNotificationData } from '../../shared/components/limit-notification/limit-notification.component';
 import {
   ColDef,
   GridReadyEvent,
@@ -52,7 +58,15 @@ ModuleRegistry.registerModules([
   templateUrl: './categories.component.html',
   styleUrls: ['./categories.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, NgxChartsModule, ColorPickerCellRendererComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    AgGridModule, 
+    NgxChartsModule, 
+    MatIconModule, 
+    MatButtonModule,
+    LimitNotificationComponent
+  ],
 })
 export class CategoriesComponent implements OnInit {
   chartView: [number, number] = [window.innerWidth * 0.35, window.innerHeight * 0.4];
@@ -60,6 +74,21 @@ export class CategoriesComponent implements OnInit {
   gridContext = { componentParent: this };
   gastoTarjeta: any[] = [];
   gastoEfectivo: any[] = [];
+
+  // Variables para límites del plan
+  keywordsLimit: number = 5;
+  currentPlanName: string = 'free';
+
+  // Variables para notificaciones
+  showLimitNotification = false;
+  limitNotificationData: LimitNotificationData = {
+    type: 'warning',
+    title: '',
+    message: '',
+    limit: 0,
+    current: 0,
+    showUpgradeButton: false
+  };
 
   paginationPageSize = 10;
   paginationPageSizeSelector = [10, 25, 50, 100];
@@ -137,11 +166,49 @@ export class CategoriesComponent implements OnInit {
     this.chartView = [width, height];
   }
 
-  constructor(private categoryService: CategoryService) {}
+  constructor(
+    private categoryService: CategoryService,
+    private planLimitsService: PlanLimitsService,
+    private featureControlService: FeatureControlService
+  ) {}
 
   ngOnInit() {
     this.onResize();
     this.loadCategories();
+    this.loadPlanInfo();
+  }
+
+  loadPlanInfo(): void {
+    // Cargar información del plan actual
+    this.featureControlService.featureControl$.subscribe(control => {
+      if (control) {
+        this.currentPlanName = control.planName;
+      }
+    });
+
+    // Cargar límite de keywords
+    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.KEYWORDS_PER_CATEGORY).subscribe({
+      next: (limitStatus) => {
+        this.keywordsLimit = limitStatus.limit;
+      },
+      error: (error) => {
+        console.error('Error al cargar límite de keywords:', error);
+        this.keywordsLimit = 5; // Límite por defecto
+      }
+    });
+  }
+
+  upgradePlan(): void {
+    window.location.href = '/plans';
+  }
+
+  displayLimitNotification(data: LimitNotificationData): void {
+    this.limitNotificationData = data;
+    this.showLimitNotification = true;
+  }
+
+  hideLimitNotification(): void {
+    this.showLimitNotification = false;
   }
 
   loadCategories(): void {
@@ -221,15 +288,48 @@ export class CategoriesComponent implements OnInit {
     const categoryId = event.data.id;
     if (event.colDef.field === 'keywords') {
       const newKeywords = event.data.keywords;
+      
+      // Verificar límite antes de guardar
+      if (Array.isArray(newKeywords) && newKeywords.length > this.keywordsLimit) {
+        this.displayLimitNotification({
+          type: 'error',
+          title: 'Límite de Keywords Alcanzado',
+          message: `Has alcanzado el límite de ${this.keywordsLimit} keywords por categoría. Actualiza tu plan para agregar más keywords.`,
+          limit: this.keywordsLimit,
+          current: newKeywords.length,
+          showUpgradeButton: true
+        });
+        
+        // Revertir el cambio en la UI
+        event.api.undoCellEditing();
+        return;
+      }
+      
       this.categoryService.updateUserCategoryKeywords(categoryId, newKeywords).subscribe({
-        next: () => alert('Palabras clave actualizadas'),
-        error: () => alert('Error al actualizar palabras clave')
+        next: () => {
+          console.log('Palabras clave actualizadas correctamente');
+          // Opcional: mostrar notificación de éxito
+        },
+        error: (error) => {
+          console.error('Error al actualizar palabras clave:', error);
+          this.displayLimitNotification({
+            type: 'error',
+            title: 'Error al Actualizar',
+            message: 'Error al actualizar palabras clave. Por favor, inténtalo de nuevo.',
+            limit: this.keywordsLimit,
+            current: newKeywords.length,
+            showUpgradeButton: false
+          });
+          
+          // Revertir el cambio en la UI en caso de error
+          event.api.undoCellEditing();
+        }
       });
     }
     if (event.colDef.field === 'color') {
       const newColor = event.data.color;
       this.categoryService.updateCategoryColor(categoryId, newColor).subscribe({
-        next: () => alert('Color actualizado'),
+        next: () => console.log('Color actualizado'),
         error: () => alert('Error al actualizar color')
       });
     }

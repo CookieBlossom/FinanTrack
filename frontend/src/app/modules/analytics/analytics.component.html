@@ -1,6 +1,16 @@
 <div class="container-analytics">
     <div class="chart-wrapper" #chartWrapper>
-      <h2>Análisis de Ingresos y Costos</h2>
+      <div class="chart-header">
+        <h2>Análisis de Ingresos y Costos</h2>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="exportData()"
+          *appFeatureControl="'canExportData'">
+          <mat-icon>download</mat-icon>
+          Exportar Datos
+        </button>
+      </div>
       <div class="chart-container" #chartContainer>
         <!-- Estado de carga -->
         <div *ngIf="isLoading" class="loading-state">

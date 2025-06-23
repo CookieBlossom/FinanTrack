@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { CardTypeService } from '../services/cardType.service';
 import { DatabaseError } from '../utils/errors';
 import { cardTypeSchema, cardTypeUpdateSchema } from '../validators/cardTypeSchema';
@@ -10,7 +10,7 @@ export class CardTypeController {
     this.cardTypeService = new CardTypeService();
   }
 
-  public getAllCardTypes = async (req: Request, res: Response) => {
+  public getAllCardTypes = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const types = await this.cardTypeService.getAllCardTypes();
       res.json(types);
@@ -19,7 +19,7 @@ export class CardTypeController {
     }
   };
 
-  public getCardTypeById = async (req: Request, res: Response): Promise<void> => {
+  public getCardTypeById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -38,7 +38,7 @@ export class CardTypeController {
     }
   };
 
-  public createCardType = async (req: Request, res: Response): Promise<void> => {
+  public createCardType = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const validatedData = cardTypeSchema.parse(req.body);
       const cardType = await this.cardTypeService.createCardType(validatedData);
@@ -60,7 +60,7 @@ export class CardTypeController {
     }
   };
 
-  public updateCardType = async (req: Request, res: Response): Promise<void> => {
+  public updateCardType = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -88,7 +88,7 @@ export class CardTypeController {
     }
   };
 
-  public deleteCardType = async (req: Request, res: Response): Promise<void> => {
+  public deleteCardType = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {

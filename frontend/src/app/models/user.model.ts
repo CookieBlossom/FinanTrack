@@ -7,6 +7,8 @@ export interface User {
   phone: string;
   role: string;
   isActive: boolean;
+  planId: number;
+  planName: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,4 +49,12 @@ export interface ApiResponse<T> {
 export interface AuthResponse extends ApiResponse<{ token: string; user: User }> {
   token: string;
   user: User;
+}
+
+export interface UserUpdateRequest {
+  firstName?: string;
+  lastName?: string;
+  countryCode?: string;
+  phone?: string;
+  planId?: number;
 } 

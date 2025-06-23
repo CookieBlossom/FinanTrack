@@ -5,12 +5,12 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { initializeDatabase, pool } from './config/database/connection';
 import router from './routes/index';
-
 // Cargar variables de entorno
 dotenv.config();
 console.log('Variables de entorno cargadas');
 console.log('Puerto configurado:', process.env.PORT || 3000);
 console.log('Base de datos:', process.env.DB_NAME || 'finantrack');
+
 
 const app = express();
 
@@ -18,9 +18,14 @@ const app = express();
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:4200',
     methods: ['GET', 'HEAD', 'PATCH' ,'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires'],
     credentials: true
 }));
+
+// Middleware para manejar el body raw de Stripe webhook
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+
+// Middleware para JSON en todas las demás rutas
 app.use(express.json());
 
 // Rutas de la API

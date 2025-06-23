@@ -11,13 +11,14 @@ export class BancoEstadoService {
         private readonly scraperService: ScraperService,
     ) {}
 
-    async executeScraperTask(userId: number, credentials: { rut: string; password: string }): Promise<{ taskId: string }> {
+    async executeScraperTask(userId: number, credentials: { rut: string; password: string; planId: number }): Promise<{ taskId: string }> {
         try {
             // Crear la tarea usando el ScraperService
             const task = await this.scraperService.createTask({
                 userId,
                 type: 'banco-estado',
-                data: credentials
+                data: credentials,
+                planId: credentials.planId
             });
 
             // Crear la tarea en Redis con el formato que espera el scraper

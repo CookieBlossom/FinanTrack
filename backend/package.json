@@ -8,7 +8,8 @@
     "dev": "nodemon --exec ts-node src/app.ts",
     "build": "tsc",
     "test": "jest",
-    "db:reset": "psql -U postgres -d finantrack -f src/config/database/schema.sql"
+    "db:reset": "psql -U postgres -d finantrack -f src/config/database/schema.sql",
+    "stripe:test": "node src/test-stripe-connection.js"
   },
   "keywords": [],
   "author": "",
@@ -36,6 +37,7 @@
     "pg-hstore": "^2.3.4",
     "redis": "^4.7.1",
     "reflect-metadata": "^0.2.2",
+    "stripe": "^18.2.1",
     "typeorm": "^0.3.24",
     "typescript": "^5.0.3",
     "uuid": "^11.1.0",
@@ -53,6 +55,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.6.6",
+    "axios": "^1.6.0",
     "jest": "^29.5.0",
     "nodemon": "^2.0.22",
     "ts-jest": "^29.1.0",

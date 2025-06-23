@@ -1,17 +1,15 @@
 import { Router } from 'express';
 import { ProjectedMovementController } from '../controllers/ProjectedMovementController';
-import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
-const projectedMovementController = new ProjectedMovementController();
+const controller = new ProjectedMovementController();
 
-// Aplicar middleware de autenticación a todas las rutas
-router.use(authMiddleware);
-router.get('/', projectedMovementController.getAll);
-router.get('/filter', projectedMovementController.getByFilters);
-router.get('/:id', projectedMovementController.getById);
-router.post('/', projectedMovementController.create);
-router.put('/:id', projectedMovementController.update);
-router.delete('/:id', projectedMovementController.delete);
+// Las rutas aquí ya están protegidas por authMiddleware desde routes/index.ts
+router.get('/', controller.getAll);
+router.get('/filter', controller.getByFilters);
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.delete);
 
 export default router; 

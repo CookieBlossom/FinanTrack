@@ -3,8 +3,11 @@ import { CommonModule } from '@angular/common';
 import { LegendPosition, NgxChartsModule, ScaleType } from '@swimlane/ngx-charts';
 import { AgGridModule } from 'ag-grid-angular';
 import { MatDialog } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { curveLinear } from 'd3-shape';
 import { AnalyticsService, AnalyticsData } from '../../services/analytics.service';
+import { FeatureControlDirective } from '../../shared/directives/feature-control.directive';
 
 interface ChartDataPoint {
     name: string;
@@ -29,7 +32,14 @@ interface SpendingLimit {
     standalone: true,
     templateUrl: './analytics.component.html',
     styleUrls: ['./analytics.component.css'],
-    imports: [CommonModule, NgxChartsModule, AgGridModule],
+    imports: [
+        CommonModule, 
+        NgxChartsModule, 
+        AgGridModule, 
+        MatButtonModule, 
+        MatIconModule, 
+        FeatureControlDirective
+    ],
 })
 export class AnalyticsComponent implements AfterViewInit, OnInit {
     @ViewChild('chartContainer') chartContainerRef!: ElementRef<HTMLDivElement>;
@@ -218,6 +228,12 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
             return 'No hay datos';
         }
         return new Date(value).toLocaleDateString('es-ES');
+    }
+
+    exportData(): void {
+        // Implementar lógica de exportación
+        console.log('Exportando datos de analytics...');
+        // Aquí se podría implementar la lógica para exportar a CSV, Excel, etc.
     }
 }
 

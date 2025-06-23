@@ -1,64 +1,137 @@
 <div class="card-panel-container">
+  <!-- Header con estadísticas -->
   <div class="card-header">
-    <h2><mat-icon color="primary" style="vertical-align: middle;">credit_card</mat-icon> Mis Tarjetas</h2>
-    <div class="actions">
-      <button mat-raised-button color="primary" (click)="openAddCardDialog()">
-        <mat-icon>add</mat-icon>
-        Agregar Tarjeta
-      </button>
-      <button mat-raised-button color="accent" (click)="syncCard()">
-        <mat-icon>sync</mat-icon>
-        Sincronizar
-      </button>
+    <div class="header-content">
+      <div class="title-section">
+        <h2><mat-icon color="primary" style="vertical-align: middle;">credit_card</mat-icon> Mis Tarjetas</h2>
+        <div class="card-stats" *ngIf="limitsInfo">
+          <span class="stat-item">
+            <mat-icon>credit_card</mat-icon>
+            {{ limitsInfo.max_cards?.used || 0 }}/{{ limitsInfo.max_cards?.limit || 0 }} tarjetas
+          </span>
+        </div>
+      </div>
+      <div class="actions">
+        <button 
+          mat-icon-button 
+          color="primary" 
+          (click)="forceRefresh()"
+          [disabled]="loading"
+          matTooltip="Recargar datos">
+          <mat-icon>{{ loading ? 'hourglass_empty' : 'refresh' }}</mat-icon>
+        </button>
+        <button mat-raised-button color="primary" (click)="openAddCardDialog()">
+          <mat-icon>add</mat-icon>
+          Agregar Tarjeta
+        </button>
+        <button 
+          mat-raised-button 
+          color="accent" 
+          (click)="syncCard()"
+          [disabled]="syncing"
+          *appFeatureControl="'canUseScraper'">
+          <mat-icon>{{ syncing ? 'hourglass_empty' : 'sync' }}</mat-icon>
+          {{ syncing ? 'Sincronizando...' : 'Sincronizar' }}
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="card-dashboard-content">
-    <!-- Carrusel tarjetas -->
-    <div class="carousel-section-vertical">
-      <div class="card-carousel-vertical">
-        <mat-card *ngFor="let card of visibleCards" class="carousel-card">
-          <mat-card-header>
-            <mat-card-title>{{ card.nameAccount }}</mat-card-title>
-            <mat-card-subtitle *ngIf="card.aliasAccount">{{ card.aliasAccount }}</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="balance">{{ getCardBalance(card) | currency:'CLP' }}</div>
-          </mat-card-content>
-          <mat-card-actions align="end">
-            <button mat-icon-button color="primary" (click)="editCard(card)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" (click)="deleteCard(card.id, card.nameAccount)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      </div>
+  <!-- Loading spinner -->
+  <div class="loading-container" *ngIf="loading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Cargando tarjetas...</p>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-container" *ngIf="error && !loading">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-button color="primary" (click)="retryLoad()">
+      <mat-icon>refresh</mat-icon>
+      Reintentar
+    </button>
+  </div>
+
+  <!-- Main content -->
+  <div class="card-dashboard-content" *ngIf="!loading">
+    <!-- Estado vacío -->
+    <div class="empty-state" *ngIf="!error && !hasCards()">
+      <mat-icon>credit_card_off</mat-icon>
+      <h3>No tienes tarjetas registradas</h3>
+      <p>Agrega tu primera tarjeta para comenzar a gestionar tus finanzas</p>
+      <button mat-raised-button color="primary" (click)="openAddCardDialog()">
+        <mat-icon>add</mat-icon>
+        Agregar Primera Tarjeta
+      </button>
     </div>
 
-    <!-- Panel lateral: total + gráfico -->
-    <div class="summary-section">
-      <mat-card class="summary-card">
-        <mat-card-title>Total en tarjetas activas</mat-card-title>
-        <mat-card-content>
-          <h2>{{ getTotalBalance() | currency:'CLP' }}</h2>
-        </mat-card-content>
-      </mat-card>
-      <div class="chart-container" *ngIf="getPieChartData().length > 0; else emptyChart">
-        <ngx-charts-pie-chart
-          [results]="getPieChartData()"
-          [view]="[380, 280]"
-          [legend]="true"
-          [doughnut]="true"
-          [labels]="true"
-          [explodeSlices]="false"
-          [animations]="true">
-        </ngx-charts-pie-chart>
+    <!-- Contenido con tarjetas -->
+    <div class="cards-content" *ngIf="!error && hasCards()">
+      <!-- Carrusel de tarjetas -->
+      <div class="carousel-section">
+        <h3 class="section-title">Tus Tarjetas</h3>
+        <div class="card-carousel">
+          <mat-card *ngFor="let card of visibleCards" class="carousel-card">
+            <mat-card-header>
+              <mat-card-title>{{ card.nameAccount }}</mat-card-title>
+              <mat-card-subtitle *ngIf="card.aliasAccount">{{ card.aliasAccount }}</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="balance" [class.negative]="getCardBalance(card) < 0">
+                {{ getCardBalance(card) | currency:'CLP' }}
+              </div>
+              <div class="card-status" [class.active]="card.statusAccount === 'active'">
+                {{ card.statusAccount === 'active' ? 'Activa' : 'Inactiva' }}
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-icon-button color="primary" (click)="editCard(card)" matTooltip="Editar tarjeta">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteCard(card.id, card.nameAccount)" matTooltip="Eliminar tarjeta">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </div>
       </div>
-      <ng-template #emptyChart>
-        <p class="no-data">No hay suficiente información para mostrar el gráfico.</p>
-      </ng-template>
+
+      <!-- Panel lateral: total + gráfico -->
+      <div class="summary-section">
+        <div class="total-balance">
+          <h3>Total en tarjetas activas</h3>
+          <div class="amount" [class.negative]="getTotalBalance() < 0">
+            {{ getTotalBalance() | currency:'CLP':'symbol':'1.0-0' }}
+          </div>
+        </div>
+        
+        <!-- Gráfico solo si hay datos -->
+        <div class="chart-container" *ngIf="hasChartData(); else emptyChart">
+          <h3 class="chart-title">Distribución de saldos por tarjeta</h3>
+          <div class="chart-wrapper">
+            <ngx-charts-pie-chart
+              [results]="getPieChartData()"
+              [view]="chartView"
+              [legend]="true"
+              [doughnut]="true"
+              [labels]="false"
+              [explodeSlices]="false"
+              [animations]="true"
+              [scheme]="colorScheme"
+              [tooltipDisabled]="false"
+              [legendTitle]="'Tarjetas'">
+            </ngx-charts-pie-chart>
+          </div>
+        </div>
+        <ng-template #emptyChart>
+          <div class="empty-chart">
+            <mat-icon>pie_chart</mat-icon>
+            <p>No hay datos suficientes para mostrar el gráfico</p>
+            <small>Agrega tarjetas con saldo para ver la distribución</small>
+          </div>
+        </ng-template>
+      </div>
     </div>
   </div>
 </div>

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../interfaces/AuthRequest';
 import { validateRut } from '../utils/validators';
 import { BancoEstadoService } from '../services/scrapers/banco-estado/banco-estado.service';
@@ -21,10 +21,10 @@ export class ScraperController {
   /**
    * Crea una nueva tarea de scraping para Banco Estado
    */
-  public createTask = async (req: AuthRequest, res: Response): Promise<Response> => {
+  public createTask = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const user = (req as AuthRequest).user;
+      if (!user) {
         return res.status(401).json({ success: false, message: 'Usuario no autorizado' });
       }
 
@@ -66,7 +66,7 @@ export class ScraperController {
       let taskResponse;
       if (site.toLowerCase() === 'banco-estado') {
         console.log('Ejecutando tarea para Banco Estado');
-        taskResponse = await this.bancoEstadoService.executeScraperTask(userId, { rut, password });
+        taskResponse = await this.bancoEstadoService.executeScraperTask(user.id, { rut, password, planId: user.planId });
         console.log('Respuesta de la tarea:', { taskId: taskResponse?.taskId });
       } else {
         console.warn(`[ScraperController] Intento de crear tarea para sitio no implementado: ${site}`);
@@ -90,9 +90,9 @@ export class ScraperController {
   /**
    * Obtiene el estado de una tarea específica
    */
-  public getTaskStatus = async (req: AuthRequest, res: Response): Promise<Response> => {
+  public getTaskStatus = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
     try {
-      const userId = req.user?.id; 
+      const userId = (req as AuthRequest).user?.id; 
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Usuario no autorizado' });
       }
@@ -119,9 +119,9 @@ export class ScraperController {
   /**
    * Cancela una tarea específica
    */
-  public cancelTask = async (req: AuthRequest, res: Response): Promise<Response> => {
+  public cancelTask = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
     try {
-      const userId = req.user?.id; 
+      const userId = (req as AuthRequest).user?.id; 
       if (!userId) {
         return res.status(401).json({ success: false, message: 'Usuario no autorizado' });
       }

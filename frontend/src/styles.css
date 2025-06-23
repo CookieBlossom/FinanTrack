@@ -22,6 +22,32 @@ body{
 
   --color-text: #000000;
   --color-text-inverse: #ffffff;
+  --color-text-muted: #6c757d;
+  --color-border: #e9ecef;
+  --color-error: #dc3545;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-info: #17a2b8;
+
+  /* Variables para errores y notificaciones */
+  --clr-error-a10: rgba(220, 53, 69, 0.1);
+  --clr-error-a20: rgba(220, 53, 69, 0.2);
+  --clr-success-a10: rgba(40, 167, 69, 0.1);
+  --clr-warning-a10: rgba(255, 193, 7, 0.1);
+
+  /* Variables adicionales para componentes */
+  --color-text-secondary: #6c757d;
+  --color-success-600: #28a745;
+  --color-danger-600: #dc3545;
+  --color-primary-600: #a84f68;
+  --clr-primary-50: rgba(168, 79, 104, 0.1);
+  --clr-primary-100: rgba(168, 79, 104, 0.2);
+  --clr-primary-200: rgba(168, 79, 104, 0.3);
+  --clr-danger-50: rgba(220, 53, 69, 0.1);
+  --clr-danger-100: rgba(220, 53, 69, 0.2);
+  --clr-danger-200: rgba(220, 53, 69, 0.3);
+  --clr-danger-700: #dc3545;
+  --clr-surface-a5: rgba(255, 255, 255, 0.05);
 
   --font-size-xxs: 0.5rem;
   --font-size-xs: 0.70rem;
@@ -57,11 +83,76 @@ body{
 
   --color-text: #ffffff;
   --color-text-inverse: #000000;
+  --color-text-muted: #adb5bd;
+  --color-border: #495057;
+  --color-error: #ff6b6b;
+  --color-success: #51cf66;
+  --color-warning: #ffd43b;
+  --color-info: #74c0fc;
+
+  /* Variables para errores y notificaciones */
+  --clr-error-a10: rgba(255, 107, 107, 0.1);
+  --clr-error-a20: rgba(255, 107, 107, 0.2);
+  --clr-success-a10: rgba(81, 207, 102, 0.1);
+  --clr-warning-a10: rgba(255, 212, 59, 0.1);
+
+  /* Variables adicionales para componentes */
+  --color-text-secondary: #adb5bd;
+  --color-success-600: #51cf66;
+  --color-danger-600: #ff6b6b;
+  --color-primary-600: #dc59ac;
+  --clr-primary-50: rgba(220, 89, 172, 0.1);
+  --clr-primary-100: rgba(220, 89, 172, 0.2);
+  --clr-primary-200: rgba(220, 89, 172, 0.3);
+  --clr-danger-50: rgba(255, 107, 107, 0.1);
+  --clr-danger-100: rgba(255, 107, 107, 0.2);
+  --clr-danger-200: rgba(255, 107, 107, 0.3);
+  --clr-danger-700: #ff6b6b;
+  --clr-surface-a5: rgba(0, 0, 0, 0.05);
 }
 
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Estilos globales para mejorar la apariencia */
+* {
+  box-sizing: border-box;
+}
+
+/* Mejoras para Material Design */
+.mat-mdc-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mat-mdc-button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+.mat-mdc-raised-button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+/* Mejoras para iconos */
+mat-icon {
+  font-size: 1.2em !important;
+  width: 1.2em !important;
+  height: 1.2em !important;
+}
+
+/* Mejoras para tooltips */
+.mat-mdc-tooltip {
+  font-size: 0.875rem !important;
+  border-radius: 6px !important;
+}
+
+/* Mejoras para snackbars */
+.mat-mdc-snack-bar-container {
+  border-radius: 8px !important;
+}
 
 .custom-dialog .mat-mdc-dialog-container {
   padding: 0;
@@ -71,4 +162,23 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   padding: 0;
   border-radius: 8px;
   overflow: hidden;
+}
+
+/* Modal de pantalla completa */
+.full-screen-dialog .mat-mdc-dialog-container {
+  padding: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.full-screen-dialog .mat-mdc-dialog-surface {
+  padding: 0;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.full-screen-dialog .cdk-overlay-pane {
+  max-width: none !important;
+  max-height: none !important;
 }

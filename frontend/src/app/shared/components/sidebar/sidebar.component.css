@@ -2,6 +2,7 @@
 :host {
   display: grid;
   grid-template-rows: 10% 70% 20%;
+  justify-content: center;
   height: 100%;
   min-width: 0;
   min-height: 0;
@@ -21,7 +22,7 @@
 }
 
 .brand-name {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: bold;
   color: var(--color-text);
   overflow: hidden;
@@ -38,6 +39,7 @@
 .menu-items {
   display: flex;
   flex-direction: column;
+  justify-content: space-evenly;
   overflow-x: hidden;
 }
 
@@ -49,13 +51,42 @@
 }
 
 /* Links */
-a {
+.menu-item {
   overflow: hidden;
   text-overflow: ellipsis;
+  text-decoration: none;
   white-space: nowrap;
   text-align: center;
+  font-size: var(--font-size-xs);
   padding: 0px;
   color: var(--color-text);
+}
+
+/* Opciones premium */
+.menu-item.premium {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #8B2635 0%, #6B1E2A 100%);
+  color: white;
+  border-radius: 8px;
+  margin: 4px 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.menu-item.premium:hover {
+  background: linear-gradient(135deg, #6B1E2A 0%, #4A1520 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(139, 38, 53, 0.3);
+}
+
+.menu-item.premium mat-icon {
+  color: white;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 
 /* Forzar el color de los list items */

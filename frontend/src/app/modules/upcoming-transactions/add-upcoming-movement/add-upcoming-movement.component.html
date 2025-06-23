@@ -1,0 +1,195 @@
+<div class="dialog-container">
+  <div class="form-section">
+    <div class="form-header">
+      <button class="close-button" (click)="onCancel()">
+        <span class="close-icon">×</span>
+      </button>
+      <h3>Agregar Movimiento Futuro</h3>
+    </div>
+    
+    <div class="form-body">
+      <!-- Tabs de navegación -->
+      <div class="tab-navigation">
+        <button 
+          class="tab-button" 
+          [class.active]="activeTab === 'single'"
+          (click)="setActiveTab('single')">
+          <span class="tab-icon">📅</span>
+          <span class="tab-text">Movimiento Único</span>
+        </button>
+        <button 
+          class="tab-button" 
+          [class.active]="activeTab === 'recurring'"
+          (click)="setActiveTab('recurring')">
+          <span class="tab-icon">🔄</span>
+          <span class="tab-text">Recurrente</span>
+        </button>
+      </div>
+
+      <!-- Formulario -->
+      <form [formGroup]="upcomingForm" (ngSubmit)="onSubmit()" class="upcoming-form">
+        <!-- Descripción -->
+        <div class="form-group">
+          <label class="form-label">Descripción *</label>
+          <input 
+            type="text" 
+            placeholder="Ej: Pago de luz, Netflix, Salario, etc." 
+            class="form-input"
+            formControlName="description"
+            [class.is-invalid]="upcomingForm.get('description')?.invalid && upcomingForm.get('description')?.touched">
+          <div class="error-message" *ngIf="upcomingForm.get('description')?.invalid && upcomingForm.get('description')?.touched">
+            <span *ngIf="upcomingForm.get('description')?.errors?.['required']">La descripción es requerida</span>
+            <span *ngIf="upcomingForm.get('description')?.errors?.['minlength']">La descripción debe tener al menos 3 caracteres</span>
+          </div>
+        </div>
+
+        <!-- Tipo de movimiento -->
+        <div class="form-group">
+          <label class="form-label">Tipo de movimiento *</label>
+          <div class="radio-group">
+            <label class="radio-option" *ngFor="let type of movementTypes">
+              <input 
+                type="radio" 
+                [value]="type.value"
+                formControlName="movementType"
+                class="radio-input">
+              <span class="radio-icon">{{ type.icon }}</span>
+              <span class="radio-label">{{ type.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Monto -->
+        <div class="form-group">
+          <label class="form-label">Monto *</label>
+          <div class="amount-container">
+            <span class="currency-symbol">$</span>
+            <input 
+              type="number" 
+              placeholder="0" 
+              class="form-input amount-input"
+              formControlName="amount"
+              min="1"
+              [class.is-invalid]="upcomingForm.get('amount')?.invalid && upcomingForm.get('amount')?.touched">
+          </div>
+          <div class="error-message" *ngIf="upcomingForm.get('amount')?.invalid && upcomingForm.get('amount')?.touched">
+            <span *ngIf="upcomingForm.get('amount')?.errors?.['required']">El monto es requerido</span>
+            <span *ngIf="upcomingForm.get('amount')?.errors?.['min']">El monto debe ser mayor a 0</span>
+          </div>
+        </div>
+
+        <!-- Fecha esperada -->
+        <div class="form-group">
+          <label class="form-label">Fecha esperada *</label>
+          <input 
+            type="date" 
+            class="form-input"
+            formControlName="expectedDate"
+            [class.is-invalid]="upcomingForm.get('expectedDate')?.invalid && upcomingForm.get('expectedDate')?.touched">
+          <div class="error-message" *ngIf="upcomingForm.get('expectedDate')?.invalid && upcomingForm.get('expectedDate')?.touched">
+            <span *ngIf="upcomingForm.get('expectedDate')?.errors?.['required']">La fecha es requerida</span>
+          </div>
+        </div>
+
+        <!-- Categoría -->
+        <div class="form-group">
+          <label class="form-label">Categoría (opcional)</label>
+          <select 
+            class="form-select"
+            formControlName="categoryId">
+            <option value="">Seleccionar categoría</option>
+            <option *ngFor="let category of categories" [value]="category.id">
+              {{ category.name_category }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Tarjeta -->
+        <div class="form-group">
+          <label class="form-label">Tarjeta (opcional)</label>
+          <select 
+            class="form-select"
+            formControlName="cardId">
+            <option value="">Seleccionar tarjeta</option>
+            <option *ngFor="let card of cards" [value]="card.id">
+              {{ card.nameAccount }} {{ card.aliasAccount ? '(' + card.aliasAccount + ')' : '' }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Probabilidad -->
+        <div class="form-group">
+          <label class="form-label">Probabilidad *</label>
+          <select 
+            class="form-select"
+            formControlName="probability"
+            [class.is-invalid]="upcomingForm.get('probability')?.invalid && upcomingForm.get('probability')?.touched">
+            <option *ngFor="let option of probabilityOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="upcomingForm.get('probability')?.invalid && upcomingForm.get('probability')?.touched">
+            <span *ngIf="upcomingForm.get('probability')?.errors?.['required']">La probabilidad es requerida</span>
+          </div>
+        </div>
+
+        <!-- Tipo de recurrencia (solo para tab recurrente) -->
+        <div class="form-group" *ngIf="activeTab === 'recurring'">
+          <label class="form-label">Tipo de recurrencia *</label>
+          <select 
+            class="form-select"
+            formControlName="recurrenceType"
+            [class.is-invalid]="upcomingForm.get('recurrenceType')?.invalid && upcomingForm.get('recurrenceType')?.touched">
+            <option *ngFor="let recurrence of recurrenceTypes" [value]="recurrence.value">
+              {{ recurrence.label }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="upcomingForm.get('recurrenceType')?.invalid && upcomingForm.get('recurrenceType')?.touched">
+            <span *ngIf="upcomingForm.get('recurrenceType')?.errors?.['required']">El tipo de recurrencia es requerido</span>
+          </div>
+        </div>
+
+        <!-- Botón de envío -->
+        <button 
+          type="submit" 
+          class="submit-button"
+          [disabled]="upcomingForm.invalid || isLoading">
+          <span *ngIf="!isLoading">Agregar Movimiento Futuro</span>
+          <span *ngIf="isLoading" class="loading">
+            <span class="spinner"></span>
+            Agregando...
+          </span>
+        </button>
+      </form>
+    </div>
+    
+    <div class="form-footer"></div>
+  </div>
+
+  <!-- Sección de información a la derecha -->
+  <div class="info-section">
+    <div class="info-content">
+      <div class="info-icon">🔮</div>
+      <h1 class="info-title">MOVIMIENTOS FUTUROS</h1>
+      <p class="info-description">Planifica y anticipa tus finanzas con movimientos futuros inteligentes</p>
+      <div class="info-features">
+        <div class="feature">
+          <span class="feature-icon">📊</span>
+          <span class="feature-text">Planificación financiera avanzada</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🔄</span>
+          <span class="feature-text">Movimientos recurrentes automáticos</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🎯</span>
+          <span class="feature-text">Control de probabilidades</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">📈</span>
+          <span class="feature-text">Análisis predictivo</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

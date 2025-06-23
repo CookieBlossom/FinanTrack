@@ -1,14 +1,12 @@
-import { Response, NextFunction, RequestHandler } from 'express';
+import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { AuthRequest } from '../interfaces/AuthRequest';
 import { IUserToken } from '../interfaces/IUser';
-import { DatabaseError } from '../utils/errors';
 
-export const authMiddleware = async (
-  req: AuthRequest,
+export const authMiddleware = (
+  req: any,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+): void => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -26,7 +24,7 @@ export const authMiddleware = async (
     try {
       const decoded = jwt.verify(
         token,
-        process.env.JWT_SECRET || 'your-secret-key'
+        process.env.JWT_SECRET || '2004'
       ) as IUserToken
       // Asegurar que el token decodificado tenga un rol
       if (!decoded.role) {
@@ -36,6 +34,7 @@ export const authMiddleware = async (
         decoded.name = decoded.email;
       }
       
+      // Asignar el usuario al request
       req.user = decoded;
       next();
     } catch (error) {

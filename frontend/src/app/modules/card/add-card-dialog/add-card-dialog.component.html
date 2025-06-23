@@ -1,97 +1,175 @@
 <div class="dialog-container">
-  <h2 mat-dialog-title>Agregar Nueva Tarjeta</h2>
+  <h2 mat-dialog-title align="center">Agregar Nueva Tarjeta</h2>
+
+  <!-- Notificación de límites -->
+  <div class="limit-notification" *ngIf="showLimitNotification">
+    <app-limit-notification 
+      [data]="limitNotificationData"
+      (onClose)="hideLimitNotification()">
+    </app-limit-notification>
+  </div>
+
   <mat-tab-group>
-    <!-- Scraper Automático -->
-    <mat-tab label="Automático">
-      <form [formGroup]="cardForm" (ngSubmit)="onSubmitScraper()">
-        <div mat-dialog-content>
-          <div class="form-content">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Banco</mat-label>
-              <mat-select formControlName="bank">
-                <mat-option *ngFor="let bank of banks" [value]="bank.name">
-                  {{ bank.name }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>RUT</mat-label>
-              <input matInput formControlName="rut" placeholder="12.345.678-9" (input)="onRutInput($event)" [errorStateMatcher]="matcher">
-              <mat-error *ngIf="cardForm.get('rut')?.errors">
-                {{ getErrorMessage('rut') }}
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Contraseña</mat-label>
-              <input matInput type="password" formControlName="password" placeholder="Contraseña del banco">
-              <mat-error *ngIf="cardForm.get('password')?.errors">
-                {{ getErrorMessage('password') }}
-              </mat-error>
-            </mat-form-field>
-            <div *ngIf="loading" class="progress-container">
-              <mat-progress-bar mode="determinate" [value]="progress" *ngIf="progress > 0"></mat-progress-bar>
-              <mat-spinner diameter="30" *ngIf="progress === 0"></mat-spinner>
-              <p class="status-message">{{statusMessage || 'Sincronizando con el banco, por favor espera...'}}</p>
-              <p class="progress-message" *ngIf="progress > 0">Progreso: {{progress}}%</p>
-              <p class="info-message">Este proceso puede tardar varios minutos. No cierres esta ventana.</p>
-            </div>
-            <div *ngIf="error" class="error-message">
-              <mat-icon color="warn">error</mat-icon>
-              <span>{{ error }}</span>
-              <button mat-button color="primary" (click)="retrySync()" *ngIf="canRetry">
-                <mat-icon>refresh</mat-icon>
-                Reintentar
-              </button>
-            </div>
-          </div>
-        </div>
-        <div mat-dialog-actions align="end">
-          <button mat-button type="button" [disabled]="loading" (click)="onCancel()">Cancelar</button>
-          <button mat-raised-button color="primary" type="submit" [disabled]="cardForm.invalid || loading">
-            <mat-spinner diameter="20" *ngIf="loading"></mat-spinner>
-            <span *ngIf="!loading">Agregar Tarjeta</span>
-          </button>
-        </div>
-      </form>
-    </mat-tab>
-    <!-- Manual -->
-    <mat-tab label="Manual">
-      <form [formGroup]="manualForm" (ngSubmit)="onManualSubmit()" class="manual-form">
-        <div mat-dialog-content>
+    <!-- Pestaña Automático - Solo para planes premium -->
+    <mat-tab label="Automático" *ngIf="showAutomaticTab">
+      <div mat-dialog-content>
+        <form [formGroup]="cardForm" (ngSubmit)="onSubmitScraper()">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nombre de la tarjeta</mat-label>
-            <input matInput formControlName="nameAccount" placeholder="Ej: Cuenta Rut, Visa Entel, etc.">
+            <mat-label>Banco *</mat-label>
+            <mat-select formControlName="bank" required>
+              <mat-option value="">Seleccionar banco</mat-option>
+              <mat-option *ngFor="let bank of banks" [value]="bank.name">
+                {{ bank.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="cardForm.get('bank')?.hasError('required')">
+              El banco es requerido
+            </mat-error>
           </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>RUT *</mat-label>
+            <input matInput 
+                   placeholder="12.345.678-9" 
+                   formControlName="rut"
+                   (input)="onRutInput($event)"
+                   required />
+            <mat-error *ngIf="cardForm.get('rut')?.hasError('required')">
+              El RUT es requerido
+            </mat-error>
+            <mat-error *ngIf="cardForm.get('rut')?.hasError('invalidRut')">
+              RUT inválido
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Contraseña *</mat-label>
+            <input matInput 
+                   [type]="hidePassword ? 'password' : 'text'"
+                   placeholder="Contraseña del banco" 
+                   formControlName="password"
+                   required />
+            <button mat-icon-button 
+                    matSuffix 
+                    type="button"
+                    (click)="hidePassword = !hidePassword">
+              <mat-icon>{{ hidePassword ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="cardForm.get('password')?.hasError('required')">
+              La contraseña es requerida
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Estado de carga -->
+          <div *ngIf="loading" class="progress-container">
+            <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+            <p class="status-message">{{statusMessage || 'Sincronizando con el banco, por favor espera...'}}</p>
+            <p class="progress-message" *ngIf="progress > 0">Progreso: {{progress}}%</p>
+            <p class="info-message">Este proceso puede tardar varios minutos. No cierres esta ventana.</p>
+          </div>
+
+          <!-- Error -->
+          <div *ngIf="error" class="error-container">
+            <mat-icon class="error-icon">warning</mat-icon>
+            <span class="error-text">{{ error }}</span>
+            <button mat-raised-button 
+                    color="primary" 
+                    class="retry-button" 
+                    (click)="retrySync()" 
+                    *ngIf="canRetry">
+              <mat-icon>refresh</mat-icon>
+              Reintentar
+            </button>
+          </div>
+
+          <div mat-dialog-actions align="end">
+            <button mat-button type="button" (click)="onCancel()">Cancelar</button>
+            <button mat-raised-button 
+                    color="primary" 
+                    type="submit" 
+                    [disabled]="cardForm.invalid || loading">
+              <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+              <span *ngIf="!loading">Agregar Tarjeta</span>
+              <span *ngIf="loading">Sincronizando...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </mat-tab>
+
+    <!-- Pestaña Manual -->
+    <mat-tab label="Manual" *ngIf="showManualTab">
+      <div mat-dialog-content>
+        <form [formGroup]="manualForm" (ngSubmit)="onManualSubmit()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nombre de la tarjeta *</mat-label>
+            <input matInput 
+                   placeholder="Ej: Cuenta Rut, Visa Entel, etc." 
+                   formControlName="nameAccount"
+                   required />
+            <mat-error *ngIf="manualForm.get('nameAccount')?.hasError('required')">
+              El nombre es requerido
+            </mat-error>
+          </mat-form-field>
+
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Alias (opcional)</mat-label>
-            <input matInput formControlName="aliasAccount">
+            <input matInput 
+                   placeholder="Alias personalizado" 
+                   formControlName="aliasAccount" />
           </mat-form-field>
+
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Tipo de tarjeta</mat-label>
+            <mat-label>Tipo de tarjeta *</mat-label>
             <mat-select formControlName="cardTypeId" required>
-              <mat-option *ngFor="let type of cardTypes" [value]="type.id">{{ type.name }}</mat-option>
+              <mat-option value="">Seleccionar tipo</mat-option>
+              <mat-option *ngFor="let type of cardTypes" [value]="type.id">
+                {{ type.name }}
+              </mat-option>
             </mat-select>
+            <mat-error *ngIf="manualForm.get('cardTypeId')?.hasError('required')">
+              El tipo de tarjeta es requerido
+            </mat-error>
           </mat-form-field>
+
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Banco (opcional)</mat-label>
             <mat-select formControlName="bankId">
-              <mat-option *ngFor="let bank of banks" [value]="bank.id">{{ bank.name }}</mat-option>
+              <mat-option value="">Seleccionar banco</mat-option>
+              <mat-option *ngFor="let bank of banks" [value]="bank.id">
+                {{ bank.name }}
+              </mat-option>
             </mat-select>
           </mat-form-field>
+
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Saldo inicial</mat-label>
-            <input matInput type="number" formControlName="balance" min="0" placeholder="Ej: 250000">
+            <input matInput 
+                   type="number" 
+                   placeholder="Ej: 250000" 
+                   formControlName="balance"
+                   min="0" />
           </mat-form-field>
-          <button mat-raised-button color="primary" type="submit" [disabled]="manualForm.invalid || isUploading">
-            <mat-spinner *ngIf="isUploading" diameter="20"></mat-spinner>
-            <span *ngIf="!isUploading">Agregar Tarjeta</span>
-            <div *ngIf="manualError" class="manual-error-message">
-              <mat-icon color="warn">error</mat-icon>
-              {{ manualError }}
-            </div>
-          </button>
-        </div>
-      </form>
+
+          <!-- Error manual -->
+          <div *ngIf="manualError" class="error-container">
+            <mat-icon class="error-icon">warning</mat-icon>
+            <span class="error-text">{{ manualError }}</span>
+          </div>
+
+          <div mat-dialog-actions align="end">
+            <button mat-button type="button" (click)="onCancel()">Cancelar</button>
+            <button mat-raised-button 
+                    color="primary" 
+                    type="submit" 
+                    [disabled]="manualForm.invalid || isUploading">
+              <mat-spinner *ngIf="isUploading" diameter="20"></mat-spinner>
+              <span *ngIf="!isUploading">Agregar Tarjeta</span>
+              <span *ngIf="isUploading">Agregando...</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </mat-tab>
   </mat-tab-group>
 </div>

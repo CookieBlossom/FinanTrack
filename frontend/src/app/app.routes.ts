@@ -6,7 +6,7 @@ export const routes: Routes = [
   // Rutas públicas (sin layout)
   {
     path: '',
-    redirectTo: 'login',
+    redirectTo: 'home',
     pathMatch: 'full'
   },
   {
@@ -33,6 +33,16 @@ export const routes: Routes = [
     path: 'reset-password',
     loadComponent: () =>
       import('./modules/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
+  },
+  {
+    path: 'home',
+    loadComponent: () =>
+      import('./modules/home/home.component').then(m => m.HomeComponent),
+  },
+  {
+    path: 'plans',
+    loadComponent: () =>
+      import('./modules/plans/plans.component').then(m => m.PlansComponent),
   },
   // Rutas privadas (con layout)
   {

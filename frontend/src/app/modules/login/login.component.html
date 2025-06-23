@@ -1,47 +1,100 @@
-<div class="container-login">
-  <div class="contenedor">
-    <div class="card" style="width: 20rem;">
-      <div class="card-body">
-        <div class="container">
-          <img src="assets/images/logoVino.png" alt="">
-          <h4>FinanTrack</h4>
-        </div>
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+<div class="login-container">
+  <div class="form-login">
+    <div class="form-login-header">
+      <a class="button" routerLink="/home">
+        <span class="back-icon">←</span>
+      </a>
+      <h3>Iniciar sesión</h3>
+    </div>
+    
+    <div class="form-login-body">
+      <!-- Formulario -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <!-- Email -->
+        <div class="form-group">
           <input 
             type="email" 
-            placeholder="Ingrese su correo electrónico" 
-            class="input-form"
+            placeholder="Correo electrónico" 
+            class="form-input"
             formControlName="email"
+            autocomplete="email"
             [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
           <div class="error-message" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
             <span *ngIf="loginForm.get('email')?.errors?.['required']">El correo electrónico es requerido</span>
             <span *ngIf="loginForm.get('email')?.errors?.['email']">Ingrese un correo electrónico válido</span>
           </div>
+        </div>
 
-          <input 
-            type="password" 
-            placeholder="Ingrese su contraseña" 
-            class="input-form"
-            formControlName="password"
-            [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+        <!-- Contraseña -->
+        <div class="form-group">
+          <div class="password-container">
+            <input 
+              [type]="hidePassword ? 'password' : 'text'"
+              placeholder="Contraseña" 
+              class="form-input"
+              formControlName="password"
+              autocomplete="current-password"
+              [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            <button 
+              type="button" 
+              class="password-toggle"
+              (click)="hidePassword = !hidePassword">
+              {{ hidePassword ? '👁️' : '🙈' }}
+            </button>
+          </div>
           <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
             <span *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es requerida</span>
             <span *ngIf="loginForm.get('password')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
           </div>
+        </div>
 
-          <div class="contButton">
-            <button type="submit" [disabled]="loginForm.invalid || loginForm.disabled">
-              {{ loginForm.disabled ? 'Iniciando sesión...' : 'Iniciar sesión' }}
-            </button>
-            <a routerLink="/forgot-password">¿Olvidó su contraseña?</a>
-            <a [routerLink]="['/register']">Registrarse</a>
-          </div>
-        </form>
+        <!-- Enlaces -->
+        <div class="form-links">
+          <a routerLink="/forgot-password">¿Olvidó su contraseña?</a>
+        </div>
+
+        <!-- Botón de login -->
+        <button 
+          type="submit" 
+          class="login-button"
+          [disabled]="loginForm.invalid || loginForm.disabled">
+          <span *ngIf="!isLoading">Iniciar sesión</span>
+          <span *ngIf="isLoading" class="loading">
+            <span class="spinner"></span>
+            Iniciando sesión...
+          </span>
+        </button>
+
+        <!-- Registro -->
+        <div class="register-section">
+          <p>¿No tiene una cuenta? <a routerLink="/register">Registrarse</a></p>
+        </div>
+      </form>
+    </div>
+    
+    <div class="form-login-footer"></div>
+  </div>
+
+  <!-- Sección de branding a la derecha -->
+  <div class="branding-section">
+    <div class="branding-content">
+      <img src="assets/images/logoVino.png" alt="FinanTrack Logo" class="branding-logo">
+      <h1 class="branding-title">FINANTRACK</h1>
+      <p class="branding-slogan">Gestiona tus finanzas de manera inteligente</p>
+      <div class="branding-features">
+        <div class="feature">
+          <span class="feature-icon">📊</span>
+          <span class="feature-text">Análisis detallado</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">💰</span>
+          <span class="feature-text">Control total</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🎯</span>
+          <span class="feature-text">Finanzas que se organizan solas</span>
+        </div>
       </div>
     </div>
-  </div>
-  <div>
-    <h1>Bienvenidos</h1>
-    <img src="assets/images/imagenBienvenidos.jpg" alt="" class="img-bienvenidos">
   </div>
 </div>

@@ -16,22 +16,7 @@
         (gridReady)="onGridReady($event)"
         (gridSizeChanged)="onGridSizeChanged($event)">
       </ag-grid-angular>
-      <button class="btn-add">+ Agregar Movimiento</button>
-    </div>
-    <!-- Grafico gastos -->
-    <div class="chart-wrapper" #chartContainer>
-      <ngx-charts-pie-chart
-        [results]="categoriasPorGasto"
-        [scheme]="colorScheme"
-        [legend]="true"
-        [legendTitle]="'Leyenda'"
-        [explodeSlices]="false"
-        [labels]="true"
-        [legendPosition]="below"
-        [animations]="true"
-        [doughnut]="true"
-        [view]="chartView">
-      </ngx-charts-pie-chart>
+      <button class="btn-add" (click)="openAddUpcomingMovement()">+ Agregar Movimiento</button>
     </div>
   </div>
   

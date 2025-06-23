@@ -6,6 +6,8 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { HostListener } from '@angular/core';
+import { LimitNotificationsComponent } from '../limit-notifications/limit-notifications.component';
+
 @Component({
   selector: 'app-layout',
   standalone: true,
@@ -15,7 +17,8 @@ import { HostListener } from '@angular/core';
     MatSidenavModule,
     MatToolbarModule,
     SidebarComponent,
-    ToolbarComponent
+    ToolbarComponent,
+    LimitNotificationsComponent
   ],
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.css']

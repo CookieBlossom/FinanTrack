@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
 exports.config = {
-    jwtSecret: process.env.JWT_SECRET || 'tu_clave_secreta_por_defecto',
+    jwtSecret: process.env.JWT_SECRET || '2004',
     database: {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),

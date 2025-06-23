@@ -9,10 +9,59 @@
   .container-categories {
     display: grid;
     grid-template-columns: 60% 40%;
-    grid-template-rows: 1fr;
+    grid-template-rows: auto auto 1fr;
     height: 100%;
     width: 100%;
     justify-content: center;
+  }
+
+  .categories-header {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--clr-surface-a10);
+    border-radius: 1rem 1rem 0 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .categories-header h2 {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .plan-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .keywords-limit-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: var(--color-text);
+  }
+
+  .keywords-limit-info mat-icon {
+    color: var(--color-primary);
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .usage-info {
+    color: #6c757d;
+    font-size: 12px;
+    font-style: italic;
   }
 
   .left-panel {
@@ -24,7 +73,7 @@
   }
 
   .table-section {
-    border-radius: 1rem;
+    border-radius: 0 0 0 1rem;
     overflow: hidden;
     padding: 10px;
   }
@@ -124,6 +173,18 @@
     .container {
       padding: 10px;
     }
+
+    .categories-header {
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .plan-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
   }
  .table-section {
     height: calc(100vh - 180px); /* Por ejemplo, 100vh menos el header/navbar */
@@ -141,4 +202,11 @@
     --ag-selected-row-background-color: var(--clr-surface-a30);
     --ag-font-size: 14px;
     --ag-font-family: var(--font-family);
+  }
+
+  .notifications-container {
+    grid-column: 1 / -1;
+    padding: 0 20px;
+    background: var(--clr-surface-a10);
+    border-bottom: 1px solid var(--color-border);
   }

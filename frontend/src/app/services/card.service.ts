@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -15,54 +15,81 @@ export class CardService {
   private cardTypesUrl = `${environment.apiUrl}/card-types`;
   private banksUrl = `${environment.apiUrl}/banks`;
 
+  // Headers para evitar cache
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+  }
+
   constructor(
     private http: HttpClient,
     private scraperService: ScraperService
   ) {}
 
   private transformCard(card: Card): Card {
-    return {
+    console.log('🔄 Transformando tarjeta:', card);
+    console.log('🔄 card.balance original:', card.balance, 'tipo:', typeof card.balance);
+    
+    const transformedBalance = card.balance !== undefined && card.balance !== null
+      ? Number(card.balance)
+      : 0;
+    
+    console.log('🔄 balance transformado:', transformedBalance, 'tipo:', typeof transformedBalance);
+    console.log('🔄 isNaN(transformedBalance):', isNaN(transformedBalance));
+    
+    const result = {
       ...card,
-      balance: card.balance !== undefined && card.balance !== null
-        ? Number(card.balance)
-        : 0,
+      balance: transformedBalance,
       createdAt: card.createdAt ? new Date(card.createdAt) : undefined,
       updatedAt: card.updatedAt ? new Date(card.updatedAt) : undefined
     };
+    
+    console.log('🔄 Tarjeta transformada:', result);
+    return result;
   }
 
   getCards(): Observable<Card[]> {
-    return this.http.get<Card[]>(this.apiUrl).pipe(
+    // Agregar timestamp para evitar cache
+    const timestamp = new Date().getTime();
+    return this.http.get<Card[]>(`${this.apiUrl}?t=${timestamp}`, { headers: this.getHeaders() }).pipe(
       map(cards => cards.map(card => this.transformCard(card))),
       catchError(this.handleError)
     );
   }
 
   getCard(id: number): Observable<Card> {
-    return this.http.get<Card>(`${this.apiUrl}/${id}`).pipe(
+    const timestamp = new Date().getTime();
+    return this.http.get<Card>(`${this.apiUrl}/${id}?t=${timestamp}`, { headers: this.getHeaders() }).pipe(
       map(card => this.transformCard(card)),
       catchError(this.handleError)
     );
   }
 
   deleteCard(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.delete<void>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
+  
   getCardTypes(): Observable<CardType[]> {
-    return this.http.get<CardType[]>(`${this.cardTypesUrl}`).pipe(
+    const timestamp = new Date().getTime();
+    return this.http.get<CardType[]>(`${this.cardTypesUrl}?t=${timestamp}`, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
   
   getBanks(): Observable<Bank[]> {
-    return this.http.get<Bank[]>(`${this.banksUrl}`).pipe(
+    const timestamp = new Date().getTime();
+    return this.http.get<Bank[]>(`${this.banksUrl}?t=${timestamp}`, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
+  
   syncCard(id: number): Observable<Card> {
-    return this.http.post<Card>(`${this.apiUrl}/${id}/sync`, {}).pipe(
+    return this.http.post<Card>(`${this.apiUrl}/${id}/sync`, {}, { headers: this.getHeaders() }).pipe(
       map(card => this.transformCard(card)),
       catchError(this.handleError)
     );
@@ -87,6 +114,7 @@ export class CardService {
       catchError(this.handleError)
     );
   }
+  
   addCardManual(data: {
     nameAccount: string;
     aliasAccount?: string;
@@ -96,12 +124,13 @@ export class CardService {
     currency?: string;
     source?: string; // manual
   }): Observable<any> {
-    return this.http.post(`${this.apiUrl}`, data).pipe(
+    return this.http.post(`${this.apiUrl}`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
+  
   addCardFromCartola(formData: FormData): Observable<any> {
-    return this.http.post(`${this.cartolasUrl}/upload`, formData).pipe(
+    return this.http.post(`${this.cartolasUrl}/upload`, formData, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
@@ -110,22 +139,27 @@ export class CardService {
     const formData = new FormData();
     formData.append('cartola', file);
 
-    return this.http.post(`${this.apiUrl}/${cardId}/process-cartola`, formData).pipe(
+    return this.http.post(`${this.apiUrl}/${cardId}/process-cartola`, formData, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
+  
   syncAllCards() {
-    return this.http.post<Card[]>(`${this.apiUrl}/sync`, {});
+    return this.http.post<Card[]>(`${this.apiUrl}/sync`, {}, { headers: this.getHeaders() });
   }
+  
   getTotalCardBalance(): Observable<number> {
-    return this.http.get<{ total: number }>(`${this.apiUrl}/total-balance`).pipe(
+    const timestamp = new Date().getTime();
+    return this.http.get<{ total: number }>(`${this.apiUrl}/total-balance?t=${timestamp}`, { headers: this.getHeaders() }).pipe(
       map(resp => resp.total),
       catchError(this.handleError)
     );
   }
+  
   updateCard(cardId: number, data: { aliasAccount?: string; balance?: number; statusAccount?: string }): Observable<Card> {
-    return this.http.put<Card>(`${this.apiUrl}/${cardId}`, data);
+    return this.http.put<Card>(`${this.apiUrl}/${cardId}`, data, { headers: this.getHeaders() });
   }
+
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'Ocurrió un error en el servidor.';
     if (error.error instanceof ErrorEvent) {

@@ -4,16 +4,31 @@
 </mat-nav-list>
 
 <mat-nav-list class="menu-items">
-  <a mat-list-item routerLink="/dashboard" routerLinkActive="active">Panel de Control</a>
-  <a mat-list-item routerLink="/cards" routerLinkActive="active">Tarjetas</a>
-  <a mat-list-item routerLink="/movements" routerLinkActive="active">Historial de Movimientos</a>
-  <a mat-list-item routerLink="/analytics" routerLinkActive="active">Análisis y Proyección</a>
-  <a mat-list-item routerLink="/categories" routerLinkActive="active">Categorización</a>
-  <a mat-list-item routerLink="/upcoming-transactions" routerLinkActive="active">Próximos Movimientos</a>
+  <a class="menu-item" routerLink="/dashboard" routerLinkActive="active">Panel de Control</a>
+  <a class="menu-item" routerLink="/cards" routerLinkActive="active">Tarjetas</a>
+  <a class="menu-item" routerLink="/movements" routerLinkActive="active">Historial de Movimientos</a>
+  <a class="menu-item" routerLink="/analytics" routerLinkActive="active">Análisis y Proyección</a>
+  <a class="menu-item" routerLink="/categories" routerLinkActive="active">Categorización</a>
+  <a class="menu-item" routerLink="/upcoming-transactions" routerLinkActive="active">Próximos Movimientos</a>
+  
+  <!-- Opciones premium -->
+  <a class="menu-item premium" routerLink="/scraper" routerLinkActive="active" *appFeatureControl="'canUseScraper'">
+    <mat-icon>sync</mat-icon>
+    Sincronización Automática
+  </a>
+  
+  <a class="menu-item premium" routerLink="/api" routerLinkActive="active" *appFeatureControl="'canUseApi'">
+    <mat-icon>api</mat-icon>
+    API Access
+  </a>
+  
+  <a class="menu-item premium" routerLink="/executive-dashboard" routerLinkActive="active" *appFeatureControl="'canUseExecutiveDashboard'">
+    <mat-icon>dashboard</mat-icon>
+    Dashboard Ejecutivo
+  </a>
 </mat-nav-list>
 
 <mat-nav-list class="sidebar-footer">
-  <a mat-list-item routerLink="/config">Configuraciones</a>
-  <a mat-list-item routerLink="/about-company" >Acerca de la empresa</a>
-  <a mat-list-item routerLink="/login" >Cerrar sesión</a>
+  <a class="menu-item" routerLink="/about-company" >Acerca de la empresa</a>
+  <a class="menu-item" routerLink="/home" >Cerrar sesión</a>
 </mat-nav-list>

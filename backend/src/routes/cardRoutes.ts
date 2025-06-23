@@ -10,12 +10,13 @@ const cardController = new CardController();
 
 // Rutas de tarjetas
 router.get('/', cardController.getAllCards);
+// Rutas específicas deben ir ANTES de las rutas con parámetros
+router.get('/total-balance', cardController.getTotalBalanceByUserId);
+router.post('/sync', cardController.syncCardsFromUser);
+// Rutas con parámetros van DESPUÉS
 router.get('/:id', cardController.getCardById);
 router.post('/', cardController.createCard);
 router.put('/:id', cardController.updateCard);
-router.delete('/:id', cardController.deleteCard);
-router.post('/sync', cardController.syncCardsFromUser);
-router.get('/total-balance', cardController.getTotalBalanceByUserId);
 router.delete('/:id', cardController.deleteCard);
 // Ruta especial para actualizar saldo
 router.patch('/:id/balance', cardController.updateBalance);

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { MovementService } from '../services/movement.service';
 import { ScraperService } from '../services/scrapers/scraper.service';
 import { AuthRequest } from '../interfaces/AuthRequest';
@@ -25,9 +25,9 @@ export class DashboardController {
     /**
      * Obtiene los ingresos vs gastos del año especificado
      */
-    async getIncomeVsExpenses(req: AuthRequest, res: Response): Promise<Response | void> {
+    public getIncomeVsExpenses = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 return res.status(401).json({ error: 'Usuario no autenticado' });
             }
@@ -38,21 +38,14 @@ export class DashboardController {
             const startDate = new Date(year, 0, 1);
             const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-            const filters: IMovementFilters = { startDate, endDate };
+            const filters: IMovementFilters = { startDate, endDate, userId };
             const movements: IMovement[] = await this.movementService.getMovements(filters);
-            
-            const userMovements = movements.filter(async (mov) => {
-                const card = await new CardService().getCardById(mov.cardId, userId);
-                return !!card;
-            });
-            const resolvedUserMovements = await Promise.all(userMovements.map(async (movPromise) => movPromise ? await this.movementService.getMovementById( (await movPromise).id ): null));
-            const finalMovements = resolvedUserMovements.filter(m => m !== null) as IMovement[];
 
             const monthlyData = new Map<string, { ingresos: number; gastos: number }>();
             const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
             months.forEach(month => monthlyData.set(month, { ingresos: 0, gastos: 0 }));
 
-            finalMovements.forEach((movement: IMovement) => {
+            movements.forEach((movement: IMovement) => {
                 const date = new Date(movement.transactionDate);
                 const month = months[date.getMonth()];
                 if (monthlyData.has(month)) {
@@ -86,24 +79,18 @@ export class DashboardController {
             return res.status(500).json({ error: 'Error al obtener datos de ingresos vs gastos' });
         }
     };
-    public getCategoryExpenses = async (req: AuthRequest, res: Response): Promise<Response> => {
+
+    public getCategoryExpenses = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) { return res.status(401).json({ error: 'Usuario no autenticado' }); }
 
             const now = new Date();
             const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-            const filters: IMovementFilters = { startDate, endDate, movementType: 'expense' };
-            const allMovements: IMovement[] = await this.movementService.getMovements(filters);
-
-            const cardService = new CardService();
-            const userMovementPromises = allMovements.map(async (mov) => {
-                const card = await cardService.getCardById(mov.cardId, userId);
-                return card ? mov : null;
-            });
-            const movements = (await Promise.all(userMovementPromises)).filter(m => m !== null) as IMovement[];
+            const filters: IMovementFilters = { startDate, endDate, movementType: 'expense', userId };
+            const movements: IMovement[] = await this.movementService.getMovements(filters);
 
             const categoryData = movements.reduce((acc: { [key: string]: number }, mov: IMovement) => {
                 const categoryName = mov.category?.nameCategory || 'Sin Categoría';
@@ -133,35 +120,29 @@ export class DashboardController {
     /**
      * Obtiene los movimientos recientes, incluyendo los del scraper
      */
-    public getRecentMovements = async (req: AuthRequest, res: Response): Promise<Response> => {
+    public getRecentMovements = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) { return res.status(401).json({ error: 'Usuario no autenticado' }); }
             
             const limit = parseInt(req.query.limit as string) || 10;
 
-            const allMovements: IMovement[] = await this.movementService.getMovements({});
-            
-            const cardService = new CardService();
-            const userMovementPromises = allMovements.map(async (mov) => {
-                const card = await cardService.getCardById(mov.cardId, userId);
-                return card ? mov : null;
-            });
-            let movements = (await Promise.all(userMovementPromises)).filter(m => m !== null) as IMovement[];
+            const filters: IMovementFilters = { userId };
+            const movements: IMovement[] = await this.movementService.getMovements(filters);
 
             movements.sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime());
-            movements = movements.slice(0, limit);
+            const recentMovements = movements.slice(0, limit);
 
-            return res.json(movements);
+            return res.json(recentMovements);
         } catch (error) {
             console.error('Error en getRecentMovements:', error);
             return res.status(500).json({ message: 'Error al obtener los movimientos recientes' });
         }
     };
 
-    public async processScraperMovements(req: AuthRequest, res: Response): Promise<void | Response> {
+    public async processScraperMovements(req: Request, res: Response, next: NextFunction): Promise<void | Response> {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) { return res.status(401).json({ error: 'Usuario no autenticado' }); }
 
             const { rawMovements, defaultCardId, scraperTaskId } = req.body;
@@ -175,7 +156,7 @@ export class DashboardController {
             for (const rawMov of rawMovements) {
                 try {
                     const movementToCreate = await this.convertScraperMovement(rawMov as IScraperMovement, scraperTaskId, defaultCardId);
-                    const newMovement = await this.movementService.createMovement(movementToCreate, userId);
+                    const newMovement = await this.movementService.createMovement(movementToCreate, userId, (req as AuthRequest).user!.planId);
                     createdMovements.push(newMovement);
                 } catch (error) {
                     errors.push({ rawMovement: rawMov, error: error instanceof Error ? error.message : 'Error desconocido' });

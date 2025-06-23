@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { BankService } from '../services/bank.service';
 
 export class BankController {
@@ -7,7 +7,7 @@ export class BankController {
     this.service = new BankService();
   }
 
-  public getAllBanks = async (req: Request, res: Response) => {
+  public getAllBanks = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const banks = await this.service.getAllBanks();
       res.json(banks);

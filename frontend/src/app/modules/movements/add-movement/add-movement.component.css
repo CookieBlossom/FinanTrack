@@ -38,6 +38,59 @@
     padding: 10px;
     }
 
+  /* Estilos para información de límites */
+  .limits-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 16px 0;
+  }
+
+  .limit-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--color-text);
+  }
+
+  .limit-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .limit-item mat-icon {
+    color: var(--color-primary);
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .limit-item span {
+    flex: 1;
+    font-weight: 500;
+  }
+
+  .limit-bar {
+    width: 60px;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .limit-progress {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .limit-notification {
+    margin: 16px 0;
+  }
+
   .file-upload-container {
     display: flex;
     flex-direction: column;

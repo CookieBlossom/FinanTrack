@@ -1,5 +1,32 @@
 <h2 mat-dialog-title align="center">Agregar Movimiento</h2>
 
+<!-- Información de límites -->
+<div class="limits-info" *ngIf="limitsInfo">
+  <div class="limit-item">
+    <mat-icon>receipt</mat-icon>
+    <span>Movimientos manuales: {{ limitsInfo.manual_movements.used }}/{{ limitsInfo.manual_movements.limit }}</span>
+    <div class="limit-bar">
+      <div class="limit-progress" [style.width.%]="getProgressPercentage('manual_movements')"></div>
+    </div>
+  </div>
+  
+  <div class="limit-item" *ngIf="limitsInfo.max_cards">
+    <mat-icon>credit_card</mat-icon>
+    <span>Tarjetas activas: {{ limitsInfo.max_cards.used }}/{{ limitsInfo.max_cards.limit }}</span>
+    <div class="limit-bar">
+      <div class="limit-progress" [style.width.%]="getProgressPercentage('max_cards')"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Notificación de límites -->
+<div class="limit-notification" *ngIf="showLimitNotification">
+  <app-limit-notification 
+    [data]="limitNotificationData"
+    (onClose)="hideLimitNotification()">
+  </app-limit-notification>
+</div>
+
 <mat-tab-group>
   <!-- Pestaña de Ingreso Manual -->
   <mat-tab label="Manual">
@@ -19,38 +46,38 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Fecha</mat-label>
-          <input matInput formControlName="fecha" type="date" required />
-          <mat-error *ngIf="manualForm.get('fecha')?.hasError('required')">
+          <input matInput formControlName="transactionDate" type="date" required />
+          <mat-error *ngIf="manualForm.get('transactionDate')?.hasError('required')">
             La fecha es requerida
           </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nombre</mat-label>
-          <input matInput formControlName="nombre" required />
-          <mat-error *ngIf="manualForm.get('nombre')?.hasError('required')">
+          <input matInput formControlName="description" required />
+          <mat-error *ngIf="manualForm.get('description')?.hasError('required')">
             El nombre es requerido
           </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Monto</mat-label>
-          <input matInput type="number" formControlName="monto" required />
-          <mat-error *ngIf="manualForm.get('monto')?.hasError('required')">
+          <input matInput type="number" formControlName="amount" required />
+          <mat-error *ngIf="manualForm.get('amount')?.hasError('required')">
             El monto es requerido
           </mat-error>
-          <mat-error *ngIf="manualForm.get('monto')?.hasError('min')">
+          <mat-error *ngIf="manualForm.get('amount')?.hasError('min')">
             El monto debe ser mayor a 0
           </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Tipo de Movimiento</mat-label>
-          <mat-select formControlName="tipoMovimiento" required>
+          <mat-select formControlName="movementType" required>
             <mat-option value="income">Ingreso</mat-option>
             <mat-option value="expense">Gasto</mat-option>
           </mat-select>
-          <mat-error *ngIf="manualForm.get('tipoMovimiento')?.hasError('required')">
+          <mat-error *ngIf="manualForm.get('movementType')?.hasError('required')">
             El tipo de movimiento es requerido
           </mat-error>
         </mat-form-field>
@@ -62,45 +89,6 @@
           </button>
         </div>
       </form>
-    </div>
-  </mat-tab>
-
-  <!-- Pestaña de Carga de Cartola -->
-  <mat-tab label="Cartola">
-    <div mat-dialog-content>
-      <div class="file-upload-container">
-        <button mat-stroked-button type="button" (click)="fileInput.click()">
-          <mat-icon>upload_file</mat-icon>
-          Subir Cartola (PDF)
-        </button>
-        <input #fileInput type="file" 
-               accept=".pdf"
-               style="display: none"
-               (change)="onFileSelected($event)">
-        <span class="file-name" *ngIf="selectedFile">
-          {{selectedFile.name}}
-          <button mat-icon-button (click)="removeFile()">
-            <mat-icon>close</mat-icon>
-          </button>
-        </span>
-      </div>
-
-      <div *ngIf="uploadError" class="error-message">
-        <mat-icon color="warn">error</mat-icon>
-        <span>{{uploadError}}</span>
-      </div>
-
-      <div mat-dialog-actions align="end">
-        <button mat-button type="button" (click)="onCancel()">Cancelar</button>
-        <button mat-raised-button
-                color="primary"
-                type="button"
-                (click)="onUploadCartola()"
-                [disabled]="!selectedFile || isUploading">
-          <mat-spinner diameter="20" *ngIf="isUploading"></mat-spinner>
-          <span *ngIf="!isUploading">Procesar Cartola</span>
-        </button>
-      </div>
     </div>
   </mat-tab>
 </mat-tab-group>

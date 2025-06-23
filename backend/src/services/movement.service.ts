@@ -5,17 +5,20 @@ import { IMovement, IMovementCreate, IMovementFilters, IMovementUpdate } from '.
 import { CartolaService } from './cartola.service';
 import dotenv from 'dotenv';
 import { pool } from '../config/database/connection';
+import { PlanService } from './plan.service';
 dotenv.config();
 
 export class MovementService {
   private pool: Pool;
   private cardService: CardService;
   private cartolaService: CartolaService;
+  private planService: PlanService;
 
   constructor() {
     this.pool = pool;
     this.cardService = new CardService();
     this.cartolaService = new CartolaService();
+    this.planService = new PlanService();
   }
 
   private buildWhereClause(filters: IMovementFilters): { conditions: string[]; values: any[]; paramCount: number } {
@@ -66,6 +69,50 @@ export class MovementService {
 
     return { conditions, values, paramCount };
   }
+  async countMonthlyManualMoves(userId: number): Promise<number> {
+    const monthStart = new Date();
+    monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    const res = await this.pool.query(
+      `SELECT COUNT(*) AS cnt
+       FROM movements m
+       JOIN cards c ON m.card_id = c.id
+       WHERE c.user_id = $1
+         AND m.movement_source = 'manual'
+         AND m.transaction_date >= $2`,
+      [userId, monthStart]
+    );
+    return Number(res.rows[0].cnt);
+  }
+
+  async countMonthlyCartolaMoves(userId: number): Promise<number> {
+    const monthStart = new Date();
+    monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    const res = await this.pool.query(
+      `SELECT COUNT(*) AS cnt
+       FROM movements m
+       JOIN cards c ON m.card_id = c.id
+       WHERE c.user_id = $1
+         AND m.movement_source = 'cartola'
+         AND m.transaction_date >= $2`,
+      [userId, monthStart]
+    );
+    return Number(res.rows[0].cnt);
+  }
+
+  async countMonthlyScraperMoves(userId: number): Promise<number> {
+    const monthStart = new Date();
+    monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    const res = await this.pool.query(
+      `SELECT COUNT(*) AS cnt
+       FROM movements m
+       JOIN cards c ON m.card_id = c.id
+       WHERE c.user_id = $1
+         AND m.movement_source = 'scraper'
+         AND m.transaction_date >= $2`,
+      [userId, monthStart]
+    );
+    return Number(res.rows[0].cnt);
+  }
 
   async getMovements(filters: IMovementFilters = {}): Promise<IMovement[]> {
     try {
@@ -82,6 +129,12 @@ export class MovementService {
         FROM movements m
         LEFT JOIN categories cat ON m.category_id = cat.id
       `;
+
+      if (filters.userId) {
+        query += ` JOIN cards c ON m.card_id = c.id`;
+        conditions.push(`c.user_id = $${values.length + 1}`);
+        values.push(filters.userId);
+      }
 
       if (conditions.length > 0) {
         query += ` WHERE ${conditions.join(' AND ')}`;
@@ -171,13 +224,64 @@ export class MovementService {
     }
   }
 
-  async createMovement(movementData: IMovementCreate, userId: number): Promise<IMovement> {
+  async createMovement(movementData: IMovementCreate, userId: number, planId: number): Promise<IMovement> {
     try {
       const card = await this.cardService.getCardById(movementData.cardId, userId);
       if (!card) {
         throw new DatabaseError('Tarjeta no encontrada o no pertenece al usuario.');
       }
 
+      // Verificar límites según el tipo de fuente
+      const limits = await this.planService.getLimitsForPlan(planId);
+      
+      if (movementData.movementSource === 'manual') {
+        // Verificar límite de movimientos manuales
+        if (limits.manual_movements !== -1) {
+          const used = await this.countMonthlyManualMoves(userId);
+          if (used >= limits.manual_movements) {
+            throw new DatabaseError(
+              `Has excedido el límite de ${limits.manual_movements} movimientos manuales por mes`
+            );
+          }
+        }
+      } else if (movementData.movementSource === 'cartola') {
+        // Verificar límite de movimientos de cartola
+        if (limits.cartola_movements !== -1) {
+          const used = await this.countMonthlyCartolaMoves(userId);
+          if (used >= limits.cartola_movements) {
+            throw new DatabaseError(
+              `Has excedido el límite de ${limits.cartola_movements} movimientos de cartola por mes`
+            );
+          }
+        }
+        // Verificar permiso para cartolas
+        const hasPermission = await this.planService.hasPermission(planId, 'cartola_upload');
+        if (!hasPermission) {
+          throw new DatabaseError('Tu plan no permite subir cartolas bancarias');
+        }
+      } else if (movementData.movementSource === 'scraper') {
+        // Verificar límite de movimientos del scraper
+        if (limits.scraper_movements !== -1) {
+          const used = await this.countMonthlyScraperMoves(userId);
+          if (used >= limits.scraper_movements) {
+            throw new DatabaseError(
+              `Has excedido el límite de ${limits.scraper_movements} movimientos del scraper por mes`
+            );
+          }
+        }
+        // Verificar permiso para scraper
+        const hasPermission = await this.planService.hasPermission(planId, 'scraper_access');
+        if (!hasPermission) {
+          throw new DatabaseError('Tu plan no permite usar el scraper automático');
+        }
+      } else if (['imported','subscription'].includes(movementData.movementSource)) {
+        // Verificar permiso para importación
+        const hasPermission = await this.planService.hasPermission(planId, 'cartola_upload');
+        if (!hasPermission) {
+          throw new DatabaseError('Tu plan no permite importar movimientos');
+        }
+      }
+  
       const amountForBalance = movementData.movementType === 'income' ? movementData.amount : -movementData.amount;
       await this.cardService.updateBalance(movementData.cardId, userId, amountForBalance);
 
@@ -321,7 +425,7 @@ export class MovementService {
     }
   }
 
-  async processCartolaMovements(buffer: Buffer, userId: number): Promise<void> {
+  async processCartolaMovements(buffer: Buffer, userId: number, planId: number): Promise<void> {
     try {
       const cartola = await this.cartolaService.procesarCartolaPDF(buffer);
 
@@ -355,7 +459,7 @@ export class MovementService {
         1
       );
 
-      await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos);
+      await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos, userId, planId);
     } catch (error) {
       console.error('[MovementService] Error al procesar movimientos de cartola:', error);
       throw new DatabaseError('Error al procesar los movimientos de la cartola');

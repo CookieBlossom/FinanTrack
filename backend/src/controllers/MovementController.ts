@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { MovementService } from '../services/movement.service';
 import { IMovementCreate, IMovementUpdate, IMovementFilters } from '../interfaces/IMovement';
 import { AuthRequest } from '../interfaces/AuthRequest';
 import { DatabaseError } from '../utils/errors';
 import multer from 'multer';
+
 export class MovementController {
     private movementService: MovementService;
 
@@ -11,9 +12,9 @@ export class MovementController {
         this.movementService = new MovementService();
     }
 
-    getAll = async (req: AuthRequest, res: Response): Promise<void> => {
+    public getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
@@ -29,9 +30,27 @@ export class MovementController {
         }
     };
 
-    getById = async (req: AuthRequest, res: Response): Promise<void> => {
+    public getCashMovements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
+            if (!userId) {
+                res.status(401).json({ message: 'Usuario no autenticado' });
+                return;
+            }
+            const cashMovements = await this.movementService.getCashMovementsByUser(userId);
+            res.json(cashMovements);
+        } catch (error) {
+            console.error('Error al obtener movimientos en efectivo:', error);
+            res.status(500).json({
+                message: 'Error al obtener los movimientos en efectivo',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    };
+
+    public getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
@@ -54,9 +73,9 @@ export class MovementController {
         }
     };
 
-    getByFilters = async (req: AuthRequest, res: Response): Promise<void> => {
+    public getByFilters = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
@@ -89,10 +108,10 @@ export class MovementController {
         }
     };
 
-    create = async (req: AuthRequest, res: Response): Promise<void> => {
+    public create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
-            if (!userId) {
+            const user = (req as AuthRequest).user;
+            if (!user) {
                 res.status(401).json({ message: 'Usuario no autenticado para crear movimiento' });
                 return;
             }
@@ -107,7 +126,7 @@ export class MovementController {
                 return;
             }
 
-            const newMovement = await this.movementService.createMovement(movementData, userId);
+            const newMovement = await this.movementService.createMovement(movementData, user.id, user.planId);
             res.status(201).json(newMovement);
         } catch (error) {
             console.error('Error al crear movimiento:', error);
@@ -118,9 +137,9 @@ export class MovementController {
         }
     };
 
-    update = async (req: AuthRequest, res: Response): Promise<void> => {
+    public update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado para actualizar movimiento' });
                 return;
@@ -154,9 +173,9 @@ export class MovementController {
         }
     };
 
-    delete = async (req: AuthRequest, res: Response): Promise<void> => {
+    public delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
             if (!userId) {
                 res.status(401).json({ message: 'Usuario no autenticado para eliminar movimiento' });
                 return;
@@ -185,10 +204,10 @@ export class MovementController {
         }
     };
 
-    uploadCartola = async (req: AuthRequest & { file?: any }, res: Response): Promise<void> => {
+    public uploadCartola = async (req: Request & { file?: any }, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const userId = req.user?.id;
-            if (!userId) {
+            const user = (req as AuthRequest).user;
+            if (!user) {
                 res.status(401).json({ message: 'Usuario no autenticado' });
                 return;
             }
@@ -198,13 +217,8 @@ export class MovementController {
                 return;
             }
 
-            if (req.file.mimetype !== 'application/pdf') {
-                res.status(400).json({ error: 'El archivo debe ser un PDF' });
-                return;
-            }
-
-            await this.movementService.processCartolaMovements(req.file.buffer, userId);
-            res.json({ message: 'Cartola procesada exitosamente' });
+            await this.movementService.processCartolaMovements(req.file.buffer, user.id, user.planId);
+            res.status(200).json({ message: 'Cartola procesada correctamente' });
         } catch (error) {
             console.error('Error al procesar cartola:', error);
             res.status(500).json({
@@ -219,7 +233,6 @@ export class MovementController {
             data.cardId &&
             data.amount &&
             data.movementType &&
-            data.movementSource &&
             data.transactionDate
         );
     }

@@ -1,67 +1,150 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-</head>
-<body>
-    <div class="container-register">
-        <div class="contenedor">
-            <div class="card">
-                <div class="card-body">
-                    <div class="container">
-                        <img src="assets/images/logoVino.png" alt="Logo FinanTrack" width="80" height="80" loading="lazy">
-                        <h4>FinanTrack</h4>
+<div class="register-container">
+    <div class="form-register">
+        <div class="form-register-header">
+            <a class="button" routerLink="/home">
+                <span class="back-icon">←</span>
+            </a>
+            <h3>Crear cuenta</h3>
+        </div>
+        
+        <div class="form-register-body">
+            <!-- Formulario -->
+            <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+                <!-- Nombre -->
+                <div class="form-group">
+                    <input 
+                        type="text" 
+                        placeholder="Nombre completo" 
+                        class="form-input"
+                        formControlName="name"
+                        autocomplete="name"
+                        [class.is-invalid]="registerForm.get('name')?.invalid && registerForm.get('name')?.touched">
+                    <div class="error-message" *ngIf="registerForm.get('name')?.invalid && registerForm.get('name')?.touched">
+                        <span *ngIf="registerForm.get('name')?.errors?.['required']">El nombre es requerido</span>
+                        <span *ngIf="registerForm.get('name')?.errors?.['minlength']">El nombre debe tener al menos 2 caracteres</span>
                     </div>
-                    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-                        <input 
-                            type="email" 
-                            placeholder="Ingrese su correo electrónico" 
-                            class="input-form"
-                            formControlName="email"
-                            autocomplete="email"
-                            [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
-                        <div class="error-message" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
-                            <span *ngIf="registerForm.get('email')?.errors?.['required']">El correo electrónico es requerido</span>
-                            <span *ngIf="registerForm.get('email')?.errors?.['email']">Ingrese un correo electrónico válido</span>
-                        </div>
+                </div>
 
+                <!-- Email -->
+                <div class="form-group">
+                    <input 
+                        type="email" 
+                        placeholder="Correo electrónico" 
+                        class="form-input"
+                        formControlName="email"
+                        autocomplete="email"
+                        [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                    <div class="error-message" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                        <span *ngIf="registerForm.get('email')?.errors?.['required']">El correo electrónico es requerido</span>
+                        <span *ngIf="registerForm.get('email')?.errors?.['email']">Ingrese un correo electrónico válido</span>
+                    </div>
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <div class="password-container">
                         <input 
                             [type]="hidePassword ? 'password' : 'text'"
-                            placeholder="Ingrese su contraseña" 
-                            class="input-form"
+                            placeholder="Contraseña" 
+                            class="form-input"
                             formControlName="password"
                             autocomplete="new-password"
                             [class.is-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
-                        <div class="error-message" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
-                            <span *ngIf="registerForm.get('password')?.errors?.['required']">La contraseña es requerida</span>
-                            <span *ngIf="registerForm.get('password')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
-                        </div>
+                        <button 
+                            type="button" 
+                            class="password-toggle"
+                            (click)="hidePassword = !hidePassword">
+                            {{ hidePassword ? '👁️' : '🙈' }}
+                        </button>
+                    </div>
+                    <div class="error-message" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                        <span *ngIf="registerForm.get('password')?.errors?.['required']">La contraseña es requerida</span>
+                        <span *ngIf="registerForm.get('password')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
+                    </div>
+                </div>
 
+                <!-- Confirmar Contraseña -->
+                <div class="form-group">
+                    <div class="password-container">
                         <input 
                             [type]="hideConfirmPassword ? 'password' : 'text'"
-                            placeholder="Confirme su contraseña" 
-                            class="input-form"
+                            placeholder="Confirmar contraseña" 
+                            class="form-input"
                             formControlName="confirmPassword"
                             autocomplete="new-password"
                             [class.is-invalid]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
-                        <div class="error-message" *ngIf="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
-                            <span *ngIf="registerForm.get('confirmPassword')?.errors?.['required']">La confirmación de contraseña es requerida</span>
-                            <span *ngIf="registerForm.get('confirmPassword')?.errors?.['passwordMismatch']">Las contraseñas no coinciden</span>
-                        </div>
+                        <button 
+                            type="button" 
+                            class="password-toggle"
+                            (click)="hideConfirmPassword = !hideConfirmPassword">
+                            {{ hideConfirmPassword ? '👁️' : '🙈' }}
+                        </button>
+                    </div>
+                    <div class="error-message" *ngIf="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
+                        <span *ngIf="registerForm.get('confirmPassword')?.errors?.['required']">Debe confirmar la contraseña</span>
+                        <span *ngIf="registerForm.get('confirmPassword')?.errors?.['passwordMismatch']">Las contraseñas no coinciden</span>
+                    </div>
+                </div>
 
-                        <div class="contButton">
-                            <button type="submit" [disabled]="registerForm.invalid || registerForm.disabled">
-                                {{ registerForm.disabled ? 'Registrando...' : 'Registrarse' }}
-                            </button>
-                            <a [routerLink]="['/login']">¿Ya tienes una cuenta? Inicia sesión</a>
-                        </div>
-                    </form>
+                <!-- Términos y condiciones -->
+                <div class="form-group terms-group">
+                    <div class="terms-checkbox">
+                        <input 
+                            type="checkbox" 
+                            id="terms"
+                            formControlName="acceptTerms"
+                            [class.is-invalid]="registerForm.get('acceptTerms')?.invalid && registerForm.get('acceptTerms')?.touched">
+                        <label for="terms">
+                            Acepto los <button type="button" class="terms-link" (click)="openTermsDialog()">Términos y Condiciones</button>
+                        </label>
+                    </div>
+                    <div class="error-message" *ngIf="registerForm.get('acceptTerms')?.invalid && registerForm.get('acceptTerms')?.touched">
+                        <span *ngIf="registerForm.get('acceptTerms')?.errors?.['required']">Debe aceptar los términos y condiciones</span>
+                    </div>
+                </div>
+
+                <!-- Botón de registro -->
+                <button 
+                    type="submit" 
+                    class="register-button"
+                    [disabled]="registerForm.invalid || registerForm.disabled">
+                    <span *ngIf="!isLoading">Crear cuenta</span>
+                    <span *ngIf="isLoading" class="loading">
+                        <span class="spinner"></span>
+                        Creando cuenta...
+                    </span>
+                </button>
+
+                <!-- Login -->
+                <div class="login-section">
+                    <p>¿Ya tiene una cuenta? <a routerLink="/login">Iniciar sesión</a></p>
+                </div>
+            </form>
+        </div>
+        
+        <div class="form-register-footer"></div>
+    </div>
+
+    <!-- Sección de branding a la derecha -->
+    <div class="branding-section">
+        <div class="branding-content">
+            <img src="assets/images/logoVino.png" alt="FinanTrack Logo" class="branding-logo">
+            <h1 class="branding-title">FINANTRACK</h1>
+            <p class="branding-slogan">Gestiona tus finanzas de manera inteligente</p>
+            <div class="branding-features">
+                <div class="feature">
+                    <span class="feature-icon">📊</span>
+                    <span class="feature-text">Análisis detallado</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">💰</span>
+                    <span class="feature-text">Control total</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🎯</span>
+                    <span class="feature-text">Finanzas que se organizan solas</span>
                 </div>
             </div>
         </div>
-        <div>
-            <h1>Únete a FinanTrack</h1>
-            <img src="assets/images/imagenBienvenidos.jpg" alt="Bienvenidos a FinanTrack" class="img-bienvenidos" loading="lazy">
-        </div>
     </div>
-</body>
-</html>
+</div>

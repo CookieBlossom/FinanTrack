@@ -5,9 +5,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterLink, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { AuthResponse } from '../../models/user.model';
+import { StripeService } from '../../services/stripe.service';
 
 @Component({
   selector: 'app-login',
@@ -20,7 +21,8 @@ import { AuthResponse } from '../../models/user.model';
     RouterModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    RouterLink
   ]
 })
 export class LoginComponent implements OnInit {
@@ -32,7 +34,8 @@ export class LoginComponent implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private stripeService: StripeService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -41,6 +44,19 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Verificar si hay un session_id en la URL (retorno de Stripe)
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    
+    if (sessionId) {
+      console.log('🔄 Detectado session_id en login:', sessionId);
+      // Mostrar mensaje informativo
+      this.snackBar.open('Completa el login para verificar tu pago', 'Cerrar', {
+        duration: 5000,
+        horizontalPosition: 'center',
+        verticalPosition: 'top'
+      });
+    }
   }
 
   onSubmit(): void {
@@ -71,7 +87,18 @@ export class LoginComponent implements OnInit {
             horizontalPosition: 'center',
             verticalPosition: 'top'
           });
-          this.router.navigate(['/dashboard']);
+          
+          // Verificar si hay un session_id para procesar el pago
+          const urlParams = new URLSearchParams(window.location.search);
+          const sessionId = urlParams.get('session_id');
+          
+          if (sessionId) {
+            console.log('🔄 Procesando pago después del login para sesión:', sessionId);
+            this.processPaymentAfterLogin(sessionId);
+          } else {
+            // Navegación normal después del login
+            this.router.navigate(['/dashboard']);
+          }
         } else {
           this.snackBar.open('Error en el inicio de sesión', 'Cerrar', {
             duration: 3000,
@@ -91,6 +118,44 @@ export class LoginComponent implements OnInit {
         });
         this.isLoading = false;
         this.loginForm.enable();
+      }
+    });
+  }
+
+  private processPaymentAfterLogin(sessionId: string): void {
+    this.stripeService.verifyPaymentPublic(sessionId).subscribe({
+      next: (response) => {
+        if (response.success && response.newToken) {
+          console.log('✅ Pago verificado exitosamente después del login');
+          console.log('📋 Nuevo plan:', response.payment?.planName);
+          
+          // Actualizar token y redirigir
+          this.stripeService.updateTokenAndRedirect(response.newToken, '/dashboard');
+          
+          // Mostrar mensaje de éxito
+          this.snackBar.open(`¡Plan actualizado exitosamente! Tu nuevo plan es: ${response.payment?.planName}`, 'Cerrar', {
+            duration: 5000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top'
+          });
+        } else {
+          console.log('⏳ Pago aún no completado después del login');
+          this.snackBar.open('El pago aún no ha sido procesado. Por favor, espera unos minutos.', 'Cerrar', {
+            duration: 5000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top'
+          });
+          this.router.navigate(['/dashboard']);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error verificando pago después del login:', error);
+        this.snackBar.open('Error al verificar el pago. Por favor, contacta soporte.', 'Cerrar', {
+          duration: 5000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+        this.router.navigate(['/dashboard']);
       }
     });
   }

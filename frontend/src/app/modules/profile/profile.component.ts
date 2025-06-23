@@ -67,7 +67,7 @@ export class ProfileComponent implements OnInit {
 
   logout() {
     this.authService.logout();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/home']);
     this.snackBar.open('Sesión cerrada exitosamente', 'Cerrar', { duration: 3000 });
   }
 
@@ -96,6 +96,8 @@ export class ProfileComponent implements OnInit {
           firstName: data.first_name,
           lastName: data.last_name || '',
           countryCode: data.country_code || '',
+          planId: data.plan_id,
+          planName: data.plan_name,
           phone: data.phone || '',
           role: data.role,
           isActive: data.is_active,
@@ -171,17 +173,74 @@ export class ProfileComponent implements OnInit {
   }
 
   openChangePasswordDialog() {
-    const dialogRef = this.dialog.open(ChangePasswordComponent, {
-      width: '400px',
-      maxHeight: '90vh',
-      panelClass: 'custom-dialog'
-    });
+    // Implementar diálogo de cambio de contraseña
+    console.log('Abrir diálogo de cambio de contraseña');
+  }
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === 'success') {
-        this.snackBar.open('Contraseña actualizada exitosamente', 'Cerrar', { duration: 3000 });
-      }
-    });
+  openBillingSection() {
+    // Navegar a la página de planes para gestionar la suscripción
+    this.router.navigate(['/plans']);
+  }
+
+  // Métodos para el template
+  getInitials(): string {
+    if (!this.userData?.firstName && !this.userData?.lastName) {
+      return 'U';
+    }
+    
+    const firstName = this.userData?.firstName?.charAt(0) || '';
+    const lastName = this.userData?.lastName?.charAt(0) || '';
+    
+    return (firstName + lastName).toUpperCase();
+  }
+
+  getPlanName(): string {
+    if (!this.userData?.planName) {
+      return 'Plan Gratuito';
+    }
+    
+    const planNames: { [key: string]: string } = {
+      'free': 'Plan Gratuito',
+      'basic': 'Plan Básico',
+      'premium': 'Plan Premium',
+      'pro': 'Plan Pro'
+    };
+    
+    return planNames[this.userData.planName] || this.userData.planName;
+  }
+
+  getPlanPrice(): string {
+    const planPrices: { [key: string]: string } = {
+      'free': 'Gratis',
+      'basic': '$9.990/mes',
+      'premium': '$19.990/mes',
+      'pro': '$29.990/mes'
+    };
+    
+    return planPrices[this.userData?.planName || 'free'] || 'Gratis';
+  }
+
+  isCurrentPlan(planName: string): boolean {
+    return this.userData?.planName === planName;
+  }
+
+  getMemberSince(): string {
+    if (!this.userData?.createdAt) return 'Reciente';
+    
+    const date = new Date(this.userData.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 30) {
+      return `${diffDays} días`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `${years} ${years === 1 ? 'año' : 'años'}`;
+    }
   }
 
   openDialog(enterAnimationDuration: string, exitAnimationDuration: string): void {
@@ -217,13 +276,33 @@ export class ProfileComponent implements OnInit {
       });
     }
   }
+
+  // Método para recargar datos del usuario (útil después de cambiar plan)
+  reloadUserData(): void {
+    this.loadUserData();
+  }
+
+  // Método para verificar si el plan ha cambiado
+  checkPlanUpdate(): void {
+    // Recargar datos del usuario para obtener el plan actualizado
+    this.loadUserData();
+  }
 }
 
 @Component({
   selector: 'dialog-animation',
-  templateUrl: 'dialog-animation.component.html',
-  imports: [MatButtonModule, MatDialogActions, MatDialogClose, MatDialogTitle, MatDialogContent],
-  standalone: true
+  template: `
+    <h2 mat-dialog-title>Eliminar cuenta</h2>
+    <mat-dialog-content>
+      ¿Está seguro de que desea eliminar su cuenta? Esta acción no se puede deshacer.
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancelar</button>
+      <button mat-button [mat-dialog-close]="'confirm'" cdkFocusInitial>Eliminar</button>
+    </mat-dialog-actions>
+  `,
+  standalone: true,
+  imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose, MatButtonModule],
 })
 export class DialogAnimation {
   readonly dialogRef = inject(MatDialogRef<DialogAnimation>);

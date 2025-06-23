@@ -1,0 +1,85 @@
+<div class="plans-container">
+  <div class="plans-header">
+    <h1>Elige tu Plan</h1>
+    <p>Selecciona el plan que mejor se adapte a tus necesidades</p>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error" class="error-container">
+    <p class="error-message">{{ error }}</p>
+    <button (click)="loadPrices()" class="retry-button">Reintentar</button>
+  </div>
+
+  <!-- Estado de verificación de pago -->
+  <div *ngIf="error && error.includes('verificar')" class="payment-verification">
+    <div class="verification-content">
+      <mat-icon class="verification-icon">hourglass_empty</mat-icon>
+      <h3>Verificando tu pago...</h3>
+      <p>{{ error }}</p>
+      <button (click)="handlePaymentReturn()" class="retry-button">
+        <mat-icon>refresh</mat-icon>
+        Reintentar verificación
+      </button>
+    </div>
+  </div>
+
+  <!-- Plans grid -->
+  <div *ngIf="!error && prices.length > 0" class="plans-grid">
+    <div *ngFor="let price of prices" class="plan-card" [class.featured]="getPlanType(price) === 'pro'">
+      <div class="plan-header">
+        <div class="plan-badge" *ngIf="getPlanType(price) === 'pro'">Más Popular</div>
+        <h3>{{ price.product.name }}</h3>
+        <div class="plan-price">
+          <span class="price-amount">{{ formatPrice(price.unit_amount, price.currency) }}</span>
+          <span class="price-period">/{{ price.recurring.interval }}</span>
+        </div>
+      </div>
+
+      <div class="plan-description">
+        <p>{{ price.product.description }}</p>
+      </div>
+
+      <div class="plan-features">
+        <h4>Características incluidas:</h4>
+        <ul>
+          <li *ngFor="let feature of getPlanFeatures(getPlanType(price))" class="feature-item">
+            <span class="feature-icon">✓</span>
+            <span class="feature-text">{{ feature }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="plan-action">
+        <button 
+          (click)="subscribeToPlan(price.id)" 
+          class="subscribe-button"
+          [class.free-plan]="price.unit_amount === 0"
+          [class.featured-button]="getPlanType(price) === 'pro'">
+          {{ price.unit_amount === 0 ? 'Comenzar Gratis' : 'Suscribirse' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Authentication prompt -->
+  <div *ngIf="!error && prices.length > 0 && !isAuthenticated" class="auth-prompt">
+    <div class="auth-message">
+      <h3>¿Listo para empezar?</h3>
+      <p>Necesitas una cuenta para suscribirte a nuestros planes</p>
+      <div class="auth-buttons">
+        <button (click)="goToLogin()" class="auth-button login-button">
+          Iniciar Sesión
+        </button>
+        <button (click)="goToRegister()" class="auth-button register-button">
+          Crear Cuenta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="!error && prices.length === 0" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando planes...</p>
+  </div>
+</div>

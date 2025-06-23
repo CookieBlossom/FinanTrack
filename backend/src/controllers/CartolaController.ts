@@ -1,6 +1,7 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { CartolaService } from '../services/cartola.service';
 import { DatabaseError } from '../utils/errors';
+import { AuthRequest } from '../interfaces/AuthRequest';
 import { Pool } from 'pg';
 
 export class CartolaController {
@@ -117,7 +118,7 @@ export class CartolaController {
     }
   }
 
-  public uploadCartola = async (req: Request & { file?: any, user?: any }, res: Response) => {
+  public uploadCartola = async (req: Request & { file?: any }, res: Response, next: NextFunction) => {
     const crypto = await import('crypto');
     const client = await this.pool.connect();
     try {
@@ -129,8 +130,8 @@ export class CartolaController {
         return res.status(400).json({ error: 'El archivo debe ser un PDF' });
       }
 
-      const userId = req.user?.id;
-      if (!userId) {
+      const user = (req as AuthRequest).user;
+      if (!user) {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
@@ -141,7 +142,7 @@ export class CartolaController {
 
       const existing = await client.query(
         'SELECT * FROM statements WHERE user_id = $1 AND file_hash = $2',
-        [userId, hash]
+        [user.id, hash]
       );
       if (existing.rows.length > 0) {
         await client.release();
@@ -151,19 +152,19 @@ export class CartolaController {
       const cartola = await this.cartolaService.procesarCartolaPDF(fileBuffer);
 
       const cardId = await this.findOrCreateCard(
-        userId,
+        user.id,
         cartola.tituloCartola,
         cartola.clienteNombre,
         cartola.saldoAnterior,
         cartola.fechaHoraConsulta
       );
 
-      await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos);
+      await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos, user.id, user.planId);
 
       await client.query(
         `INSERT INTO statements (user_id, card_id, file_hash, processed_at) 
          VALUES ($1, $2, $3, NOW())`,
-        [userId, cardId, hash]
+        [user.id, cardId, hash]
       );
 
       await client.release();
@@ -186,6 +187,9 @@ export class CartolaController {
       console.error('Error al procesar cartola:', error);
 
       if (error instanceof DatabaseError) {
+        if (error.message.includes('límite') || error.message.includes('no incluye')) {
+          return res.status(403).json({ error: error.message });
+        }
         return res.status(500).json({ error: 'Error al guardar los movimientos en la base de datos' });
       }
 

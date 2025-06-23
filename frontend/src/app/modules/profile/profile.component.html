@@ -1,70 +1,145 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil de Usuario</title>
-</head>
-<body>
-    <div class="container-profile">
-        <div class="profile-card">
-            <div class="profile-header">
-                <h2>Mi Perfil</h2>
-                <button mat-icon-button (click)="logout()" class="logout-button">
-                    <mat-icon>exit_to_app</mat-icon>
-                </button>
-            </div>
-
+<div class="profile-container">
+    <div class="form-profile">
+        <div class="form-profile-header">
+            <a class="button" routerLink="/dashboard">
+                <span class="back-icon">←</span>
+            </a>
+            <h3>Mi Perfil</h3>
+        </div>
+        
+        <div class="form-profile-body">
+            <!-- Formulario -->
             <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
+                <!-- Nombre -->
                 <div class="form-group">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Nombre *</mat-label>
-                        <input matInput formControlName="firstName" placeholder="Ingrese su nombre">
-                        <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
-                            El nombre es requerido
-                        </mat-error>
-                    </mat-form-field>
+                    <input 
+                        type="text" 
+                        placeholder="Nombre *" 
+                        class="form-input"
+                        formControlName="firstName"
+                        autocomplete="given-name"
+                        [class.is-invalid]="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched">
+                    <div class="error-message" *ngIf="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched">
+                        <span *ngIf="profileForm.get('firstName')?.errors?.['required']">El nombre es requerido</span>
+                    </div>
                 </div>
 
+                <!-- Apellido -->
                 <div class="form-group">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Apellido</mat-label>
-                        <input matInput formControlName="lastName" placeholder="Ingrese su apellido">
-                    </mat-form-field>
+                    <input 
+                        type="text" 
+                        placeholder="Apellido" 
+                        class="form-input"
+                        formControlName="lastName"
+                        autocomplete="family-name">
                 </div>
 
+                <!-- Email (solo lectura) -->
                 <div class="form-group">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Correo electrónico</mat-label>
-                        <input matInput [value]="userData?.email" readonly>
-                    </mat-form-field>
+                    <input 
+                        type="email" 
+                        placeholder="Correo electrónico" 
+                        class="form-input"
+                        [value]="userData?.email"
+                        readonly
+                        [class.readonly]="true">
+                    <div class="readonly-note">El correo electrónico no se puede modificar</div>
                 </div>
 
-                <div class="phone-input-container">
-                    <mat-form-field appearance="outline" class="country-code">
-                        <mat-label>Código de área</mat-label>
-                        <input matInput formControlName="countryCode" placeholder="+XX">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" class="phone-number">
-                        <mat-label>Teléfono</mat-label>
-                        <input matInput formControlName="phone" placeholder="Ingrese su teléfono">
-                        <mat-error *ngIf="profileForm.get('phone')?.hasError('pattern')">
-                            Ingrese un número de teléfono válido
-                        </mat-error>
-                    </mat-form-field>
+                <!-- Teléfono -->
+                <div class="form-group">
+                    <div class="phone-container">
+                        <input 
+                            type="text" 
+                            placeholder="+56" 
+                            class="form-input country-code"
+                            formControlName="countryCode"
+                            maxlength="5">
+                        <input 
+                            type="tel" 
+                            placeholder="Número de teléfono" 
+                            class="form-input phone-number"
+                            formControlName="phone"
+                            autocomplete="tel"
+                            [class.is-invalid]="profileForm.get('phone')?.invalid && profileForm.get('phone')?.touched">
+                    </div>
+                    <div class="error-message" *ngIf="profileForm.get('phone')?.invalid && profileForm.get('phone')?.touched">
+                        <span *ngIf="profileForm.get('phone')?.errors?.['pattern']">Ingrese un número de teléfono válido</span>
+                    </div>
                 </div>
 
-                <div class="form-actions">
-                    <button mat-raised-button color="primary" type="submit" [disabled]="!profileForm.get('firstName')?.valid || isLoading">
-                        {{ isLoading ? 'Guardando...' : 'Guardar cambios' }}
-                    </button>
-                    <button mat-button type="button" (click)="openChangePasswordDialog()">
-                        Cambiar contraseña
-                    </button>
-                </div>
+                <!-- Botón de guardar -->
+                <button 
+                    type="submit" 
+                    class="save-button"
+                    [disabled]="profileForm.invalid || profileForm.disabled || isLoading">
+                    <span *ngIf="!isLoading">Guardar cambios</span>
+                    <span *ngIf="isLoading" class="loading">
+                        <span class="spinner"></span>
+                        Guardando...
+                    </span>
+                </button>
             </form>
         </div>
+        
+        <div class="form-profile-footer"></div>
     </div>
-</body>
-</html>
+
+    <!-- Sección de información del usuario a la derecha -->
+    <div class="user-info-section">
+        <div class="user-info-content">
+            <div class="user-avatar">
+                <span class="avatar-text">{{ getInitials() }}</span>
+            </div>
+            <h1 class="user-name">{{ userData?.firstName }} {{ userData?.lastName }}</h1>
+            <p class="user-email">{{ userData?.email }}</p>
+            <div class="user-plan">
+                <span class="plan-badge">{{ getPlanName() }}</span>
+                <span class="plan-price">{{ getPlanPrice() }}</span>
+            </div>
+            <div class="user-stats">
+                <div class="stat">
+                    <span class="stat-icon">📊</span>
+                    <span class="stat-text">Miembro desde {{ getMemberSince() }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-icon">🔒</span>
+                    <span class="stat-text">Cuenta verificada</span>
+                </div>
+            </div>
+        </div>
+        <!-- Sección de acciones de cuenta -->
+        <div class="account-actions-section">
+            <h4 class="section-title">Acciones de cuenta</h4>
+            
+            <div class="action-buttons">
+                <!-- Cambiar contraseña -->
+                <button 
+                    type="button" 
+                    class="action-button change-password-button"
+                    (click)="openChangePasswordDialog()">
+                    <span class="action-icon">🔐</span>
+                    <span class="action-text">Cambiar contraseña</span>
+                </button>
+
+                <!-- Gestionar facturación -->
+                <button 
+                    type="button" 
+                    class="action-button billing-button"
+                    (click)="openBillingSection()">
+                    <span class="action-icon">💳</span>
+                    <span class="action-text">Gestionar facturación</span>
+                </button>
+
+                <!-- Cerrar sesión -->
+                <button 
+                    type="button" 
+                    class="action-button logout-button"
+                    (click)="logout()">
+                    <span class="action-icon">🚪</span>
+                    <span class="action-text">Cerrar sesión</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

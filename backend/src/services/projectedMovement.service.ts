@@ -1,14 +1,23 @@
-import { Pool } from 'pg';
+import {Pool } from 'pg';
 import { IProjectedMovement, IProjectedMovementCreate, IProjectedMovementUpdate, IProjectedMovementFilters } from '../interfaces/IProjectedMovement';
 import { pool } from '../config/database/connection';
-
+import { PlanService } from './plan.service';
+import { DatabaseError } from '../utils/errors';
 export class ProjectedMovementService {
     private pool: Pool;
+    private planService: PlanService;
 
     constructor() {
         this.pool = pool;
+        this.planService = new PlanService();
     }
-
+    async countProjectedByUser(userId: number): Promise<number> {
+        const res = await this.pool.query(
+          `SELECT COUNT(*) AS cnt FROM projected_movements WHERE user_id = $1`,
+          [userId]
+        );
+        return Number(res.rows[0].cnt);
+      }
     async getAllProjectedMovements(userId: number): Promise<IProjectedMovement[]> {
         const query = `
             SELECT 
@@ -131,39 +140,68 @@ export class ProjectedMovementService {
         const result = await this.pool.query(query, values);
         return result.rows;
     }
-
-    async createProjectedMovement(movementData: IProjectedMovementCreate): Promise<IProjectedMovement> {
+    async createProjectedMovement(params: {
+        userId: number;
+        planId: number;
+        categoryId?: number;
+        cardId?: number;
+        amount: number;
+        description?: string;
+        movementType: 'income' | 'expense';
+        expectedDate: Date;
+        probability?: number;
+        recurrenceType?: 'monthly' | 'yearly' | 'weekly' | null;
+      }): Promise<IProjectedMovementCreate> {
+        const {
+          userId,
+          planId,
+          categoryId = null,
+          cardId = null,
+          amount,
+          description = null,
+          movementType,
+          expectedDate,
+          probability = 100,
+          recurrenceType = null
+        } = params;
+    
+        try {
+          const limits = await this.planService.getLimitsForPlan(planId);
+          if (limits.projected_moves !== -1) {
+            const used = await this.countProjectedByUser(userId);
+            if (used >= limits.projected_moves) {
+              throw new DatabaseError(
+                `Has alcanzado el límite de ${limits.projected_moves} movimientos proyectados para tu plan`
+              );
+            }
+          }
+        } catch (error) {
+            if (error instanceof DatabaseError) {
+                throw error;
+            }
+            throw new DatabaseError('Error al obtener los límites del plan');
+        }
+        
         const query = `
-            INSERT INTO projected_movements (
-                user_id, category_id, card_id, amount,
-                description, movement_type, expected_date,
-                probability, recurrence_type, status
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending'
-            )
-            RETURNING 
-                id, user_id as "userId", category_id as "categoryId",
-                card_id as "cardId", amount, description,
-                movement_type as "movementType", expected_date as "expectedDate",
-                probability, status, actual_movement_id as "actualMovementId",
-                recurrence_type as "recurrenceType",
-                created_at as "createdAt", updated_at as "updatedAt"
+          INSERT INTO projected_movements (
+            user_id, category_id, card_id, amount,
+            description, movement_type, expected_date,
+            probability, recurrence_type, status
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending'
+          )
+          RETURNING
+            id, user_id AS "userId", category_id AS "categoryId",
+            card_id AS "cardId", amount, description,
+            movement_type AS "movementType", expected_date AS "expectedDate",
+            probability, status, actual_movement_id AS "actualMovementId",
+            recurrence_type AS "recurrenceType", created_at AS "createdAt", updated_at AS "updatedAt"
         `;
-
-        const result = await this.pool.query(query, [
-            movementData.userId,
-            movementData.categoryId,
-            movementData.cardId,
-            movementData.amount,
-            movementData.description,
-            movementData.movementType,
-            movementData.expectedDate,
-            movementData.probability || 100,
-            movementData.recurrenceType
-        ]);
-
+    
+        const values = [userId, categoryId, cardId, amount, description, movementType, expectedDate, probability, recurrenceType];
+        const result = await this.pool.query(query, values);
         return result.rows[0];
-    }
+      }
 
     async updateProjectedMovement(
         id: number, 

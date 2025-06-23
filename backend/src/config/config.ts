@@ -1,5 +1,5 @@
 export const config = {
-    jwtSecret: process.env.JWT_SECRET || 'tu_clave_secreta_por_defecto',
+    jwtSecret: process.env.JWT_SECRET || '2004',
     database: {
         host: process.env.DB_HOST,
         port: Number(process.env.DB_PORT),

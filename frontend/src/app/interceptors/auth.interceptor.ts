@@ -16,7 +16,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // No interceptar peticiones a rutas de autenticación
-  if (req.url.includes('/users/login') || req.url.includes('/users/register')) {
+  if (req.url.includes('/users/login') || req.url.includes('/users/register') || req.url.includes('/stripe/prices')) {
     return next(req);
   }
 
@@ -38,6 +38,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         console.log('Token expirado o inválido');
         authTokenService.removeToken();
         router.navigate(['/login']);
+      } else if (error.status === 403) {
+        console.log('Acceso denegado - Plan insuficiente');
+        // Para errores de plan, redirigir a la página de planes
+        if (!req.url.includes('/plans')) {
+          router.navigate(['/plans']);
+        }
+      } else if (error.status === 429) {
+        console.log('Límite de uso alcanzado');
+        // Para errores de límite, redirigir a la página de planes
+        if (!req.url.includes('/plans')) {
+          router.navigate(['/plans']);
+        }
       }
       return throwError(() => error);
     })

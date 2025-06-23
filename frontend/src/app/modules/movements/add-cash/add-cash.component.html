@@ -1,45 +1,87 @@
-<h2>Agregar Movimiento en Efectivo</h2>
+<h2 mat-dialog-title align="center">Agregar Movimiento en Efectivo</h2>
 
-<form [formGroup]="cashForm" (ngSubmit)="submit()">
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Categoría</mat-label>
-    <mat-select formControlName="categoryId">
-        <mat-option *ngFor="let cat of categories" [value]="cat.id">
-            {{ cat.name_category }}
-            </mat-option>
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Método de Pago</mat-label>
-    <mat-select formControlName="description">
-      <mat-option *ngFor="let method of methodOptions" [value]="method">
-        {{ method }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Monto</mat-label>
-    <input matInput type="number" formControlName="amount" />
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Fecha</mat-label>
-    <input matInput type="date" formControlName="transactionDate" />
-  </mat-form-field>
-
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Tipo</mat-label>
-    <mat-select formControlName="movementType">
-      <mat-option *ngFor="let type of typeOptions" [value]="type">
-        {{ type === 'income' ? 'Ingreso' : 'Gasto' }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-
-  <div class="actions">
-    <button mat-flat-button color="primary" type="submit" [disabled]="isLoading">Guardar</button>
-    <button mat-flat-button color="warn" type="button" (click)="cancel()">Cancelar</button>
+<!-- Información de límites -->
+<div class="limits-info" *ngIf="limitsInfo">
+  <div class="limit-item">
+    <mat-icon>receipt</mat-icon>
+    <span>Movimientos manuales: {{ limitsInfo.manual_movements?.used || 0 }}/{{ limitsInfo.manual_movements?.limit || 0 }}</span>
+    <div class="limit-bar">
+      <div class="limit-progress" [style.width.%]="getProgressPercentage('manual_movements')"></div>
+    </div>
   </div>
-</form>
+</div>
+
+<!-- Notificación de límites -->
+<div class="limit-notification" *ngIf="showLimitNotification">
+  <app-limit-notification 
+    [data]="limitNotificationData"
+    (onClose)="hideLimitNotification()">
+  </app-limit-notification>
+</div>
+
+<div mat-dialog-content>
+  <form [formGroup]="cashForm" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Categoría</mat-label>
+      <mat-select formControlName="categoryId" required>
+          <mat-option *ngFor="let cat of categories" [value]="cat.id">
+              {{ cat.name_category }}
+          </mat-option>
+      </mat-select>
+      <mat-error *ngIf="cashForm.get('categoryId')?.hasError('required')">
+        La categoría es requerida
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Método de Pago</mat-label>
+      <mat-select formControlName="description" required>
+        <mat-option *ngFor="let method of methodOptions" [value]="method">
+          {{ method }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="cashForm.get('description')?.hasError('required')">
+        El método de pago es requerido
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Monto</mat-label>
+      <input matInput type="number" formControlName="amount" required />
+      <mat-error *ngIf="cashForm.get('amount')?.hasError('required')">
+        El monto es requerido
+      </mat-error>
+      <mat-error *ngIf="cashForm.get('amount')?.hasError('min')">
+        El monto debe ser mayor a 0
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Fecha</mat-label>
+      <input matInput type="date" formControlName="transactionDate" required />
+      <mat-error *ngIf="cashForm.get('transactionDate')?.hasError('required')">
+        La fecha es requerida
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Tipo</mat-label>
+      <mat-select formControlName="movementType" required>
+        <mat-option *ngFor="let type of typeOptions" [value]="type">
+          {{ type === 'income' ? 'Ingreso' : 'Gasto' }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="cashForm.get('movementType')?.hasError('required')">
+        El tipo es requerido
+      </mat-error>
+    </mat-form-field>
+
+    <div mat-dialog-actions align="end">
+      <button mat-button type="button" (click)="cancel()">Cancelar</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="cashForm.invalid || isLoading">
+        <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+        <span *ngIf="!isLoading">Guardar</span>
+      </button>
+    </div>
+  </form>
+</div>

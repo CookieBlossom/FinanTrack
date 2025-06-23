@@ -14,12 +14,15 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom, Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
-
 import { CardService } from '../../../services/card.service';
 import { AuthTokenService } from '../../../services/auth-token.service';
 import { RutUtils } from '../../../utils/rut.utils';
 import { InstantErrorStateMatcher } from '../../../utils/error-state.matcher';
 import { Bank, CardType } from '../../../models/card.model';
+import { PlanLimitsService } from '../../../services/plan-limits.service';
+import { LimitNotificationComponent, LimitNotificationData } from '../../../shared/components/limit-notification/limit-notification.component';
+import { PLAN_LIMITS } from '../../../models/plan.model';
+import { FeatureControlService } from '../../../services/feature-control.service';
 
 interface CardCredentials {
   rut: string;
@@ -44,7 +47,8 @@ interface CardCredentials {
     MatProgressBarModule,
     MatIconModule,
     MatTooltipModule,
-    MatTabsModule
+    MatTabsModule,
+    LimitNotificationComponent
   ]
 })
 export class AddCardDialogComponent implements OnInit, OnDestroy {
@@ -59,15 +63,36 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   progress = 0;
   statusMessage = '';
   canRetry = false;
+  activeTab = 'automatic'; // Tab activo por defecto
+  hidePassword = true; // Para mostrar/ocultar contraseña
   private destroy$ = new Subject<void>();
   matcher = new InstantErrorStateMatcher();
+
+  // Variables para límites
+  limitsInfo: any = null;
+  showLimitNotification = false;
+  limitNotificationData: LimitNotificationData = {
+    type: 'warning',
+    title: '',
+    message: '',
+    limit: 0,
+    current: 0,
+    showUpgradeButton: false
+  };
+
+  // Variables para control de plan
+  currentPlanName: string = 'free';
+  showAutomaticTab: boolean = false;
+  showManualTab: boolean = true;
 
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<AddCardDialogComponent>,
     private cardService: CardService,
     private authTokenService: AuthTokenService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private planLimitsService: PlanLimitsService,
+    private featureControlService: FeatureControlService
   ) {
     // Scraper form
     this.cardForm = this.fb.group({
@@ -105,6 +130,13 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       this.manualForm.disable();
       return;
     }
+    
+    // Cargar límites
+    this.loadLimitsInfo();
+    
+    // Cargar información del plan
+    this.loadPlanInfo();
+    
     // Carga dinámica de tipos y bancos
     this.cardTypes = (await firstValueFrom(this.cardService.getCardTypes()))
     .filter(type => type.name.toLowerCase() !== 'efectivo');
@@ -112,9 +144,53 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     this.banks = await firstValueFrom(this.cardService.getBanks());
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  loadLimitsInfo(): void {
+    // Cargar información de límites
+    this.planLimitsService.currentUsage$.subscribe({
+      next: (usage) => {
+        this.limitsInfo = usage;
+      },
+      error: (error) => {
+        console.error('Error al cargar límites:', error);
+      }
+    });
+  }
+
+  loadPlanInfo(): void {
+    // Cargar información del plan actual
+    this.featureControlService.featureControl$.subscribe(control => {
+      if (control) {
+        this.currentPlanName = control.planName;
+        
+        // Controlar qué pestañas mostrar según el plan
+        this.showAutomaticTab = ['premium', 'enterprise'].includes(control.planName.toLowerCase());
+        this.showManualTab = true; // Siempre mostrar manual
+        
+        // Si no se puede mostrar automático, cambiar a manual por defecto
+        if (!this.showAutomaticTab && this.activeTab === 'automatic') {
+          this.activeTab = 'manual';
+        }
+      }
+    });
+  }
+
+  getProgressPercentage(limitKey: string): number {
+    if (!this.limitsInfo || !this.limitsInfo[limitKey]) return 0;
+    const limit = this.limitsInfo[limitKey];
+    return Math.min((limit.used / limit.limit) * 100, 100);
+  }
+
+  displayLimitNotification(data: LimitNotificationData): void {
+    this.limitNotificationData = data;
+    this.showLimitNotification = true;
+  }
+
+  hideLimitNotification(): void {
+    this.showLimitNotification = false;
+  }
+
+  upgradePlan(): void {
+    window.location.href = '/plans';
   }
 
   // --- Scraper TAB
@@ -141,6 +217,34 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       this.snackBar.open(errorMsg, 'Cerrar', { duration: 5000 });
       return;
     }
+
+    // Verificar límites antes de agregar tarjeta
+    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MAX_CARDS).subscribe({
+      next: (limitStatus) => {
+        if (limitStatus.currentUsage >= limitStatus.limit) {
+          this.displayLimitNotification({
+            type: 'error',
+            title: 'Límite de Tarjetas Alcanzado',
+            message: `Has alcanzado el límite de ${limitStatus.limit} tarjetas activas. Actualiza tu plan para agregar más tarjetas.`,
+            limit: limitStatus.limit,
+            current: limitStatus.currentUsage,
+            showUpgradeButton: true
+          });
+          return;
+        }
+
+        // Continuar con la sincronización
+        this.proceedWithScraperSync();
+      },
+      error: (error) => {
+        console.error('Error al verificar límites:', error);
+        // Continuar sin verificación en caso de error
+        this.proceedWithScraperSync();
+      }
+    });
+  }
+
+  private proceedWithScraperSync(): void {
     this.loading = true;
     this.progress = 0;
     this.statusMessage = '';
@@ -184,7 +288,34 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   // --- Manual TAB
   onManualSubmit(): void {
     if (this.manualForm.invalid) return;
-  
+
+    // Verificar límites antes de agregar tarjeta manual
+    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MAX_CARDS).subscribe({
+      next: (limitStatus) => {
+        if (limitStatus.currentUsage >= limitStatus.limit) {
+          this.displayLimitNotification({
+            type: 'error',
+            title: 'Límite de Tarjetas Alcanzado',
+            message: `Has alcanzado el límite de ${limitStatus.limit} tarjetas activas. Actualiza tu plan para agregar más tarjetas.`,
+            limit: limitStatus.limit,
+            current: limitStatus.currentUsage,
+            showUpgradeButton: true
+          });
+          return;
+        }
+
+        // Continuar con la creación manual
+        this.proceedWithManualCard();
+      },
+      error: (error) => {
+        console.error('Error al verificar límites:', error);
+        // Continuar sin verificación en caso de error
+        this.proceedWithManualCard();
+      }
+    });
+  }
+
+  private proceedWithManualCard(): void {
     this.manualError = null; // limpiar error previo
     this.isUploading = true;
   
@@ -204,6 +335,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       }
     });
   }
+
   onCancel(): void {
     this.dialogRef.close();
   }
@@ -228,5 +360,18 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     if (error.error?.message) return error.error.message;
     if (error.message) return error.message;
     return 'Error desconocido';
+  }
+
+  // Método para cambiar entre tabs
+  setActiveTab(tab: 'automatic' | 'manual'): void {
+    this.activeTab = tab;
+    // Limpiar errores al cambiar de tab
+    this.error = null;
+    this.manualError = null;
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 } 

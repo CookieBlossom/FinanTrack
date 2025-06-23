@@ -1,12 +1,12 @@
 <div class="container-movements">
-    <div class="top-bar">
-        <h2>Movimientos</h2>
-        <button class="btn-upload" (click)="openUploadStatementDialog()">
+    <div class="table">
+        <button 
+          class="btn-upload" 
+          (click)="openUploadStatementDialog()"
+          *appFeatureControl="'canUseCartola'">
           <mat-icon>upload_file</mat-icon>
           Cargar Cartola
         </button>
-      </div>
-    <div class="table">
         <h3>Movimientos de Cuenta</h3>
         <ag-grid-angular
             class="ag-theme-alpine"

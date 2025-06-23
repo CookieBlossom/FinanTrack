@@ -1,4 +1,32 @@
 <div class="container-categories">
+  <!-- Header con información del plan -->
+  <div class="categories-header">
+    <h2>Gestión de Categorías</h2>
+    <div class="plan-info">
+      <div class="keywords-limit-info">
+        <mat-icon>label</mat-icon>
+        <span>Límite: {{ keywordsLimit }} keywords por categoría</span>
+        <span class="usage-info">(Plan {{ currentPlanName }})</span>
+      </div>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="upgradePlan()"
+        *ngIf="currentPlanName === 'free'">
+        <mat-icon>upgrade</mat-icon>
+        Actualizar Plan
+      </button>
+    </div>
+  </div>
+
+  <!-- Notificación de límites -->
+  <div class="notifications-container" *ngIf="showLimitNotification">
+    <app-limit-notification 
+      [data]="limitNotificationData"
+      (onClose)="hideLimitNotification()">
+    </app-limit-notification>
+  </div>
+
   <div class="left-panel">
     <div class="table-section">
       <ag-grid-angular

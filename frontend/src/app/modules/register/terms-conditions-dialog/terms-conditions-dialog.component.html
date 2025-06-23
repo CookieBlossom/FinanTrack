@@ -1,0 +1,89 @@
+<div class="terms-dialog">
+  <h2 mat-dialog-title>
+    <mat-icon>gavel</mat-icon>
+    TÉRMINOS Y CONDICIONES DE USO
+  </h2>
+  
+  <div mat-dialog-content class="terms-content">
+    <div class="last-update">
+      <strong>Última actualización:</strong> 21 de junio de 2025
+    </div>
+
+    <section class="terms-section">
+      <h3>1. Introducción</h3>
+      <p>Bienvenido a Finantrack, una plataforma digital orientada a personas residentes en Chile, diseñada para entregar claridad financiera mediante la visualización, categorización y análisis de gastos e ingresos personales.</p>
+      <p>Al utilizar Finantrack, aceptas los presentes Términos y Condiciones.</p>
+    </section>
+
+    <section class="terms-section">
+      <h3>2. Requisitos de uso</h3>
+      <p>El servicio está disponible solo para personas mayores de 18 años con al menos una tarjeta bancaria. El registro requiere un correo electrónico válido.</p>
+    </section>
+
+    <section class="terms-section">
+      <h3>3. Servicios ofrecidos</h3>
+      <p>Finantrack permite a los usuarios:</p>
+      <ul>
+        <li>Ingresar movimientos manuales.</li>
+        <li>Subir cartolas del Banco Estado.</li>
+        <li>Usar automatización mediante scraper para obtener movimientos y saldos de cuentas bancarias.</li>
+        <li>Visualizar y categorizar transacciones financieras.</li>
+      </ul>
+    </section>
+
+    <section class="terms-section">
+      <h3>4. Planes de suscripción</h3>
+      <p>Finantrack cuenta con:</p>
+      <ul>
+        <li><strong>Plan Básico:</strong> acceso limitado a categorías, movimientos y sin acceso al scraper.</li>
+        <li><strong>Plan Premium:</strong> acceso ilimitado a funcionalidades y uso completo del scraper bancario.</li>
+      </ul>
+    </section>
+
+    <section class="terms-section">
+      <h3>5. Uso de datos personales</h3>
+      <p>Los datos ingresados en Finantrack (nombre, correo, movimientos financieros) se almacenan en una base de datos PostgreSQL. Estos datos se guardan mientras el usuario mantenga activa su cuenta o hasta que él decida eliminarlos.</p>
+      <p><strong>Finantrack no almacena credenciales bancarias ni números de tarjeta.</strong></p>
+    </section>
+
+    <section class="terms-section">
+      <h3>6. Uso de credenciales bancarias</h3>
+      <p>Para la automatización por scraping, el usuario puede ingresar temporalmente sus credenciales bancarias. Estas se procesan a través de un sistema seguro y se eliminan automáticamente tras completarse el proceso. No se almacenan ni se asocian de forma permanente a la cuenta del usuario.</p>
+      <p>Se solicitará consentimiento explícito antes de cada uso.</p>
+    </section>
+
+    <section class="terms-section">
+      <h3>7. Seguridad</h3>
+      <ul>
+        <li>Las contraseñas están protegidas mediante algoritmos de hash seguros.</li>
+        <li>El acceso a la información está controlado mediante tokens de seguridad (JWT).</li>
+        <li>Redis se utiliza como almacenamiento temporal, protegido por prácticas de seguridad modernas.</li>
+      </ul>
+    </section>
+
+    <section class="terms-section">
+      <h3>8. Cambios y modificaciones</h3>
+      <p>Finantrack puede modificar estos Términos y Condiciones, notificando a los usuarios mediante correo o notificaciones en la plataforma. El uso continuado implica la aceptación de los nuevos términos.</p>
+    </section>
+
+    <section class="terms-section">
+      <h3>9. Contacto</h3>
+      <p>Si tienes dudas, puedes contactarnos a:</p>
+      <div class="contact-info">
+        <mat-icon>email</mat-icon>
+        <span>📧 contacto&#64;finantrack.cl</span>
+      </div>
+    </section>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-button (click)="onDecline()">
+      <mat-icon>close</mat-icon>
+      Rechazar
+    </button>
+    <button mat-raised-button color="primary" (click)="onAccept()">
+      <mat-icon>check</mat-icon>
+      Aceptar Términos
+    </button>
+  </div>
+</div> 
