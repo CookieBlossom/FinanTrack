@@ -35,8 +35,6 @@
             "outputHashing": "all",
             "sourceMap": false,
             "extractLicenses": true,
-            "vendorChunk": true,
-            "buildOptimizer": true,
             "budgets": [
               {
                 "type": "initial",
@@ -67,9 +65,7 @@
               "outputHashing": "all",
               "optimization": true,
               "sourceMap": false,
-              "extractLicenses": true,
-              "vendorChunk": true,
-              "buildOptimizer": true
+              "extractLicenses": true
             },
             "development": {
               "optimization": false,
