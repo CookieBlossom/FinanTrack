@@ -6,6 +6,7 @@ import { StripeService } from '../../services/stripe.service';
 import { StripePrice } from '../../models/stripe.model';
 import { AuthTokenService } from '../../services/auth-token.service';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-plans',
@@ -79,8 +80,23 @@ export class PlansComponent implements OnInit {
       return;
     }
 
-    const successUrl = `${window.location.origin}/plans`;
-    const cancelUrl = `${window.location.origin}/plans`;
+    // Derivar la URL del frontend basándose en la URL del backend
+    const getFrontendUrl = (): string => {
+      const backendUrl = new URL(environment.apiUrl);
+      const hostname = backendUrl.hostname;
+      
+      // Si estamos en producción (Render), usar el dominio del frontend
+      if (hostname.includes('onrender.com')) {
+        return 'https://finantrack-frontend.onrender.com';
+      }
+      
+      // En desarrollo, usar localhost:4200
+      return 'http://localhost:4200';
+    };
+    
+    const frontendUrl = getFrontendUrl();
+    const successUrl = `${frontendUrl}/plans`;
+    const cancelUrl = `${frontendUrl}/plans`;
 
     console.log('🔄 Creando sesión de checkout con URLs:', { successUrl, cancelUrl });
 
