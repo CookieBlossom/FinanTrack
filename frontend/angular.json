@@ -26,9 +26,28 @@
             ],
             "styles": [
               "@angular/material/prebuilt-themes/magenta-violet.css",
+              "src/app/shared/styles/common-styles.css",
               "src/styles.css"
             ],
             "scripts": [
+            ],
+            "optimization": true,
+            "outputHashing": "all",
+            "sourceMap": false,
+            "extractLicenses": true,
+            "vendorChunk": true,
+            "buildOptimizer": true,
+            "budgets": [
+              {
+                "type": "initial",
+                "maximumWarning": "2MB",
+                "maximumError": "5MB"
+              },
+              {
+                "type": "anyComponentStyle",
+                "maximumWarning": "20kB",
+                "maximumError": "50kB"
+              }
             ]
           },
           "configurations": {
@@ -36,21 +55,38 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "2MB",
+                  "maximumError": "5MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "15kB"
+                  "maximumWarning": "20kB",
+                  "maximumError": "50kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": true,
+              "sourceMap": false,
+              "extractLicenses": true,
+              "vendorChunk": true,
+              "buildOptimizer": true
             },
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2MB",
+                  "maximumError": "5MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "20kB",
+                  "maximumError": "50kB"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"

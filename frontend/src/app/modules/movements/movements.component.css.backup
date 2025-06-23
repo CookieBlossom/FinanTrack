@@ -1,0 +1,112 @@
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .container-movements {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 1fr;
+    height: 100%;
+    max-height: 98%;
+    max-width: 100%;
+    overflow: hidden;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--clr-surface-a0);
+    
+  }
+  .table{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 99%;
+    width: 100%;
+  }
+  h3 {
+    font-family: var(--font-family-bold);
+    font-size: var(--font-size-xl);
+    margin: 0px;
+    color: var(--color-text);
+    text-align: center;
+  }
+  .btn-add {
+    background-color: var(--color-primary-darker);
+    color: var(--color-text-inverse);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.7rem 1rem;
+    font-family: var(--font-family-bold);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    width: 97%;
+  }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .btn-upload {
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  ag-grid-angular {
+    display: block;
+    flex: 1;
+    width: 97%;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+  }
+  @media (max-width: 1000px) {
+    .container-movements {
+      padding: 0px;
+    }
+    .container-tables{
+        display: flex;
+        flex-direction: column;
+        justify-items: center;
+    }
+    .cards{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 100%;
+        width: 90%;
+        border-radius: 20px;
+        justify-content: center;
+        
+    }
+    .card-summary-a, .card-summary-b, .card-summary-c{
+        display: flex;
+        width: 90%;
+        height: 60%;
+        padding: 0.4rem;
+        flex-direction: column;
+        justify-content: center;
+        h3{
+            font-size: var(--font-size-sm);
+        }
+        .text-card{
+            p{
+                font-size: var(--font-size-xs);
+            }
+            h3{
+                font-size: var(--font-size-md);
+            }
+        }
+    }
+  }

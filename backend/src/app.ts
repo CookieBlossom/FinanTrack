@@ -23,7 +23,7 @@ app.use(cors({
 }));
 
 // Middleware para manejar el body raw de Stripe webhook
-app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 
 // Middleware para JSON en todas las demás rutas
 app.use(express.json());

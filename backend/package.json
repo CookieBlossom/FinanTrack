@@ -9,7 +9,8 @@
     "build": "tsc",
     "test": "jest",
     "db:reset": "psql -U postgres -d finantrack -f src/config/database/schema.sql",
-    "stripe:test": "node src/test-stripe-connection.js"
+    "stripe:test": "node src/test-stripe-connection.js",
+    "db:migrate": "node -e \"const { initializeDatabase } = require('./dist/config/database/connection'); initializeDatabase().then(() => { console.log('DB migrated successfully'); process.exit(0); }).catch((err) => { console.error('DB migration failed:', err); process.exit(1); });\""
   },
   "keywords": [],
   "author": "",

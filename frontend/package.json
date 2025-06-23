@@ -5,8 +5,12 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build --configuration=production",
+    "build:optimized": "npm run optimize:css && ng build --configuration=production",
+    "build:render": "npm run build:optimized",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "optimize:css": "node optimize-css.js",
+    "analyze": "ng build --configuration=production --stats-json && npx webpack-bundle-analyzer dist/fronted/stats.json"
   },
   "private": true,
   "dependencies": {
@@ -25,14 +29,10 @@
     "ag-grid-angular": "^33.2.4",
     "ag-grid-community": "^33.2.4",
     "axios": "^1.6.8",
-    "cors": "^2.8.5",
     "d3": "^7.9.0",
     "d3-shape": "^3.2.0",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
     "jwt-decode": "^4.0.0",
     "ngx-chips": "^3.0.0",
-    "pg": "^8.14.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

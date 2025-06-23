@@ -1,0 +1,368 @@
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .title-section{
+    margin: 0px;
+    text-align: center;
+    font-family: var(--font-family-bold);
+    font-size: var(--font-size-xl);
+    color: var(--color-accent);
+  }
+  
+  .container-dashboard {
+    padding: 10px;
+    display: grid;
+    gap: 1rem;
+    height: 98%;
+    max-width: 100%;
+    overflow: hidden;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    align-items: center;
+  }
+  
+  .dashboard-content {
+    display: grid;
+    gap: 1rem;
+    height: 100%;
+    width: 100%;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+  }
+  
+  /* Secciones */
+  .ingresosVsCostos,
+  .movimientos,
+  .gastosPorCategoria {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 90%;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  /* Estados vacíos */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    background-color: var(--clr-surface-a10);
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .empty-state i {
+    font-size: 2rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 1rem;
+  }
+  
+  .empty-state p {
+    color: var(--color-text-secondary);
+    margin: 0;
+    font-size: var(--font-size-md);
+  }
+  
+  /* Gráfico de líneas */
+  .ingresosVsCostos ngx-charts-line-chart {
+    flex: 1;
+    min-height: 200px;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  .chart-wrapper {
+    height: 100%;
+    width: 100%;
+    background-color: var(--clr-surface-a10);
+    border-radius: 1rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Pie chart */
+  .gastosPorCategoria ngx-charts-pie-chart {
+    flex: 1;
+    min-height: 200px;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  .movimientos {
+    display: flex;
+    flex-direction: column;
+    width: 100%;   /* <--- IMPORTANTE */
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+  /* Tabla ag-grid */
+  .movimientos ag-grid-angular {
+    display: block; /* IMPORTANTE */
+    flex: 1;
+    width: 100%;
+    height: 100% !important;
+    min-height: 0;
+    overflow: auto;
+  }
+  
+  /* Layout en pantallas grandes */
+  @media (min-width: 768px) {
+    .dashboard-content {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 50% 1fr;
+        grid-template-areas:
+            "ingresosVsCostos ingresosVsCostos"
+            "movimientos gastosPorCategoria";
+    }
+  
+    .ingresosVsCostos {
+        grid-area: ingresosVsCostos;
+    }
+  
+    .movimientos {
+        grid-area: movimientos;
+    }
+  
+    .gastosPorCategoria {
+        grid-area: gastosPorCategoria;
+    }
+  }
+  .ag-theme-alpine {
+    --ag-foreground-color: var(--color-text);
+    --ag-background-color: var(--clr-surface-a0);
+    --ag-header-foreground-color: var(--color-text);
+    --ag-header-background-color: var(--clr-surface-a10);
+    --ag-odd-row-background-color: var(--clr-surface-a0);
+    --ag-row-hover-color: var(--clr-surface-a20);
+    --ag-font-family: var(--font-family-normal);
+    --ag-font-size: var(--font-size-md);
+  }
+  ::ng-deep .chart-legend .legend-title{
+    font-family: var(--font-family-bold) !important;
+    font-size: var(--font-size-md) !important;
+    color: var(--color-text) !important;
+    margin: 0px !important;
+    text-align: center;
+    padding: 10px;
+  }
+  ::ng-deep .chart-legend .legend-labels {
+    list-style: none;
+    text-align: left;
+    float: left;
+    width: 100%;
+    border-radius: 3px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: nowrap;
+    background: var(--color-bg-gray);
+    color: var(--color-text);
+    text-align: center;
+}
+::ng-deep .chart-legend .legend-label .active .legend-label-text {
+    color: var(--color-text) !important;
+}
+
+::ng-deep .chart-legend .legend-label-text {
+    display: inline-block;
+    vertical-align: top;
+    font-size: var(--font-size-md);
+    color: var(--color-primary-dark);
+    font-family: var(--font-family-bold) !important;
+    width: calc(100% - 20px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+  ::ng-deep ngx-charts text {
+    font-family: var(--font-family-normal) !important;
+    fill: var(--color-text) !important;
+    font-size: var(--font-size-sm) !important;
+  }
+  ::ng-deep .ngx-charts text {
+    font-family: var(--font-family-normal) !important;
+    font-size: var(--font-size-sm) !important;
+    fill: var(--color-text) !important;
+  }
+  ::ng-deep .x.axis text,
+  ::ng-deep .y.axis text,
+  ::ng-deep .x.axis-label,
+  ::ng-deep .y.axis-label {
+    font-family: var(--font-family-normal) !important;
+    font-size: var(--font-size-sm) !important;
+    fill: var(--color-text) !important;
+  }
+  ::ng-deep .tooltip-label,
+  ::ng-deep .tooltip-value {
+    font-family: var(--font-family-bold) !important;
+    font-size: var(--font-size-sm) !important;
+    color: var(--color-text) !important;
+  }
+
+/* Estilos para mensajes de "no hay datos" */
+.no-data-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 2rem;
+}
+
+.no-data-content {
+    text-align: center;
+    max-width: 600px;
+    padding: 2rem;
+    background: var(--clr-surface-a10);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.no-data-content i {
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+}
+
+.no-data-content h2 {
+    color: var(--color-text);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.no-data-content p {
+    color: var(--color-text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.action-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.action-button.primary {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.action-button.secondary {
+    background-color: var(--color-accent);
+    color: white;
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button i {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Asegurar que los contenedores tengan altura mínima */
+.chart-wrapper, 
+.movimientos ag-grid-angular,
+.gastosPorCategoria ngx-charts-pie-chart {
+  min-height: 300px;
+  height: 100%;
+}
+
+/* Estilos para mensajes de carga */
+.loading-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 2rem;
+  background-color: var(--clr-surface-a10);
+  border-radius: 1rem;
+  text-align: center;
+}
+
+.loading-message i {
+  font-size: 2rem;
+  color: var(--color-accent);
+  margin-bottom: 1rem;
+}
+
+.loading-message p {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-family-normal);
+  font-size: var(--font-size-md);
+}
+
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    width: 100%;
+}
+
+.loading-content {
+    text-align: center;
+    padding: 2rem;
+    background: var(--clr-surface-a10);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loading-content i {
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+}
+
+.loading-content h2 {
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+}
+
+.loading-content p {
+    color: var(--color-text-secondary);
+}
+
+.table-container {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    background-color: var(--clr-surface-a10);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.chart-container {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    background-color: var(--clr-surface-a10);
+    border-radius: 1rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}

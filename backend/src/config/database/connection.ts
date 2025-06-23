@@ -16,10 +16,10 @@ export async function initializeDatabase(): Promise<boolean> {
     let client: PoolClient | null = null;
     try {
         client = await pool.connect();
-        // const schemaPath = path.join(__dirname, 'schema.sql'); // Ajusta la ruta si es necesario
-        // const schema = fs.readFileSync(schemaPath, 'utf8');
-        // await client.query(schema);
-        // console.log('Esquema ejecutado correctamente');
+        const schemaPath = path.join(__dirname, 'schema.sql'); // Ajusta la ruta si es necesario
+        const schema = fs.readFileSync(schemaPath, 'utf8');
+        await client.query(schema);
+        console.log('Esquema ejecutado correctamente');
         return true;
     } catch (error) {
         console.error('Error al conectar con PostgreSQL:', error);
