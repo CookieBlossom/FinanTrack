@@ -19,12 +19,21 @@ export class HomeComponent implements OnInit {
     const stripeCancel = urlParams.get('stripe_cancel');
     const sessionId = urlParams.get('session_id');
 
+    console.log('🏠 Home component - Parámetros recibidos:', {
+      stripeSuccess,
+      stripeCancel,
+      sessionId,
+      fullUrl: window.location.href
+    });
+
     if (stripeSuccess && sessionId) {
+      console.log('🔄 Redirigiendo a plans con session_id:', sessionId);
       // Redirigir a plans con el session_id
       this.router.navigate(['/plans'], { 
         queryParams: { session_id: sessionId }
       });
     } else if (stripeCancel) {
+      console.log('🔄 Redirigiendo a plans (cancelado)');
       // Redirigir a plans sin session_id (cancelado)
       this.router.navigate(['/plans']);
     }

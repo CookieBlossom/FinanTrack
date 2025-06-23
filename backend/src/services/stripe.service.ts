@@ -65,7 +65,7 @@ export class StripeService {
               mode: 'subscription',
               line_items: [{ price: priceId, quantity: 1 }],
               metadata: { paymentRecordId: String(paymentRecordId), userId: String(userId) },
-              success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+              success_url: `${successUrl}&session_id={CHECKOUT_SESSION_ID}`,
               cancel_url: cancelUrl
             };
 
