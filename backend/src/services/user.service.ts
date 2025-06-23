@@ -207,9 +207,11 @@ export class UserService {
   public async getProfile(userId: number): Promise<IUserResponse> {
     try {
       const query = `
-        SELECT id, email, first_name, last_name, country_code, phone, role, created_at, updated_at
-        FROM "user"
-        WHERE id = $1;
+        SELECT u.id, u.email, u.first_name, u.last_name, u.country_code, u.phone, u.role, 
+               u.created_at, u.updated_at, u.plan_id, p.name as plan_name
+        FROM "user" u
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE u.id = $1;
       `;
 
       const result = await this.pool.query(query, [userId]);
@@ -258,23 +260,30 @@ export class UserService {
         throw new DatabaseError('No valid fields to update');
       }
 
-      const query = `
+      const updateQuery = `
         UPDATE "user"
         SET ${updates.join(', ')}, updated_at = NOW()
         WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL
-        RETURNING id, email, first_name, last_name, country_code, phone, role, is_active, created_at, updated_at;
+        RETURNING id;
       `;
 
-      console.log('Query:', query);
-      console.log('Values:', values);
+      const updateResult = await this.pool.query(updateQuery, values);
 
-      const result = await this.pool.query(query, values);
-
-      if (!result.rows[0]) {
+      if (!updateResult.rows[0]) {
         throw new DatabaseError('User not found or inactive');
       }
 
-      return result.rows[0];
+      // Obtener los datos completos del usuario actualizado
+      const selectQuery = `
+        SELECT u.id, u.email, u.first_name, u.last_name, u.country_code, u.phone, u.role, 
+               u.is_active, u.created_at, u.updated_at, u.plan_id, p.name as plan_name
+        FROM "user" u
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE u.id = $1;
+      `;
+
+      const selectResult = await this.pool.query(selectQuery, [userId]);
+      return selectResult.rows[0];
     } catch (error: unknown) {
       console.error('Error updating profile:', error);
       if (error instanceof DatabaseError) {

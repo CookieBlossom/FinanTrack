@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterModule, Router } from '@angular/router';
@@ -37,7 +37,7 @@ import { AuthTokenService } from '../../services/auth-token.service';
   ],
   standalone: true,
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   readonly dialog = inject(MatDialog);
   private userService = inject(UserService);
   private authService = inject(AuthService);
@@ -52,6 +52,11 @@ export class ProfileComponent implements OnInit {
   isEditing = false;
   isLoading = true;
 
+  private planUpdateHandler = () => {
+    console.log('🔄 Plan actualizado detectado, recargando datos del perfil...');
+    this.loadUserData();
+  };
+
   constructor() {
     this.profileForm = this.fb.group({
       firstName: ['', [Validators.required]],
@@ -63,6 +68,14 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit() {
     this.loadUserData();
+    
+    // Escuchar eventos de actualización de plan
+    window.addEventListener('planUpdated', this.planUpdateHandler);
+  }
+
+  ngOnDestroy() {
+    // Limpiar el event listener cuando el componente se destruye
+    window.removeEventListener('planUpdated', this.planUpdateHandler);
   }
 
   logout() {

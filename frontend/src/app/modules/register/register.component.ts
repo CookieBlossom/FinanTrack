@@ -51,7 +51,8 @@ export class RegisterComponent {
     private dialog: MatDialog
   ) {
     this.registerForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
+      firstName: ['', [Validators.required, Validators.minLength(2)]],
+      lastName: [''],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
@@ -155,7 +156,8 @@ export class RegisterComponent {
     this.registerForm.disable();
 
     const userData = {
-      name: this.registerForm.get('name')?.value,
+      firstName: this.registerForm.get('firstName')?.value,
+      lastName: this.registerForm.get('lastName')?.value,
       email: this.registerForm.get('email')?.value,
       password: this.registerForm.get('password')?.value
     };

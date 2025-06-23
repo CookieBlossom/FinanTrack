@@ -28,7 +28,7 @@ export class AuthService {
     this.isAuthenticatedSubject.next(this.authTokenService.isTokenValid());
   }
 
-  register(userData: { email: string; password: string }): Observable<AuthResponse> {
+  register(userData: { firstName: string; lastName?: string; email: string; password: string }): Observable<AuthResponse> {
     console.log('Enviando datos de registro:', userData);
     const url = `${this.apiUrl}/users/register`;
     console.log('URL de registro:', url);

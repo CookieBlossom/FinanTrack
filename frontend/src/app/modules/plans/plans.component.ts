@@ -137,11 +137,10 @@ export class PlansComponent implements OnInit {
           if (response.success && response.newToken) {
             console.log('✅ Pago verificado exitosamente');
             console.log('📋 Nuevo plan:', response.payment?.planName);
-            
             // Actualizar token y redirigir
             this.stripeService.updateTokenAndRedirect(response.newToken, '/dashboard');
-            
-            // Mostrar mensaje de éxito
+            // Recargar datos del usuario para reflejar el cambio de plan
+            this.reloadUserData();
             alert(`¡Plan actualizado exitosamente! Tu nuevo plan es: ${response.payment?.planName}`);
           } else {
             console.log('⏳ Pago aún no completado, intentando simular webhook...');
@@ -248,5 +247,13 @@ export class PlansComponent implements OnInit {
     }
     
     return planType;
+  }
+
+  // Método para recargar datos del usuario
+  reloadUserData(): void {
+    // Emitir un evento para que otros componentes sepan que el plan cambió
+    window.dispatchEvent(new CustomEvent('planUpdated', {
+      detail: { planName: 'premium' }
+    }));
   }
 }

@@ -14,15 +14,25 @@
                 <div class="form-group">
                     <input 
                         type="text" 
-                        placeholder="Nombre completo" 
+                        placeholder="Nombre" 
                         class="form-input"
-                        formControlName="name"
-                        autocomplete="name"
-                        [class.is-invalid]="registerForm.get('name')?.invalid && registerForm.get('name')?.touched">
-                    <div class="error-message" *ngIf="registerForm.get('name')?.invalid && registerForm.get('name')?.touched">
-                        <span *ngIf="registerForm.get('name')?.errors?.['required']">El nombre es requerido</span>
-                        <span *ngIf="registerForm.get('name')?.errors?.['minlength']">El nombre debe tener al menos 2 caracteres</span>
+                        formControlName="firstName"
+                        autocomplete="given-name"
+                        [class.is-invalid]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">
+                    <div class="error-message" *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">
+                        <span *ngIf="registerForm.get('firstName')?.errors?.['required']">El nombre es requerido</span>
+                        <span *ngIf="registerForm.get('firstName')?.errors?.['minlength']">El nombre debe tener al menos 2 caracteres</span>
                     </div>
+                </div>
+
+                <!-- Apellido -->
+                <div class="form-group">
+                    <input 
+                        type="text" 
+                        placeholder="Apellido" 
+                        class="form-input"
+                        formControlName="lastName"
+                        autocomplete="family-name">
                 </div>
 
                 <!-- Email -->
