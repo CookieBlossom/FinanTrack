@@ -1,1 +1,196 @@
-body{margin:0px;padding:0px;}:root{--color-primary-darkest:#311019;--color-primary-darker:#4f0f20;--color-primary-dark:#6d2237;--color-primary:#a84f68;--color-accent:#9b2949;--color-highlight:#e69ac3;--color-bg-light:#000000;--color-bg-gray:#cfcfcf;--clr-surface-a0:#ffffff;--clr-surface-a10:#f1f1f1;--clr-surface-a20:#c0bebe;--clr-surface-a30:#9b9999;--clr-surface-a40:#868686;--clr-surface-a50:#6a6a6a;--color-text:#000000;--color-text-inverse:#ffffff;--color-text-muted:#6c757d;--color-border:#e9ecef;--color-error:#dc3545;--color-success:#28a745;--color-warning:#ffc107;--color-info:#17a2b8;--clr-error-a10:rgba(220,53,69,0.1);--clr-error-a20:rgba(220,53,69,0.2);--clr-success-a10:rgba(40,167,69,0.1);--clr-warning-a10:rgba(255,193,7,0.1);--color-text-secondary:#6c757d;--color-success-600:#28a745;--color-danger-600:#dc3545;--color-primary-600:#a84f68;--clr-primary-50:rgba(168,79,104,0.1);--clr-primary-100:rgba(168,79,104,0.2);--clr-primary-200:rgba(168,79,104,0.3);--clr-danger-50:rgba(220,53,69,0.1);--clr-danger-100:rgba(220,53,69,0.2);--clr-danger-200:rgba(220,53,69,0.3);--clr-danger-700:#dc3545;--clr-surface-a5:rgba(255,255,255,0.05);--font-size-xxs:0.5rem;--font-size-xs:0.70rem;--font-size-sm:0.875rem;--font-size-md:1rem;--font-size-lg:1.25rem;--font-size-xl:1.5rem;--font-size-xxl:2rem;--font-family-normal:"QuickSand",sans-serif;--font-family-bold:"QuickSand-Bold",sans-serif;}.dark-theme{--color-primary-darkest:#a02b73;--color-primary-darker:#c542a2;--color-primary-dark:#e644a4;--color-primary:#dc59ac;--color-accent:#df85b7;--color-highlight:#c856a0;--color-bg-light:#fafafa;--color-bg-gray:#2f2f2f;--clr-surface-a0:#030303;--clr-surface-a10:#1f1f1f;--clr-surface-a20:#373737;--clr-surface-a30:#505050;--clr-surface-a40:#6a6a6a;--clr-surface-a50:#868686;--color-text:#ffffff;--color-text-inverse:#000000;--color-text-muted:#adb5bd;--color-border:#495057;--color-error:#ff6b6b;--color-success:#51cf66;--color-warning:#ffd43b;--color-info:#74c0fc;--clr-error-a10:rgba(255,107,107,0.1);--clr-error-a20:rgba(255,107,107,0.2);--clr-success-a10:rgba(81,207,102,0.1);--clr-warning-a10:rgba(255,212,59,0.1);--color-text-secondary:#adb5bd;--color-success-600:#51cf66;--color-danger-600:#ff6b6b;--color-primary-600:#dc59ac;--clr-primary-50:rgba(220,89,172,0.1);--clr-primary-100:rgba(220,89,172,0.2);--clr-primary-200:rgba(220,89,172,0.3);--clr-danger-50:rgba(255,107,107,0.1);--clr-danger-100:rgba(255,107,107,0.2);--clr-danger-200:rgba(255,107,107,0.3);--clr-danger-700:#ff6b6b;--clr-surface-a5:rgba(0,0,0,0.05);}html,body{height:100%;}body{margin:0;font-family:Roboto,"Helvetica Neue",sans-serif;}*{box-sizing:border-box;}.mat-mdc-card{border-radius:12px !important;box-shadow:0 2px 8px rgba(0,0,0,0.1) !important;}.mat-mdc-button{border-radius:8px !important;font-weight:500 !important;}.mat-mdc-raised-button{border-radius:8px !important;font-weight:500 !important;}mat-icon{font-size:1.2em !important;width:1.2em !important;height:1.2em !important;}.mat-mdc-tooltip{font-size:0.875rem !important;border-radius:6px !important;}.mat-mdc-snack-bar-container{border-radius:8px !important;}.custom-dialog .mat-mdc-dialog-container{padding:0;}.custom-dialog .mat-mdc-dialog-surface{padding:0;border-radius:8px;overflow:hidden;}.full-screen-dialog .mat-mdc-dialog-container{padding:0;border-radius:0;overflow:hidden;}.full-screen-dialog .mat-mdc-dialog-surface{padding:0;border-radius:0;overflow:hidden;box-shadow:none;}.full-screen-dialog .cdk-overlay-pane{max-width:none !important;max-height:none !important;}
+/* Reset básico */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Variables CSS - Tema claro */
+:root {
+  /* Colores primarios */
+  --color-primary-darkest: #311019;
+  --color-primary-darker: #4f0f20;
+  --color-primary-dark: #6d2237;
+  --color-primary: #a84f68;
+  --color-accent: #9b2949;
+  --color-highlight: #e69ac3;
+  
+  /* Colores de fondo */
+  --color-bg-light: #000000;
+  --color-bg-gray: #cfcfcf;
+  --clr-surface-a0: #ffffff;
+  --clr-surface-a10: #f1f1f1;
+  --clr-surface-a20: #c0bebe;
+  --clr-surface-a30: #9b9999;
+  --clr-surface-a40: #868686;
+  --clr-surface-a50: #6a6a6a;
+  --clr-surface-a5: rgba(255, 255, 255, 0.05);
+  
+  /* Colores de texto */
+  --color-text: #000000;
+  --color-text-inverse: #ffffff;
+  --color-text-muted: #6c757d;
+  --color-text-secondary: #6c757d;
+  
+  /* Colores de estado */
+  --color-border: #e9ecef;
+  --color-error: #dc3545;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-info: #17a2b8;
+  
+  /* Colores con transparencia */
+  --clr-error-a10: rgba(220, 53, 69, 0.1);
+  --clr-error-a20: rgba(220, 53, 69, 0.2);
+  --clr-success-a10: rgba(40, 167, 69, 0.1);
+  --clr-warning-a10: rgba(255, 193, 7, 0.1);
+  
+  /* Variantes de colores */
+  --color-success-600: #28a745;
+  --color-danger-600: #dc3545;
+  --color-primary-600: #a84f68;
+  --clr-primary-50: rgba(168, 79, 104, 0.1);
+  --clr-primary-100: rgba(168, 79, 104, 0.2);
+  --clr-primary-200: rgba(168, 79, 104, 0.3);
+  --clr-danger-50: rgba(220, 53, 69, 0.1);
+  --clr-danger-100: rgba(220, 53, 69, 0.2);
+  --clr-danger-200: rgba(220, 53, 69, 0.3);
+  --clr-danger-700: #dc3545;
+  
+  /* Tipografía */
+  --font-size-xxs: 0.5rem;
+  --font-size-xs: 0.70rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-xxl: 2rem;
+  --font-family-normal: "QuickSand", sans-serif;
+  --font-family-bold: "QuickSand-Bold", sans-serif;
+}
+
+/* Variables CSS - Tema oscuro */
+.dark-theme {
+  /* Colores primarios */
+  --color-primary-darkest: #a02b73;
+  --color-primary-darker: #c542a2;
+  --color-primary-dark: #e644a4;
+  --color-primary: #dc59ac;
+  --color-accent: #df85b7;
+  --color-highlight: #c856a0;
+  
+  /* Colores de fondo */
+  --color-bg-light: #fafafa;
+  --color-bg-gray: #2f2f2f;
+  --clr-surface-a0: #030303;
+  --clr-surface-a10: #1f1f1f;
+  --clr-surface-a20: #373737;
+  --clr-surface-a30: #505050;
+  --clr-surface-a40: #6a6a6a;
+  --clr-surface-a50: #868686;
+  --clr-surface-a5: rgba(0, 0, 0, 0.05);
+  
+  /* Colores de texto */
+  --color-text: #ffffff;
+  --color-text-inverse: #000000;
+  --color-text-muted: #adb5bd;
+  --color-text-secondary: #adb5bd;
+  
+  /* Colores de estado */
+  --color-border: #495057;
+  --color-error: #ff6b6b;
+  --color-success: #51cf66;
+  --color-warning: #ffd43b;
+  --color-info: #74c0fc;
+  
+  /* Colores con transparencia */
+  --clr-error-a10: rgba(255, 107, 107, 0.1);
+  --clr-error-a20: rgba(255, 107, 107, 0.2);
+  --clr-success-a10: rgba(81, 207, 102, 0.1);
+  --clr-warning-a10: rgba(255, 212, 59, 0.1);
+  
+  /* Variantes de colores */
+  --color-success-600: #51cf66;
+  --color-danger-600: #ff6b6b;
+  --color-primary-600: #dc59ac;
+  --clr-primary-50: rgba(220, 89, 172, 0.1);
+  --clr-primary-100: rgba(220, 89, 172, 0.2);
+  --clr-primary-200: rgba(220, 89, 172, 0.3);
+  --clr-danger-50: rgba(255, 107, 107, 0.1);
+  --clr-danger-100: rgba(255, 107, 107, 0.2);
+  --clr-danger-200: rgba(255, 107, 107, 0.3);
+  --clr-danger-700: #ff6b6b;
+}
+
+/* Configuración básica */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Personalización de Material Design */
+.mat-mdc-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mat-mdc-button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+.mat-mdc-raised-button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+mat-icon {
+  font-size: 1.2em !important;
+  width: 1.2em !important;
+  height: 1.2em !important;
+}
+
+.mat-mdc-tooltip {
+  font-size: 0.875rem !important;
+  border-radius: 6px !important;
+}
+
+.mat-mdc-snack-bar-container {
+  border-radius: 8px !important;
+}
+
+/* Diálogos personalizados */
+.custom-dialog .mat-mdc-dialog-container {
+  padding: 0;
+}
+
+.custom-dialog .mat-mdc-dialog-surface {
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.full-screen-dialog .mat-mdc-dialog-container {
+  padding: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.full-screen-dialog .mat-mdc-dialog-surface {
+  padding: 0;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.full-screen-dialog .cdk-overlay-pane {
+  max-width: none !important;
+  max-height: none !important;
+}
