@@ -95,8 +95,8 @@ export class PlansComponent implements OnInit {
     };
     
     const frontendUrl = getFrontendUrl();
-    const successUrl = `${frontendUrl}/plans`;
-    const cancelUrl = `${frontendUrl}/plans`;
+    const successUrl = `${frontendUrl}/?stripe_success=true`;
+    const cancelUrl = `${frontendUrl}/?stripe_cancel=true`;
 
     console.log('🔄 Creando sesión de checkout con URLs:', { successUrl, cancelUrl });
 
