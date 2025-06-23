@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { StripeService } from '../../services/stripe.service';
-import { StripePrice } from '../../models/stripe.model';
+import { StripePrice, PaymentVerificationResponse } from '../../models/stripe.model';
 import { AuthTokenService } from '../../services/auth-token.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
@@ -144,8 +144,27 @@ export class PlansComponent implements OnInit {
             // Mostrar mensaje de éxito
             alert(`¡Plan actualizado exitosamente! Tu nuevo plan es: ${response.payment?.planName}`);
           } else {
-            console.log('⏳ Pago aún no completado');
-            this.error = 'El pago aún no ha sido procesado. Por favor, espera unos minutos y recarga la página.';
+            console.log('⏳ Pago aún no completado, intentando simular webhook...');
+            
+            // Intentar simular el webhook
+            this.stripeService.simulateWebhookBySession(sessionId).subscribe({
+              next: (webhookResponse) => {
+                if (webhookResponse.success) {
+                  console.log('✅ Webhook simulado exitosamente');
+                  // Verificar el pago nuevamente
+                  setTimeout(() => {
+                    this.handlePaymentReturn();
+                  }, 1000);
+                } else {
+                  console.log('❌ Error simulando webhook:', webhookResponse.message);
+                  this.error = 'El pago aún no ha sido procesado. Por favor, espera unos minutos y recarga la página.';
+                }
+              },
+              error: (webhookError) => {
+                console.error('❌ Error simulando webhook:', webhookError);
+                this.error = 'El pago aún no ha sido procesado. Por favor, espera unos minutos y recarga la página.';
+              }
+            });
           }
         },
         error: (error) => {

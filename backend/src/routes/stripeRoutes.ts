@@ -234,19 +234,38 @@ router.get('/verify-payment-public', async (req, res) => {
 
     console.log(`🔍 Verificando pago público para sesión: ${session_id}`);
 
-    // Buscar el pago en la base de datos
+    // Buscar el pago en la base de datos (incluyendo pendientes)
     const paymentResult = await stripeService['db'].query(`
       SELECT p.*, u.plan_id, pl.name as plan_name, u.email, u.first_name, u.last_name, u.role
       FROM payments p
       JOIN "user" u ON p.user_id = u.id
       LEFT JOIN plans pl ON u.plan_id = pl.id
-      WHERE p.stripe_session_id = $1
+      WHERE p.stripe_session_id = $1 OR p.stripe_price_id IS NOT NULL
+      ORDER BY p.created_at DESC
+      LIMIT 1
     `, [session_id]);
 
     if (paymentResult.rows.length === 0) {
+      console.log(`❌ Pago no encontrado para sesión: ${session_id}`);
+      
+      // Buscar pagos recientes para debug
+      const recentPayments = await stripeService['db'].query(`
+        SELECT p.stripe_session_id, p.status, p.created_at, u.email
+        FROM payments p
+        JOIN "user" u ON p.user_id = u.id
+        ORDER BY p.created_at DESC
+        LIMIT 5
+      `);
+      
+      console.log('📋 Pagos recientes:', recentPayments.rows);
+      
       return res.status(404).json({ 
         success: false, 
-        message: 'Pago no encontrado' 
+        message: 'Pago no encontrado',
+        debug: {
+          sessionId: session_id,
+          recentPayments: recentPayments.rows
+        }
       });
     }
 
@@ -286,13 +305,21 @@ router.get('/verify-payment-public', async (req, res) => {
         newToken
       });
     } else {
+      console.log(`⏳ Pago aún no completado. Estado: ${payment.status}`);
       res.json({ 
         success: false, 
         message: 'Pago aún no completado',
         payment: {
           status: payment.status,
           planName: payment.plan_name,
-          planId: payment.plan_id
+          planId: payment.plan_id,
+          amount: payment.amount,
+          currency: payment.currency
+        },
+        debug: {
+          sessionId: session_id,
+          paymentId: payment.id,
+          userId: userId
         }
       });
     }
@@ -454,6 +481,96 @@ router.post('/simulate-webhook', async (req, res) => {
       message: 'Webhook simulado exitosamente',
       payment: {
         id: payment_id,
+        status: 'completed',
+        planName: planName,
+        planId: planId
+      }
+    });
+  } catch (error) {
+    console.error('Error simulando webhook:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor',
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
+// Simular webhook manualmente usando session_id
+router.post('/simulate-webhook-by-session', async (req, res) => {
+  try {
+    const { session_id } = req.body;
+    
+    if (!session_id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'session_id es requerido' 
+      });
+    }
+
+    console.log(`🔄 Simulando webhook para sesión: ${session_id}`);
+
+    // Buscar el pago por session_id
+    const paymentResult = await stripeService['db'].query(`
+      SELECT p.*, u.id as user_id, u.email
+      FROM payments p
+      JOIN "user" u ON p.user_id = u.id
+      WHERE p.stripe_session_id = $1 OR p.stripe_price_id IS NOT NULL
+      ORDER BY p.created_at DESC
+      LIMIT 1
+    `, [session_id]);
+
+    if (paymentResult.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Pago no encontrado para esta sesión' 
+      });
+    }
+
+    const payment = paymentResult.rows[0];
+    const userId = payment.user_id;
+
+    // Actualizar el pago como completado
+    await stripeService['db'].query(`
+      UPDATE payments
+      SET status = 'completed', 
+          stripe_session_id = $1,
+          updated_at = NOW()
+      WHERE id = $2
+    `, [session_id, payment.id]);
+
+    // Obtener el plan basado en el stripe_price_id
+    const planName = await stripeService['getPlanNameFromPriceId'](payment.stripe_price_id);
+    console.log(`📋 Plan detectado: ${planName}`);
+
+    // Obtener el ID del plan desde la base de datos
+    const planResult = await stripeService['db'].query(`
+      SELECT id, name FROM plans WHERE name = $1
+    `, [planName]);
+
+    if (planResult.rows.length === 0) {
+      return res.status(500).json({ 
+        success: false, 
+        message: `Plan no encontrado: ${planName}` 
+      });
+    }
+
+    const planId = planResult.rows[0].id;
+
+    // Actualizar plan del usuario
+    await stripeService['db'].query(`
+      UPDATE "user"
+      SET plan_id = $1, updated_at = NOW()
+      WHERE id = $2
+    `, [planId, userId]);
+
+    console.log(`✅ Usuario ${userId} actualizado al plan ${planName} (ID: ${planId})`);
+
+    res.json({ 
+      success: true, 
+      message: 'Webhook simulado exitosamente',
+      payment: {
+        id: payment.id,
         status: 'completed',
         planName: planName,
         planId: planId
