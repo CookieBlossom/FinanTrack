@@ -209,11 +209,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   getPlanName(): string {
     if (!this.userData?.planName) {
-      return 'Plan Gratuito';
+      return 'Plan Básico';
     }
     
     const planNames: { [key: string]: string } = {
-      'free': 'Plan Gratuito',
       'basic': 'Plan Básico',
       'premium': 'Plan Premium',
       'pro': 'Plan Pro'
@@ -224,13 +223,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   getPlanPrice(): string {
     const planPrices: { [key: string]: string } = {
-      'free': 'Gratis',
-      'basic': '$9.990/mes',
-      'premium': '$19.990/mes',
-      'pro': '$29.990/mes'
+      'basic': 'Gratis',
+      'premium': '$10.000/mes',
+      'pro': '$25.000/mes'
     };
     
-    return planPrices[this.userData?.planName || 'free'] || 'Gratis';
+    return planPrices[this.userData?.planName || 'basic'] || 'Gratis';
   }
 
   isCurrentPlan(planName: string): boolean {

@@ -48,10 +48,11 @@ export class UserService {
           country_code,
           phone,
           role, 
+          plan_id,
           is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, email, first_name, last_name, country_code, phone, role, is_active, created_at;
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, email, first_name, last_name, country_code, phone, role, plan_id, is_active, created_at;
       `;
 
       const values = [
@@ -62,6 +63,7 @@ export class UserService {
         countryCode,
         phone,
         'user',
+        1, // Plan básico por defecto
         true
       ];
 
@@ -163,7 +165,7 @@ export class UserService {
       const planQuery = `
       SELECT p.id AS plan_id, p.name AS plan_name
       FROM "user" u
-      JOIN plans p ON u.plan_id = p.id
+      LEFT JOIN plans p ON u.plan_id = p.id
       WHERE u.id = $1
       `;
       const result = await this.pool.query(query, [credentials.email.trim()]);
@@ -181,7 +183,8 @@ export class UserService {
       const name = (user.first_name || user.firstName || '') +
       ((user.last_name || user.lastName) ? ' ' + (user.last_name || user.lastName) : '');
       const planRes = await this.pool.query(planQuery, [user.id]);
-      const { plan_id, plan_name } = planRes.rows[0];
+      const planData = planRes.rows[0] || { plan_id: 1, plan_name: 'basic' };
+      const { plan_id, plan_name } = planData;
       const payload = {
         id: user.id,
         email: user.email,

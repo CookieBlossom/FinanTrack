@@ -118,7 +118,7 @@ export class PlansPageController {
                     user: {
                         id: user.id,
                         email: user.email,
-                        currentPlan: currentPlan?.name || 'free',
+                        currentPlan: currentPlan?.name || 'basic',
                         currentPlanId: user.plan_id
                     },
                     message: 'Usuario autenticado. Redirigir a pagos.'
@@ -267,27 +267,29 @@ export class PlansPageController {
 
     private getPlanFeatures(planName: string, limits: any, permissions: string[]) {
         const features = {
-            free: [
-                'Hasta 3 tarjetas manuales',
-                '50 movimientos manuales por mes',
-                '50 movimientos proyectados',
-                '3 categorías personalizadas',
-                'Analytics básicos'
-            ],
-            semi: [
-                'Hasta 10 tarjetas',
-                '150 movimientos por mes',
-                'Importación de cartolas',
-                '10 categorías personalizadas',
-                'Sincronización automática (20/mes)',
-                'Analytics avanzados'
+            basic: [
+                'Hasta 2 tarjetas',
+                '100 movimientos manuales por mes',
+                '5 palabras clave por categoría',
+                'Analytics básicos',
+                'Sin cartolas bancarias',
+                'Sin scraper automático'
             ],
             premium: [
+                'Hasta 10 tarjetas',
+                '1000 movimientos por mes',
+                '10 palabras clave por categoría',
+                'Cartolas bancarias ilimitadas',
+                'Analytics avanzados',
+                'Sincronización automática'
+            ],
+            pro: [
                 'Tarjetas ilimitadas',
                 'Movimientos ilimitados',
+                'Palabras clave ilimitadas',
                 'Cartolas ilimitadas',
-                'Categorías ilimitadas',
-                'Sincronización ilimitada',
+                'Scraper automático',
+                'Categorización automatizada',
                 'Analytics premium',
                 'Exportación de datos',
                 'Soporte prioritario'
@@ -299,9 +301,9 @@ export class PlansPageController {
 
     private getPlanPrice(planName: string): number {
         const prices = {
-            free: 0,
-            semi: 9990, // $9.990 CLP
-            premium: 19990 // $19.990 CLP
+            basic: 0,        // Gratis
+            premium: 10000,  // $10.000 CLP
+            pro: 25000       // $25.000 CLP
         };
 
         return prices[planName as keyof typeof prices] || 0;
