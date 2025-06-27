@@ -123,6 +123,11 @@ export class AddMovementComponent implements OnInit {
       cards => {
         const seen = new Set();
         this.cards = cards.filter(card => {
+          // Filtrar tarjetas de efectivo
+          if (card.nameAccount.toLowerCase() === 'efectivo') {
+            return false;
+          }
+          
           const normalized = this.normalizeCardName(card.nameAccount);
           if (seen.has(normalized)) return false;
           seen.add(normalized);
@@ -164,6 +169,14 @@ export class AddMovementComponent implements OnInit {
 
   async onSubmit() {
     if (this.manualForm.valid) {
+      const selectedCardId = this.manualForm.get('cardId')?.value;
+      const selectedCard = this.cards.find(card => card.id === selectedCardId);
+      
+      // Verificar que no se esté intentando crear un movimiento en una tarjeta de efectivo
+      if (selectedCard && selectedCard.nameAccount.toLowerCase() === 'efectivo') {
+        this.snackBar.open('No puedes crear movimientos normales en tarjetas de efectivo. Usa "Movimiento en Efectivo" en su lugar.', 'Cerrar', { duration: 5000 });
+        return;
+      }
       // Verificar límites antes de crear el movimiento
       this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MANUAL_MOVEMENTS).subscribe({
         next: (limitStatus) => {

@@ -1,22 +1,109 @@
 <div class="container-transactions">
-    <!-- Izquierda: Tabla + Botón -->
-    <div class="table-transactions">
-      <h2 class="title-section">Próximos Movimientos</h2>
-      <ag-grid-angular
-        class="ag-theme-alpine"
-        [columnDefs]="columnDefs"
-        [rowData]="rowData"
-        [pagination]="true"
-        [paginationPageSize]="5"
-        [singleClickEdit]="true"
-        [stopEditingWhenCellsLoseFocus]="true"
-        [rowSelection]="'single'"
-        [theme]="myTheme"
-        rowModelType="clientSide"
-        (gridReady)="onGridReady($event)"
-        (gridSizeChanged)="onGridSizeChanged($event)">
-      </ag-grid-angular>
-      <button class="btn-add" (click)="openAddUpcomingMovement()">+ Agregar Movimiento</button>
+  <!-- Header con estadísticas -->
+  <div class="stats-header">
+    <h2 class="title-section">Próximos Movimientos</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ upcomingStats.total }}</div>
+          <div class="stat-label">Total Pendientes</div>
+        </div>
+      </div>
+      <div class="stat-card overdue">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ upcomingStats.overdue }}</div>
+          <div class="stat-label">Vencidos</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ upcomingStats.thisWeek }}</div>
+          <div class="stat-label">Esta Semana</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ upcomingStats.totalAmount | currency:'CLP':'symbol':'1.0-0' }}</div>
+          <div class="stat-label">Balance Proyectado</div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- Tabla principal -->
+  <div class="table-transactions">
+    <div class="table-header">
+      <div class="table-title">
+        <h3>Movimientos Proyectados</h3>
+        <span class="subtitle">Gestiona tus movimientos futuros y conviértelos en reales cuando ocurran</span>
+      </div>
+      <button class="btn-add" (click)="openAddUpcomingMovement()">
+        <mat-icon>add</mat-icon>
+        Agregar Movimiento
+      </button>
+    </div>
+    
+    <!-- Mostrar tabla si hay movimientos -->
+    <ag-grid-angular
+      *ngIf="rowData.length > 0"
+      class="ag-theme-alpine"
+      [columnDefs]="columnDefs"
+      [rowData]="rowData"
+      [pagination]="true"
+      [paginationPageSize]="10"
+      [singleClickEdit]="true"
+      [stopEditingWhenCellsLoseFocus]="true"
+      [rowSelection]="'single'"
+      [theme]="myTheme"
+      [defaultColDef]="{
+        filter: true,
+        resizable: true,
+        sortable: true,
+        minWidth: 100
+      }"
+      rowModelType="clientSide"
+      (gridReady)="onGridReady($event)"
+      (gridSizeChanged)="onGridSizeChanged($event)">
+    </ag-grid-angular>
+
+    <!-- Mostrar mensaje cuando no hay movimientos -->
+    <div *ngIf="rowData.length === 0" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3 class="empty-title">No tienes movimientos próximos</h3>
+      <p class="empty-description">
+        Agrega tu primer movimiento para que se vea la tabla y puedas gestionar tus finanzas futuras
+      </p>
+      <button class="btn-add-empty" (click)="openAddUpcomingMovement()">
+        <mat-icon>add</mat-icon>
+        Agregar Primer Movimiento
+      </button>
+    </div>
+  </div>
+
+  <!-- Información adicional -->
+  <div class="info-section">
+    <div class="info-card">
+      <h4>💡 Cómo funciona</h4>
+      <ul>
+        <li><strong>Pendiente:</strong> Movimiento que aún no ha ocurrido</li>
+        <li><strong>Vencido:</strong> Fecha pasada, puedes completarlo o cancelarlo</li>
+        <li><strong>Completado:</strong> Se convirtió en movimiento real</li>
+        <li><strong>Cancelado:</strong> No ocurrirá</li>
+      </ul>
+    </div>
+    
+    <div class="info-card">
+      <h4>🎯 Probabilidad</h4>
+      <ul>
+        <li><span style="color: #2e7d32;">🟢 75-100%:</span> Muy probable</li>
+        <li><span style="color: #f57c00;">🟡 50-74%:</span> Probable</li>
+        <li><span style="color: #d32f2f;">🔴 25-49%:</span> Poco probable</li>
+      </ul>
+    </div>
+  </div>
+</div>
   

@@ -14,6 +14,7 @@ import categoryRoutes from './categoryRoutes';
 import planRoutes from './planRoutes';
 import plansPageRoutes from './plansPageRoutes';
 import stripeRoutes from './stripeRoutes';
+import automationRoutes from './automationRoutes';
 
 const router = Router();
 const protectedRouter = Router();
@@ -21,6 +22,7 @@ const protectedRouter = Router();
 router.use('/users', userRoutes);
 router.use('/plans-page', plansPageRoutes);
 router.use('/stripe', stripeRoutes);
+router.use('/automation', automationRoutes);
 router.get('/', (req, res) => {
     res.json({ message: 'rutas publicas funcionando correctamente' });
 });

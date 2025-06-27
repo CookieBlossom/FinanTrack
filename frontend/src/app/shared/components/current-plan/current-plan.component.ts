@@ -1,76 +1,38 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import { Subscription } from 'rxjs';
 import { FeatureControlService } from '../../../services/feature-control.service';
+import { PlanService } from '../../../services/plan.service';
+import { UserPlan } from '../../../models/plan.model';
 
 @Component({
   selector: 'app-current-plan',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="current-plan-container" *ngIf="planInfo">
-      <div class="plan-badge">
-        <span class="plan-name">{{ planInfo.planDisplayName }}</span>
-        <button 
-          class="upgrade-btn" 
-          (click)="upgradePlan()"
-          *ngIf="planInfo.planName === 'free'">
-          Actualizar
-        </button>
-      </div>
-    </div>
-  `,
-  styles: [`
-    .current-plan-container {
-      display: flex;
-      align-items: center;
-    }
-
-    .plan-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
-      border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 12px;
-    }
-
-    .plan-name {
-      color: #495057;
-      font-weight: 500;
-    }
-
-    .upgrade-btn {
-      background: #8B2635;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 10px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .upgrade-btn:hover {
-      background: #6B1E2A;
-    }
-  `]
+  imports: [CommonModule, MatIconModule],
+  templateUrl: './current-plan.component.html',
+  styleUrls: ['./current-plan.component.css']
 })
 export class CurrentPlanComponent implements OnInit, OnDestroy {
-  planInfo: { planName: string; planDisplayName: string } | null = null;
+  @Input() isActive: boolean = true;
+  currentPlan: UserPlan | null = null;
   private subscription?: Subscription;
 
-  constructor(private featureControlService: FeatureControlService) {}
+  constructor(
+    private featureControlService: FeatureControlService, 
+    private planService: PlanService
+  ) {}
 
   ngOnInit(): void {
+    this.loadCurrentPlan();
     this.subscription = this.featureControlService.featureControl$.subscribe(control => {
-      if (control) {
-        this.planInfo = {
+      if (control && !this.currentPlan) {
+        // Si no tenemos el plan completo, usamos la información básica
+        this.currentPlan = {
+          planId: 0,
           planName: control.planName,
-          planDisplayName: control.planDisplayName
+          limits: {},
+          permissions: []
         };
       }
     });
@@ -82,7 +44,18 @@ export class CurrentPlanComponent implements OnInit, OnDestroy {
     }
   }
 
-  upgradePlan(): void {
-    window.location.href = '/plans';
+  private loadCurrentPlan() {
+    this.planService.getCurrentPlan().subscribe({
+      next: (plan) => {
+        this.currentPlan = plan;
+      },
+      error: (error) => {
+        console.error('Error loading current plan:', error);
+      }
+    });
+  }
+
+  getPlanDisplayName(planName: string): string {
+    return this.planService.getPlanDisplayName(planName);
   }
 } 

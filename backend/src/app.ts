@@ -5,12 +5,13 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { initializeDatabase, pool } from './config/database/connection';
 import router from './routes/index';
+import { cronSetup } from './utils/cron-setup';
+
 // Cargar variables de entorno
 dotenv.config();
 console.log('Variables de entorno cargadas');
 console.log('Puerto configurado:', process.env.PORT || 3000);
 console.log('Base de datos:', process.env.DB_NAME || 'finantrack');
-
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(express.json());
 
 // Rutas de la API
 app.use('/', router);
+
 // Ruta de prueba para verificar que el servidor está funcionando
 app.get('/', (req: Request, res: Response) => {
     res.json({ message: 'Servidor FinanTrack funcionando correctamente' });
@@ -56,15 +58,49 @@ app.get('/health', async (req: Request, res: Response) => {
         });
     }
 });
-initializeDatabase()
-    .then(() => {
-        console.log('Base de datos inicializada correctamente');
-        // Iniciar el servidor solo después de confirmar la conexión a la BD
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-        });
-    })
-    .catch(error => {
-        console.error('Error al inicializar la base de datos:', error);
-        process.exit(1);
-    }); 
+
+// Ruta para ejecutar procesamiento manual (solo para desarrollo)
+if (process.env.NODE_ENV === 'development') {
+    app.post('/dev/run-automation', async (req: Request, res: Response) => {
+        try {
+            await cronSetup.runManualProcessing();
+            res.json({ success: true, message: 'Procesamiento manual ejecutado' });
+        } catch (error) {
+            res.status(500).json({ 
+                success: false, 
+                message: 'Error en procesamiento manual',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    });
+}
+
+// Comentado para desarrollo - descomentar para producción
+// initializeDatabase()
+//     .then(() => {
+//         console.log('Base de datos inicializada correctamente');
+        
+//         // Inicializar cron jobs
+//         cronSetup.initCronJobs();
+        
+//         // Iniciar el servidor solo después de confirmar la conexión a la BD
+//         const PORT = process.env.PORT || 3000;
+//         app.listen(PORT, () => {
+//             console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
+//             console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+//         });
+//     })
+//     .catch(error => {
+//         console.error('Error al inicializar la base de datos:', error);
+//         process.exit(1);
+//     });
+
+// Inicializar cron jobs
+cronSetup.initCronJobs();
+
+// Iniciar el servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+}); 

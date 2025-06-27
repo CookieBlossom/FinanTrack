@@ -1,9 +1,10 @@
 import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../interfaces/AuthRequest';
 import jwt from 'jsonwebtoken';
 import { IUserToken } from '../interfaces/IUser';
 
 export const authMiddleware = (
-  req: any,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void => {

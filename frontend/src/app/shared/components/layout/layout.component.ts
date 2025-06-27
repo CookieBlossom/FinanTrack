@@ -1,11 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { HostListener } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { LimitNotificationsComponent } from '../limit-notifications/limit-notifications.component';
 
 @Component({
@@ -16,6 +17,8 @@ import { LimitNotificationsComponent } from '../limit-notifications/limit-notifi
     RouterModule,
     MatSidenavModule,
     MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
     SidebarComponent,
     ToolbarComponent,
     LimitNotificationsComponent
@@ -23,29 +26,38 @@ import { LimitNotificationsComponent } from '../limit-notifications/limit-notifi
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.css']
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   isSidebarOpen = true;
   isMobile = false;
+  isTablet = false;
 
-  constructor() {
-    this.checkIfMobile();
+  ngOnInit() {
+    this.checkScreenSize();
   }
 
   @HostListener('window:resize', [])
   onResize() {
-    this.checkIfMobile();
+    this.checkScreenSize();
   }
 
-  checkIfMobile() {
-    this.isMobile = window.innerWidth <= 1150;
-  }
-  toggleSidebar() {
+  private checkScreenSize() {
+    const width = window.innerWidth;
+    this.isMobile = width < 768;
+    this.isTablet = width >= 768 && width < 1024;
+    
+    // En móviles, el sidebar está cerrado por defecto
     if (this.isMobile) {
-      // En mobile simplemente mostramos/ocultamos
-      this.isSidebarOpen = !this.isSidebarOpen;
+      this.isSidebarOpen = false;
+    } else if (this.isTablet) {
+      // En tablets, sidebar colapsado por defecto
+      this.isSidebarOpen = true;
     } else {
-      // En desktop, seguimos cambiando el grid
-      this.isSidebarOpen = !this.isSidebarOpen;
+      // En desktop, sidebar abierto por defecto
+      this.isSidebarOpen = true;
     }
+  }
+
+  toggleSidebar() {
+    this.isSidebarOpen = !this.isSidebarOpen;
   }
 }

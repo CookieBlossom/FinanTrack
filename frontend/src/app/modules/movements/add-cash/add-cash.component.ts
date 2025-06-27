@@ -158,7 +158,7 @@ export class AddCashComponent {
     this.movementService.addMovement(payload).subscribe({
       next: (res) => {
         this.snackBar.open('Movimiento en efectivo agregado exitosamente', 'Cerrar', { duration: 3000 });
-        this.dialogRef.close(res);
+        this.dialogRef.close(true); // Cerrar con true para indicar que se agregó exitosamente
       },
       error: (err) => {
         console.error('Error al agregar movimiento en efectivo:', err);

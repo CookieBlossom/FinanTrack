@@ -1,34 +1,103 @@
-<mat-nav-list class="logo">
-  <mat-icon class="icon">account_balance_wallet</mat-icon>
-  <span class="brand-name">Finantrack</span>
-</mat-nav-list>
+<!-- Overlay para móviles -->
+<div class="sidebar-overlay" 
+     [class.visible]="isMobile && !isCollapsed" 
+     (click)="toggleSidebar()">
+</div>
 
-<mat-nav-list class="menu-items">
-  <a class="menu-item" routerLink="/dashboard" routerLinkActive="active">Panel de Control</a>
-  <a class="menu-item" routerLink="/cards" routerLinkActive="active">Tarjetas</a>
-  <a class="menu-item" routerLink="/movements" routerLinkActive="active">Historial de Movimientos</a>
-  <a class="menu-item" routerLink="/analytics" routerLinkActive="active">Análisis y Proyección</a>
-  <a class="menu-item" routerLink="/categories" routerLinkActive="active">Categorización</a>
-  <a class="menu-item" routerLink="/upcoming-transactions" routerLinkActive="active">Próximos Movimientos</a>
+<div class="sidebar-container" [class.mobile]="isMobile" [class.collapsed]="isCollapsed" [class.top-nav]="isTopNav">
   
-  <!-- Opciones premium -->
-  <a class="menu-item premium" routerLink="/scraper" routerLinkActive="active" *appFeatureControl="'canUseScraper'">
-    <mat-icon>sync</mat-icon>
-    Sincronización Automática
-  </a>
-  
-  <a class="menu-item premium" routerLink="/api" routerLinkActive="active" *appFeatureControl="'canUseApi'">
-    <mat-icon>api</mat-icon>
-    API Access
-  </a>
-  
-  <a class="menu-item premium" routerLink="/executive-dashboard" routerLinkActive="active" *appFeatureControl="'canUseExecutiveDashboard'">
-    <mat-icon>dashboard</mat-icon>
-    Dashboard Ejecutivo
-  </a>
-</mat-nav-list>
+  <!-- Header/Brand -->
+  <div class="sidebar-header" [class.collapsed]="isCollapsed">
+    <div class="brand-container">
+      <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
+      <span class="brand-name" *ngIf="!isCollapsed">FinanTrack</span>
+    </div>
+    <button 
+      *ngIf="isMobile" 
+      class="toggle-btn" 
+      (click)="toggleSidebar()"
+      mat-icon-button>
+      <mat-icon>{{ isCollapsed ? 'menu' : 'close' }}</mat-icon>
+    </button>
+  </div>
 
-<mat-nav-list class="sidebar-footer">
-  <a class="menu-item" routerLink="/about-company" >Acerca de la empresa</a>
-  <a class="menu-item" routerLink="/home" >Cerrar sesión</a>
-</mat-nav-list>
+  <!-- Navigation Menu -->
+  <nav class="sidebar-nav" [class.collapsed]="isCollapsed">
+    
+    <!-- Main Menu Items -->
+    <div class="menu-section">
+      <a class="nav-item" 
+         routerLink="/dashboard" 
+         routerLinkActive="active"
+         [matTooltip]="isCollapsed ? 'Panel de Control' : ''"
+         [matTooltipPosition]="'right'">
+        <mat-icon>dashboard</mat-icon>
+        <span *ngIf="!isCollapsed">Panel de Control</span>
+      </a>
+
+      <a class="nav-item" 
+         routerLink="/cards" 
+         routerLinkActive="active"
+         [matTooltip]="isCollapsed ? 'Tarjetas' : ''"
+         [matTooltipPosition]="'right'">
+        <mat-icon>credit_card</mat-icon>
+        <span *ngIf="!isCollapsed">Tarjetas</span>
+      </a>
+
+      <a class="nav-item" 
+         routerLink="/movements" 
+         routerLinkActive="active"
+         [matTooltip]="isCollapsed ? 'Historial de Movimientos' : ''"
+         [matTooltipPosition]="'right'">
+        <mat-icon>receipt_long</mat-icon>
+        <span *ngIf="!isCollapsed">Historial de Movimientos</span>
+      </a>
+
+      <a class="nav-item" 
+         routerLink="/analytics" 
+         routerLinkActive="active"
+         [matTooltip]="isCollapsed ? 'Análisis y Proyección' : ''"
+         [matTooltipPosition]="'right'">
+        <mat-icon>analytics</mat-icon>
+        <span *ngIf="!isCollapsed">Análisis y Proyección</span>
+      </a>
+
+      <a class="nav-item" 
+         routerLink="/categories" 
+         routerLinkActive="active"
+         [matTooltip]="isCollapsed ? 'Categorización' : ''"
+         [matTooltipPosition]="'right'">
+        <mat-icon>category</mat-icon>
+        <span *ngIf="!isCollapsed">Categorización</span>
+      </a>
+
+      <a class="nav-item" 
+         routerLink="/upcoming-transactions" 
+         routerLinkActive="active"
+         [matTooltip]="isCollapsed ? 'Próximos Movimientos' : ''"
+         [matTooltipPosition]="'right'">
+        <mat-icon>schedule</mat-icon>
+        <span *ngIf="!isCollapsed">Próximos Movimientos</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Footer -->
+  <div class="sidebar-footer" [class.collapsed]="isCollapsed">
+    <a class="nav-item footer-item" 
+       routerLink="/about-company"
+       [matTooltip]="isCollapsed ? 'Acerca de la empresa' : ''"
+       [matTooltipPosition]="'right'">
+      <mat-icon>info</mat-icon>
+      <span *ngIf="!isCollapsed">Acerca de la empresa</span>
+    </a>
+    
+    <a class="nav-item footer-item" 
+       routerLink="/home"
+       [matTooltip]="isCollapsed ? 'Cerrar sesión' : ''"
+       [matTooltipPosition]="'right'">
+      <mat-icon>logout</mat-icon>
+      <span *ngIf="!isCollapsed">Cerrar sesión</span>
+    </a>
+  </div>
+</div>

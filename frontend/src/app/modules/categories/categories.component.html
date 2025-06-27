@@ -27,8 +27,85 @@
     </app-limit-notification>
   </div>
 
-  <div class="left-panel">
+  <!-- Panel de estadísticas -->
+  <div class="stats-panel">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ categories.length }}</div>
+        <div class="stat-label">Total Categorías</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🏷️</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalKeywords }}</div>
+        <div class="stat-label">Palabras Clave Totales</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ averageKeywordsPerCategory | number:'1.1-1' }}</div>
+        <div class="stat-label">Promedio por Categoría</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ categoriesWithKeywords }}</div>
+        <div class="stat-label">Con Palabras Clave</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulador de categorización -->
+  <div class="simulator-panel">
+    <div class="simulator-header">
+      <h3>🧪 Simulador de categorización</h3>
+    </div>
+    <div class="simulator-content">
+      <div class="input-section">
+        <input 
+          type="text" 
+          id="testDescription"
+          [(ngModel)]="testDescription"
+          placeholder="Prueba una descripción..."
+          (input)="testCategorization()"
+          class="test-input">
+      </div>
+      <div class="result-section" *ngIf="categorizationResult">
+        <div class="result-content" [class.found]="categorizationResult.found" [class.not-found]="!categorizationResult.found">
+          <div class="result-icon">
+            {{ categorizationResult.found ? '✅' : '❌' }}
+          </div>
+          <div class="result-text">
+            <div class="category-name">
+              {{ categorizationResult.found ? categorizationResult.category.name_category : 'Sin categorizar' }}
+            </div>
+            <div class="matched-keywords" *ngIf="categorizationResult.matchedKeywords.length > 0">
+              <span class="keyword-tag" *ngFor="let keyword of categorizationResult.matchedKeywords">
+                {{ keyword }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel principal con tabla -->
+  <div class="main-panel">
     <div class="table-section">
+      <div class="table-header">
+        <h3>📋 Configuración de Categorías</h3>
+        <div class="table-actions">
+          <button mat-raised-button color="accent" (click)="exportKeywords()">
+            <mat-icon>download</mat-icon>
+            Exportar Keywords
+          </button>
+        </div>
+      </div>
       <ag-grid-angular
         style="width: 100%; height: 500px;"
         [rowData]="categories"
@@ -52,8 +129,10 @@
     </div>
   </div>
 
-  <div class="right-panel">
+  <!-- Panel de gráficos (opcional) -->
+  <div class="charts-panel" *ngIf="showCharts">
     <div class="chart-section">
+      <h3>📈 Distribución de Gastos por Categoría</h3>
       <ngx-charts-pie-grid
         [view]="chartView"
         [results]="gastoTarjeta"
@@ -63,6 +142,7 @@
       </ngx-charts-pie-grid>
     </div>
     <div class="chart-section">
+      <h3>💰 Gastos en Efectivo por Categoría</h3>
       <ngx-charts-pie-grid
         [view]="chartView"
         [results]="gastoEfectivo"

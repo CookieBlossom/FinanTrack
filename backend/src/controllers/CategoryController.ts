@@ -19,9 +19,13 @@ export class CategoryController {
       try {
         const userId = (req as AuthRequest).user?.id;
         if (!userId) return res.status(401).json({ error: 'Usuario no autenticado' });
+        
+        console.log('Usuario autenticado:', (req as AuthRequest).user);
+        
         const categories = await this.categoryService.getUserCategories(userId);
         res.json(categories);
       } catch (error) {
+        console.error('Error en getUserCategories:', error);
         res.status(500).json({ error: 'Error al obtener categorías del usuario' });
       }
     }
@@ -37,6 +41,8 @@ export class CategoryController {
         const categoryId = parseInt(req.params.id);
         const { keywords } = req.body;
         
+        console.log('Datos recibidos:', { userId: user.id, categoryId, keywords, planId: user.planId });
+        
         if (isNaN(categoryId) || !Array.isArray(keywords)) {
           return res.status(400).json({ error: 'Datos inválidos' });
         }
@@ -44,10 +50,15 @@ export class CategoryController {
         await this.categoryService.updateUserCategoryKeywords(user.id, categoryId, keywords, user.planId);
         res.json({ message: 'Palabras clave actualizadas correctamente' });
       } catch (error) {
+        console.error('Error en updateUserCategoryKeywords:', error);
+        
         if (error instanceof Error && error.message.includes('límite')) {
           res.status(403).json({ error: error.message });
         } else {
-          res.status(500).json({ error: 'Error al actualizar las palabras clave' });
+          res.status(500).json({ 
+            error: 'Error al actualizar las palabras clave',
+            details: error instanceof Error ? error.message : 'Error desconocido'
+          });
         }
       }
     }

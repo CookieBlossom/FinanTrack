@@ -32,6 +32,8 @@ import {
   NumberFilterModule,
   DateFilterModule,
   CustomFilterModule,
+  RenderApiModule,
+  UndoRedoEditModule,
   ValueFormatterFunc,
   ValueFormatterParams
 } from 'ag-grid-community';
@@ -51,6 +53,8 @@ ModuleRegistry.registerModules([
   DateFilterModule,
   TextEditorModule,
   CustomFilterModule,
+  RenderApiModule,
+  UndoRedoEditModule,
 ]);
 
 @Component({
@@ -72,6 +76,7 @@ export class CategoriesComponent implements OnInit {
   chartView: [number, number] = [window.innerWidth * 0.35, window.innerHeight * 0.4];
   categories: Category[] = [];
   gridContext = { componentParent: this };
+  gridApi: any = null;
   gastoTarjeta: any[] = [];
   gastoEfectivo: any[] = [];
 
@@ -90,6 +95,16 @@ export class CategoriesComponent implements OnInit {
     showUpgradeButton: false
   };
 
+  // Variables para el simulador
+  testDescription: string = '';
+  categorizationResult: any = null;
+  showCharts: boolean = false;
+
+  // Variables para estadísticas
+  totalKeywords: number = 0;
+  averageKeywordsPerCategory: number = 0;
+  categoriesWithKeywords: number = 0;
+
   paginationPageSize = 10;
   paginationPageSizeSelector = [10, 25, 50, 100];
 
@@ -105,11 +120,19 @@ export class CategoriesComponent implements OnInit {
   });
 
   columnDefs: ColDef[] = [
-    { field: 'name_category', headerName: 'Categoría', flex: 1 },
+    {
+      field: 'name_category',
+      headerName: 'Categoría',
+      minWidth: 100,
+      maxWidth: 150,
+      flex: 1
+    },
     {
       field: 'icon',
       headerName: 'Icono',
-      flex: 1,
+      minWidth: 90,
+      maxWidth: 120,
+      flex: 0.5,
       cellRenderer: (params: { value: any }) => {
         const iconName = params.value || 'more-horizontal';
         return `<img src="/assets/icons/${iconName}.svg" alt="${iconName}" width="24" height="24" style="vertical-align:middle;" />`;
@@ -118,31 +141,34 @@ export class CategoriesComponent implements OnInit {
     {
       field: 'color',
       headerName: 'Color',
-      flex: 1,
-      editable: false, // no editable porque ya es interactivo
+      minWidth: 90,
+      maxWidth: 120,
+      flex: 0.5,
+      editable: false,
       cellRenderer: ColorPickerCellRendererComponent,
       cellRendererParams: {},
     },
     {
       field: 'keywords',
       headerName: 'Palabras clave',
-      flex: 2,
+      minWidth: 180,
+      flex: 3,
       editable: true,
       cellEditor: TagInputCellEditorComponent,
       cellRenderer: (params: { value: any }) => {
         if (Array.isArray(params.value) && params.value.length > 0) {
           return params.value
-            .map((keyword: any) =>
-              `<span style="display:inline-block;background:#f2f2f2;border-radius:8px;padding:2px 8px;margin-right:5px;font-size:12px;color:#555;">${typeof keyword === 'string' ? keyword : (keyword.value ?? '')}</span>`
-            )
+            .map((keyword: any) => {
+              const keywordText = typeof keyword === 'string' ? keyword : (keyword.value ?? '');
+              return `<span style="display: inline-flex; align-items: center; background: var(--color-primary); color: var(--color-text-inverse); padding: 3px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 500; margin: 1px 3px 1px 0; border: 1px solid var(--color-primary-darkest); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); transition: all 0.2s ease;">${keywordText}</span>`;
+            })
             .join('');
         } else {
-          return '<span style="color:#aaa;font-style:italic;">Agrega keywords...</span>';
+          return '<span style="color: var(--color-text-muted); font-style: italic; font-size: 0.8rem;">Agrega palabras clave...</span>';
         }
       },
       valueParser: params => {
         if (Array.isArray(params.newValue)) {
-          // Si el array contiene objetos, lo transforma a string.
           return params.newValue.map((k: any) => typeof k === 'string' ? k : (k.value ?? ''));
         }
         if (typeof params.newValue === 'string')
@@ -150,7 +176,6 @@ export class CategoriesComponent implements OnInit {
         return [];
       }
     }
-    
   ];
 
   defaultColDef: ColDef = {
@@ -173,8 +198,14 @@ export class CategoriesComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    console.log('Componente inicializado');
     this.onResize();
-    this.loadCategories();
+    
+    // Cargar datos con un pequeño delay para asegurar que AG Grid esté listo
+    setTimeout(() => {
+      this.loadCategories();
+    }, 100);
+    
     this.loadPlanInfo();
   }
 
@@ -212,17 +243,40 @@ export class CategoriesComponent implements OnInit {
   }
 
   loadCategories(): void {
+    console.log('Cargando categorías...');
     this.categoryService.getUserCategories().subscribe({
       next: (data: Category[]) => {
-        this.categories = data.map(item => ({
-          ...item,
-          keywords: Array.isArray(item.keywords)
-            ? item.keywords.map((k: any) => typeof k === 'string' ? k : (k.value ?? ''))
-            : []
-        }));
+        console.log('Datos recibidos del backend:', data);
+        this.categories = data.map(item => {
+          const processedItem = {
+            ...item,
+            keywords: Array.isArray(item.keywords)
+              ? item.keywords.map((k: any) => {
+                  if (typeof k === 'string') {
+                    return k.trim();
+                  } else if (k && typeof k === 'object') {
+                    return (k.display || k.value || '').trim();
+                  }
+                  return String(k).trim();
+                }).filter(k => k.length > 0)
+              : []
+          };
+          console.log(`Categoría ${processedItem.name_category}:`, processedItem.keywords);
+          return processedItem;
+        });
         
+        console.log('Categorías procesadas:', this.categories);
+        
+        // Calcular estadísticas después de cargar las categorías
+        this.calculateStats();
+        
+        // Forzar actualización de AG Grid si está disponible
+        setTimeout(() => {
+          this.refreshTable();
+        }, 200);
       },
       error: (err) => {
+        console.error('Error al cargar categorías:', err);
         alert('Error al cargar categorías: ' + (err?.message || err));
       }
     });
@@ -270,7 +324,17 @@ export class CategoriesComponent implements OnInit {
   // }
 
   onGridReady(params: GridReadyEvent) {
+    console.log('AG Grid listo');
+    this.gridApi = params.api;
     params.api.sizeColumnsToFit();
+    
+    // Si ya tenemos datos, forzar un refresh
+    if (this.categories.length > 0) {
+      setTimeout(() => {
+        params.api.sizeColumnsToFit();
+        console.log('Tabla refrescada con datos existentes');
+      }, 100);
+    }
   }
 
   onGridSizeChanged(params: GridSizeChangedEvent) {
@@ -288,6 +352,7 @@ export class CategoriesComponent implements OnInit {
     const categoryId = event.data.id;
     if (event.colDef.field === 'keywords') {
       const newKeywords = event.data.keywords;
+      console.log('Keywords cambiadas:', { categoryId, newKeywords });
       
       // Verificar límite antes de guardar
       if (Array.isArray(newKeywords) && newKeywords.length > this.keywordsLimit) {
@@ -306,23 +371,38 @@ export class CategoriesComponent implements OnInit {
       }
       
       this.categoryService.updateUserCategoryKeywords(categoryId, newKeywords).subscribe({
-        next: () => {
+        next: (response) => {
+          console.log('Respuesta del backend:', response);
           console.log('Palabras clave actualizadas correctamente');
-          // Opcional: mostrar notificación de éxito
+          this.calculateStats();
+          setTimeout(() => {
+            this.loadCategories();
+          }, 500); // Pequeño delay para asegurar que el backend procese
         },
         error: (error) => {
           console.error('Error al actualizar palabras clave:', error);
+          
+          // Mostrar más detalles del error
+          let errorMessage = 'Error al actualizar palabras clave.';
+          if (error.status === 500) {
+            errorMessage = 'Error interno del servidor. Revisa la consola del backend para más detalles.';
+          } else if (error.error && error.error.error) {
+            errorMessage = error.error.error;
+          }
+          
           this.displayLimitNotification({
             type: 'error',
             title: 'Error al Actualizar',
-            message: 'Error al actualizar palabras clave. Por favor, inténtalo de nuevo.',
+            message: errorMessage,
             limit: this.keywordsLimit,
             current: newKeywords.length,
             showUpgradeButton: false
           });
           
           // Revertir el cambio en la UI en caso de error
-          event.api.undoCellEditing();
+          if (event.api && typeof event.api.undoCellEditing === 'function') {
+            event.api.undoCellEditing();
+          }
         }
       });
     }
@@ -332,6 +412,100 @@ export class CategoriesComponent implements OnInit {
         next: () => console.log('Color actualizado'),
         error: () => alert('Error al actualizar color')
       });
+    }
+  }
+
+  // Métodos para el simulador de categorización
+  testCategorization(): void {
+    if (!this.testDescription.trim()) {
+      this.categorizationResult = null;
+      return;
+    }
+
+    const description = this.testDescription.toUpperCase();
+    let foundCategory = null;
+    let matchedKeywords: string[] = [];
+
+    // Buscar coincidencias en todas las categorías
+    for (const category of this.categories) {
+      if (category.keywords && Array.isArray(category.keywords)) {
+        for (const keyword of category.keywords) {
+          if (description.includes(keyword.toUpperCase())) {
+            foundCategory = category;
+            matchedKeywords.push(keyword);
+          }
+        }
+      }
+    }
+
+    this.categorizationResult = {
+      found: !!foundCategory,
+      category: foundCategory,
+      matchedKeywords: matchedKeywords
+    };
+  }
+
+  // Métodos para estadísticas
+  calculateStats(): void {
+    console.log('Calculando estadísticas...');
+    console.log('Categorías actuales:', this.categories);
+    
+    this.totalKeywords = 0;
+    this.categoriesWithKeywords = 0;
+
+    for (const category of this.categories) {
+      console.log(`Categoría ${category.name_category}:`, category.keywords);
+      if (category.keywords && Array.isArray(category.keywords)) {
+        this.totalKeywords += category.keywords.length;
+        if (category.keywords.length > 0) {
+          this.categoriesWithKeywords++;
+        }
+      }
+    }
+
+    this.averageKeywordsPerCategory = this.categories.length > 0 
+      ? this.totalKeywords / this.categories.length 
+      : 0;
+      
+    console.log('Estadísticas calculadas:', {
+      totalKeywords: this.totalKeywords,
+      categoriesWithKeywords: this.categoriesWithKeywords,
+      averageKeywordsPerCategory: this.averageKeywordsPerCategory
+    });
+  }
+
+  // Métodos para acciones adicionales
+  exportKeywords(): void {
+    const exportData = this.categories.map(category => ({
+      categoria: category.name_category,
+      keywords: category.keywords ? category.keywords.join(', ') : ''
+    }));
+
+    const csvContent = 'data:text/csv;charset=utf-8,' 
+      + 'Categoría,Keywords\n'
+      + exportData.map(row => `${row.categoria},"${row.keywords}"`).join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'keywords_categorias.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  toggleCharts(): void {
+    this.showCharts = !this.showCharts;
+  }
+
+  // Método para forzar actualización de la tabla
+  private refreshTable(): void {
+    if (this.gridApi) {
+      console.log('Forzando actualización de la tabla');
+      this.gridApi.sizeColumnsToFit();
+      
+      // Forzar detección de cambios
+      this.categories = [...this.categories];
     }
   }
 }

@@ -31,6 +31,7 @@ export class AddUpcomingMovementComponent implements OnInit, OnDestroy {
   categories: Category[] = [];
   isLoading = false;
   activeTab = 'single'; // 'single' | 'recurring'
+  minDate: string; // Fecha mínima para el input de fecha
   private destroy$ = new Subject<void>();
 
   // Opciones para tipos de movimiento
@@ -64,16 +65,31 @@ export class AddUpcomingMovementComponent implements OnInit, OnDestroy {
     private authTokenService: AuthTokenService,
     private snackBar: MatSnackBar
   ) {
+    // Obtener fecha mínima (hoy)
+    this.minDate = new Date().toISOString().split('T')[0];
+    
     this.upcomingForm = this.fb.group({
       description: ['', [Validators.required, Validators.minLength(3)]],
       amount: ['', [Validators.required, Validators.min(1)]],
       movementType: ['expense', Validators.required],
-      expectedDate: ['', Validators.required],
+      expectedDate: [this.minDate, [Validators.required, this.minDateValidator(this.minDate)]],
       categoryId: [null],
       cardId: [null],
       probability: [75, Validators.required],
       recurrenceType: [null]
     });
+  }
+
+  // Validador personalizado para fecha mínima
+  private minDateValidator(minDate: string) {
+    return (control: any) => {
+      if (!control.value) {
+        return null;
+      }
+      const selectedDate = new Date(control.value);
+      const minDateObj = new Date(minDate);
+      return selectedDate < minDateObj ? { minDate: true } : null;
+    };
   }
 
   async ngOnInit() {
@@ -128,15 +144,21 @@ export class AddUpcomingMovementComponent implements OnInit, OnDestroy {
     this.isLoading = true;
 
     const formValue = this.upcomingForm.value;
+    
+    // Limpiar valores vacíos de selects
+    const categoryId = formValue.categoryId && formValue.categoryId !== '' ? formValue.categoryId : undefined;
+    const cardId = formValue.cardId && formValue.cardId !== '' ? formValue.cardId : undefined;
+    const recurrenceType = formValue.recurrenceType && formValue.recurrenceType !== '' ? formValue.recurrenceType : null;
+    
     const movementData: ProjectedMovementCreate = {
       description: formValue.description,
       amount: parseFloat(formValue.amount),
       movementType: formValue.movementType,
       expectedDate: new Date(formValue.expectedDate),
-      categoryId: formValue.categoryId || undefined,
-      cardId: formValue.cardId || undefined,
+      categoryId: categoryId,
+      cardId: cardId,
       probability: formValue.probability,
-      recurrenceType: formValue.recurrenceType
+      recurrenceType: recurrenceType
     };
 
     this.projectedMovementService.createProjectedMovement(movementData)

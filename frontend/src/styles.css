@@ -66,6 +66,98 @@ body {
   --font-size-xxl: 2rem;
   --font-family-normal: "QuickSand", sans-serif;
   --font-family-bold: "QuickSand-Bold", sans-serif;
+
+  /* Variables de Material Design - Tema claro */
+  --mdc-text-button-label-text-color: #a84f68;
+  --mdc-filled-button-container-color: #a84f68;
+  --mdc-filled-button-label-text-color: #ffffff;
+  --mdc-outlined-button-label-text-color: #a84f68;
+  --mdc-outlined-button-outline-color: #a84f68;
+  
+  --mdc-dialog-subhead-color: rgba(0, 0, 0, 0.87);
+  --mdc-dialog-subhead-font: inherit;
+  --mdc-dialog-subhead-line-height: 1.5rem;
+  --mdc-dialog-subhead-size: 1rem;
+  --mdc-dialog-subhead-weight: 400;
+  --mdc-dialog-subhead-tracking: 0.03125em;
+  
+  --mdc-dialog-container-color: #ffffff;
+  --mdc-dialog-headline-color: rgba(0, 0, 0, 0.87);
+  --mdc-dialog-supporting-text-color: rgba(0, 0, 0, 0.6);
+  
+  --mdc-form-field-label-text-color: rgba(0, 0, 0, 0.6);
+  --mdc-form-field-focus-label-text-color: #a84f68;
+  --mdc-form-field-outline-color: rgba(0, 0, 0, 0.38);
+  --mdc-form-field-focus-outline-color: #a84f68;
+  --mdc-form-field-hover-outline-color: rgba(0, 0, 0, 0.87);
+  
+  --mdc-tab-text-label-text-color: rgba(0, 0, 0, 0.6);
+  --mdc-tab-text-label-text-color-selected: #a84f68;
+  --mdc-tab-text-label-text-color-hover: rgba(0, 0, 0, 0.87);
+  --mdc-tab-text-label-text-color-focus: rgba(0, 0, 0, 0.87);
+  --mdc-tab-text-label-text-color-active: #a84f68;
+  
+  --mdc-tab-indicator-active-indicator-color: #a84f68;
+  --mdc-tab-indicator-inactive-indicator-color: rgba(0, 0, 0, 0.38);
+  
+  --mdc-chip-elevated-container-color: #f1f1f1;
+  --mdc-chip-elevated-label-text-color: rgba(0, 0, 0, 0.87);
+  
+  --mdc-snackbar-container-color: #323232;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  
+  --mdc-menu-container-color: #ffffff;
+  --mdc-menu-item-label-text-color: rgba(0, 0, 0, 0.87);
+  --mdc-menu-item-hover-label-text-color: rgba(0, 0, 0, 0.87);
+  
+  --mdc-list-list-item-label-text-color: rgba(0, 0, 0, 0.87);
+  --mdc-list-list-item-hover-label-text-color: rgba(0, 0, 0, 0.87);
+  --mdc-list-list-item-selected-label-text-color: #a84f68;
+  
+  --mdc-checkbox-selected-checkmark-color: #ffffff;
+  --mdc-checkbox-selected-focus-icon-color: #a84f68;
+  --mdc-checkbox-selected-hover-icon-color: #a84f68;
+  --mdc-checkbox-selected-icon-color: #a84f68;
+  --mdc-checkbox-selected-pressed-icon-color: #a84f68;
+  --mdc-checkbox-unselected-focus-icon-color: rgba(0, 0, 0, 0.54);
+  --mdc-checkbox-unselected-hover-icon-color: rgba(0, 0, 0, 0.54);
+  --mdc-checkbox-unselected-icon-color: rgba(0, 0, 0, 0.54);
+  --mdc-checkbox-unselected-pressed-icon-color: rgba(0, 0, 0, 0.54);
+  
+  --mdc-radio-selected-icon-color: #a84f68;
+  --mdc-radio-selected-focus-icon-color: #a84f68;
+  --mdc-radio-selected-hover-icon-color: #a84f68;
+  --mdc-radio-selected-pressed-icon-color: #a84f68;
+  --mdc-radio-unselected-icon-color: rgba(0, 0, 0, 0.54);
+  --mdc-radio-unselected-focus-icon-color: rgba(0, 0, 0, 0.54);
+  --mdc-radio-unselected-hover-icon-color: rgba(0, 0, 0, 0.54);
+  --mdc-radio-unselected-pressed-icon-color: rgba(0, 0, 0, 0.54);
+  
+  --mdc-switch-selected-track-color: rgba(168, 79, 104, 0.5);
+  --mdc-switch-selected-handle-color: #a84f68;
+  --mdc-switch-selected-focus-track-color: rgba(168, 79, 104, 0.5);
+  --mdc-switch-selected-focus-handle-color: #a84f68;
+  --mdc-switch-selected-hover-track-color: rgba(168, 79, 104, 0.5);
+  --mdc-switch-selected-hover-handle-color: #a84f68;
+  --mdc-switch-selected-pressed-track-color: rgba(168, 79, 104, 0.5);
+  --mdc-switch-selected-pressed-handle-color: #a84f68;
+  --mdc-switch-unselected-track-color: rgba(0, 0, 0, 0.38);
+  --mdc-switch-unselected-handle-color: #ffffff;
+  --mdc-switch-unselected-focus-track-color: rgba(0, 0, 0, 0.38);
+  --mdc-switch-unselected-focus-handle-color: #ffffff;
+  --mdc-switch-unselected-hover-track-color: rgba(0, 0, 0, 0.38);
+  --mdc-switch-unselected-hover-handle-color: #ffffff;
+  --mdc-switch-unselected-pressed-track-color: rgba(0, 0, 0, 0.38);
+  --mdc-switch-unselected-pressed-handle-color: #ffffff;
+
+  /* REGLAS ESPECÍFICAS PARA SELECTS DE MATERIAL DESIGN */
+  --mat-select-enabled-trigger-text-color: var(--color-text);
+  --mat-select-disabled-trigger-text-color: var(--color-text-muted);
+  --mat-select-trigger-text-font: inherit;
+  --mat-select-trigger-text-line-height: 1.5;
+  --mat-select-trigger-text-size: 1rem;
+  --mat-select-trigger-text-weight: 400;
+  --mat-select-trigger-text-tracking: 0.03125em;
 }
 
 /* Variables CSS - Tema oscuro */
@@ -119,6 +211,93 @@ body {
   --clr-danger-100: rgba(255, 107, 107, 0.2);
   --clr-danger-200: rgba(255, 107, 107, 0.3);
   --clr-danger-700: #ff6b6b;
+
+  /* Variables de Material Design - Tema oscuro */
+  --mdc-text-button-label-text-color: #dc59ac;
+  --mdc-filled-button-container-color: #dc59ac;
+  --mdc-filled-button-label-text-color: #ffffff;
+  --mdc-outlined-button-label-text-color: #dc59ac;
+  --mdc-outlined-button-outline-color: #dc59ac;
+  
+  --mdc-dialog-subhead-color: rgba(255, 255, 255, 0.87);
+  --mdc-dialog-subhead-font: inherit;
+  --mdc-dialog-subhead-line-height: 1.5rem;
+  --mdc-dialog-subhead-size: 1rem;
+  --mdc-dialog-subhead-weight: 400;
+  --mdc-dialog-subhead-tracking: 0.03125em;
+  
+  --mdc-dialog-container-color: #030303;
+  --mdc-dialog-headline-color: rgba(255, 255, 255, 0.87);
+  --mdc-dialog-supporting-text-color: rgba(255, 255, 255, 0.6);
+  
+  --mdc-form-field-label-text-color: rgba(255, 255, 255, 0.6);
+  --mdc-form-field-focus-label-text-color: #dc59ac;
+  --mdc-form-field-outline-color: rgba(255, 255, 255, 0.38);
+  --mdc-form-field-focus-outline-color: #dc59ac;
+  --mdc-form-field-hover-outline-color: rgba(255, 255, 255, 0.87);
+  
+  --mdc-tab-text-label-text-color: rgba(255, 255, 255, 0.6);
+  --mdc-tab-text-label-text-color-selected: #dc59ac;
+  --mdc-tab-text-label-text-color-hover: rgba(255, 255, 255, 0.87);
+  --mdc-tab-text-label-text-color-focus: rgba(255, 255, 255, 0.87);
+  --mdc-tab-text-label-text-color-active: #dc59ac;
+  
+  --mdc-tab-indicator-active-indicator-color: #dc59ac;
+  --mdc-tab-indicator-inactive-indicator-color: rgba(255, 255, 255, 0.38);
+  
+  --mdc-chip-elevated-container-color: #1f1f1f;
+  --mdc-chip-elevated-label-text-color: rgba(255, 255, 255, 0.87);
+  
+  --mdc-snackbar-container-color: #323232;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  
+  --mdc-menu-container-color: #030303;
+  --mdc-menu-item-label-text-color: rgba(255, 255, 255, 0.87);
+  --mdc-menu-item-hover-label-text-color: rgba(255, 255, 255, 0.87);
+  
+  --mdc-list-list-item-label-text-color: rgba(255, 255, 255, 0.87);
+  --mdc-list-list-item-hover-label-text-color: rgba(255, 255, 255, 0.87);
+  --mdc-list-list-item-selected-label-text-color: #dc59ac;
+  
+  --mdc-checkbox-selected-checkmark-color: #ffffff;
+  --mdc-checkbox-selected-focus-icon-color: #dc59ac;
+  --mdc-checkbox-selected-hover-icon-color: #dc59ac;
+  --mdc-checkbox-selected-icon-color: #dc59ac;
+  --mdc-checkbox-selected-pressed-icon-color: #dc59ac;
+  --mdc-checkbox-unselected-focus-icon-color: rgba(255, 255, 255, 0.54);
+  --mdc-checkbox-unselected-hover-icon-color: rgba(255, 255, 255, 0.54);
+  --mdc-checkbox-unselected-icon-color: rgba(255, 255, 255, 0.54);
+  --mdc-checkbox-unselected-pressed-icon-color: rgba(255, 255, 255, 0.54);
+  
+  --mdc-radio-selected-icon-color: #dc59ac;
+  --mdc-radio-selected-focus-icon-color: #dc59ac;
+  --mdc-radio-selected-hover-icon-color: #dc59ac;
+  --mdc-radio-selected-pressed-icon-color: #dc59ac;
+  --mdc-radio-unselected-icon-color: rgba(255, 255, 255, 0.54);
+  --mdc-radio-unselected-focus-icon-color: rgba(255, 255, 255, 0.54);
+  --mdc-radio-unselected-hover-icon-color: rgba(255, 255, 255, 0.54);
+  --mdc-radio-unselected-pressed-icon-color: rgba(255, 255, 255, 0.54);
+  
+  --mdc-switch-selected-track-color: rgba(220, 89, 172, 0.5);
+  --mdc-switch-selected-handle-color: #dc59ac;
+  --mdc-switch-selected-focus-track-color: rgba(220, 89, 172, 0.5);
+  --mdc-switch-selected-focus-handle-color: #dc59ac;
+  --mdc-switch-selected-hover-track-color: rgba(220, 89, 172, 0.5);
+  --mdc-switch-selected-hover-handle-color: #dc59ac;
+  --mdc-switch-selected-pressed-track-color: rgba(220, 89, 172, 0.5);
+  --mdc-switch-selected-pressed-handle-color: #dc59ac;
+  --mdc-switch-unselected-track-color: rgba(255, 255, 255, 0.38);
+  --mdc-switch-unselected-handle-color: #ffffff;
+  --mdc-switch-unselected-focus-track-color: rgba(255, 255, 255, 0.38);
+  --mdc-switch-unselected-focus-handle-color: #ffffff;
+  --mdc-switch-unselected-hover-track-color: rgba(255, 255, 255, 0.38);
+  --mdc-switch-unselected-hover-handle-color: #ffffff;
+  --mdc-switch-unselected-pressed-track-color: rgba(255, 255, 255, 0.38);
+  --mdc-switch-unselected-pressed-handle-color: #ffffff;
+
+  /* REGLAS ESPECÍFICAS PARA SELECTS DE MATERIAL DESIGN */
+  --mat-select-enabled-trigger-text-color: var(--color-text);
+  --mat-select-disabled-trigger-text-color: var(--color-text-muted);
 }
 
 /* Configuración básica */
@@ -193,4 +372,306 @@ mat-icon {
 .full-screen-dialog .cdk-overlay-pane {
   max-width: none !important;
   max-height: none !important;
+}
+
+/* Sobrescrituras específicas para Material Design - REGLAS MÁS POTENTES */
+.mat-mdc-button:not(:disabled) {
+  color: var(--mdc-text-button-label-text-color) !important;
+}
+
+.mat-mdc-raised-button:not(:disabled) {
+  background-color: var(--mdc-filled-button-container-color) !important;
+  color: var(--mdc-filled-button-label-text-color) !important;
+}
+
+.mat-mdc-outlined-button:not(:disabled) {
+  color: var(--mdc-outlined-button-label-text-color) !important;
+  border-color: var(--mdc-outlined-button-outline-color) !important;
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-title {
+  color: var(--mdc-dialog-subhead-color) !important;
+  font-family: var(--mdc-dialog-subhead-font) !important;
+  line-height: var(--mdc-dialog-subhead-line-height) !important;
+  font-size: var(--mdc-dialog-subhead-size) !important;
+  font-weight: var(--mdc-dialog-subhead-weight) !important;
+  letter-spacing: var(--mdc-dialog-subhead-tracking) !important;
+}
+
+.mat-mdc-dialog-container {
+  background-color: var(--mdc-dialog-container-color) !important;
+}
+
+.mat-mdc-dialog-content {
+  color: var(--mdc-dialog-supporting-text-color) !important;
+}
+
+/* REGLAS ESPECÍFICAS PARA FORMULARIOS - MÁS POTENTES */
+.mat-mdc-form-field-label,
+.mat-mdc-form-field .mdc-floating-label {
+  color: var(--mdc-form-field-label-text-color) !important;
+}
+
+.mat-mdc-form-field.mat-focused .mat-mdc-form-field-label,
+.mat-mdc-form-field.mat-focused .mdc-floating-label {
+  color: var(--mdc-form-field-focus-label-text-color) !important;
+}
+
+.mat-mdc-form-field-outline,
+.mat-mdc-form-field .mdc-notched-outline__leading,
+.mat-mdc-form-field .mdc-notched-outline__notch,
+.mat-mdc-form-field .mdc-notched-outline__trailing {
+  border-color: var(--mdc-form-field-outline-color) !important;
+}
+
+.mat-mdc-form-field.mat-focused .mat-mdc-form-field-outline,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--mdc-form-field-focus-outline-color) !important;
+}
+
+.mat-mdc-form-field:hover .mat-mdc-form-field-outline,
+.mat-mdc-form-field:hover .mdc-notched-outline__leading,
+.mat-mdc-form-field:hover .mdc-notched-outline__notch,
+.mat-mdc-form-field:hover .mdc-notched-outline__trailing {
+  border-color: var(--mdc-form-field-hover-outline-color) !important;
+}
+
+/* Input text color */
+.mat-mdc-form-field input.mat-mdc-input-element,
+.mat-mdc-form-field textarea.mat-mdc-input-element {
+  color: var(--color-text) !important;
+}
+
+/* Placeholder color */
+.mat-mdc-form-field input.mat-mdc-input-element::placeholder,
+.mat-mdc-form-field textarea.mat-mdc-input-element::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 0.7 !important;
+}
+
+/* Tabs específicos */
+.mat-mdc-tab .mdc-tab__text-label {
+  color: var(--mdc-tab-text-label-text-color) !important;
+}
+
+.mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: var(--mdc-tab-text-label-text-color-selected) !important;
+}
+
+.mat-mdc-tab:hover .mdc-tab__text-label {
+  color: var(--mdc-tab-text-label-text-color-hover) !important;
+}
+
+.mat-mdc-tab:focus .mdc-tab__text-label {
+  color: var(--mdc-tab-text-label-text-color-focus) !important;
+}
+
+.mat-mdc-tab-group .mat-mdc-tab-header .mat-mdc-ink-bar {
+  background-color: var(--mdc-tab-indicator-active-indicator-color) !important;
+}
+
+/* Otros componentes */
+.mat-mdc-chip {
+  background-color: var(--mdc-chip-elevated-container-color) !important;
+  color: var(--mdc-chip-elevated-label-text-color) !important;
+}
+
+.mat-mdc-snack-bar-container {
+  background-color: var(--mdc-snackbar-container-color) !important;
+  color: var(--mdc-snackbar-supporting-text-color) !important;
+}
+
+.mat-mdc-menu-panel {
+  background-color: var(--mdc-menu-container-color) !important;
+}
+
+.mat-mdc-menu-item {
+  color: var(--mdc-menu-item-label-text-color) !important;
+}
+
+.mat-mdc-menu-item:hover {
+  color: var(--mdc-menu-item-hover-label-text-color) !important;
+}
+
+.mat-mdc-list-item {
+  color: var(--mdc-list-list-item-label-text-color) !important;
+}
+
+.mat-mdc-list-item:hover {
+  color: var(--mdc-list-list-item-hover-label-text-color) !important;
+}
+
+.mat-mdc-list-item.mat-mdc-list-item-selected {
+  color: var(--mdc-list-list-item-selected-label-text-color) !important;
+}
+
+/* REGLA ESPECÍFICA PARA mdc-list-item__primary-text */
+.mdc-list-item__primary-text {
+  color: inherit !important;
+}
+
+.mat-mdc-checkbox .mdc-checkbox__background {
+  border-color: var(--mdc-checkbox-unselected-icon-color) !important;
+}
+
+.mat-mdc-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__background {
+  background-color: var(--mdc-checkbox-selected-icon-color) !important;
+  border-color: var(--mdc-checkbox-selected-icon-color) !important;
+}
+
+.mat-mdc-checkbox .mdc-checkbox__checkmark {
+  color: var(--mdc-checkbox-selected-checkmark-color) !important;
+}
+
+.mat-mdc-radio-button .mdc-radio__background {
+  border-color: var(--mdc-radio-unselected-icon-color) !important;
+}
+
+.mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio__background {
+  border-color: var(--mdc-radio-selected-icon-color) !important;
+}
+
+.mat-mdc-radio-button .mdc-radio__inner-circle {
+  border-color: var(--mdc-radio-selected-icon-color) !important;
+}
+
+.mat-mdc-slide-toggle .mdc-switch__track {
+  background-color: var(--mdc-switch-unselected-track-color) !important;
+}
+
+.mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked .mdc-switch__track {
+  background-color: var(--mdc-switch-selected-track-color) !important;
+}
+
+.mat-mdc-slide-toggle .mdc-switch__handle-track {
+  background-color: var(--mdc-switch-unselected-handle-color) !important;
+}
+
+.mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked .mdc-switch__handle-track {
+  background-color: var(--mdc-switch-selected-handle-color) !important;
+}
+
+/* REGLAS ESPECÍFICAS PARA EL FORMULARIO DE TARJETAS */
+.add-card-dialog .mat-mdc-form-field-label,
+.add-card-dialog .mdc-floating-label {
+  color: var(--mdc-form-field-label-text-color) !important;
+}
+
+.add-card-dialog .mat-mdc-form-field.mat-focused .mat-mdc-form-field-label,
+.add-card-dialog .mat-mdc-form-field.mat-focused .mdc-floating-label {
+  color: var(--mdc-form-field-focus-label-text-color) !important;
+}
+
+.add-card-dialog .mat-mdc-form-field-outline,
+.add-card-dialog .mdc-notched-outline__leading,
+.add-card-dialog .mdc-notched-outline__notch,
+.add-card-dialog .mdc-notched-outline__trailing {
+  border-color: var(--mdc-form-field-outline-color) !important;
+}
+
+.add-card-dialog .mat-mdc-form-field.mat-focused .mat-mdc-form-field-outline,
+.add-card-dialog .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.add-card-dialog .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.add-card-dialog .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--mdc-form-field-focus-outline-color) !important;
+}
+
+.add-card-dialog .mat-mdc-form-field input.mat-mdc-input-element,
+.add-card-dialog .mat-mdc-form-field textarea.mat-mdc-input-element {
+  color: var(--color-text) !important;
+}
+
+.add-card-dialog .mat-mdc-form-field input.mat-mdc-input-element::placeholder,
+.add-card-dialog .mat-mdc-form-field textarea.mat-mdc-input-element::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 0.7 !important;
+}
+
+/* REGLAS ESPECÍFICAS PARA TODOS LOS DIÁLOGOS */
+.mat-mdc-dialog-container {
+  background-color: var(--mdc-dialog-container-color) !important;
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-title {
+  color: var(--mdc-dialog-subhead-color) !important;
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-content {
+  color: var(--mdc-dialog-supporting-text-color) !important;
+}
+
+/* REGLAS ESPECÍFICAS PARA TABS EN DIÁLOGOS */
+.mat-mdc-dialog-container .mat-mdc-tab .mdc-tab__text-label {
+  color: var(--mdc-tab-text-label-text-color) !important;
+}
+
+.mat-mdc-dialog-container .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: var(--mdc-tab-text-label-text-color-selected) !important;
+}
+
+.mat-mdc-dialog-container .mat-mdc-tab-group .mat-mdc-tab-header .mat-mdc-ink-bar {
+  background-color: var(--mdc-tab-indicator-active-indicator-color) !important;
+}
+
+/* REGLAS ESPECÍFICAS PARA SELECTS DE MATERIAL DESIGN */
+.mat-mdc-select {
+  color: var(--color-text) !important;
+}
+
+.mat-mdc-select .mat-mdc-select-value {
+  color: var(--color-text) !important;
+}
+
+.mat-mdc-select .mat-mdc-select-value-text {
+  color: var(--color-text) !important;
+}
+
+.mat-mdc-select .mat-mdc-select-min-line {
+  color: var(--color-text) !important;
+}
+
+.mat-mdc-select .mat-mdc-select-arrow {
+  color: var(--color-text) !important;
+}
+
+.mat-mdc-select .mat-mdc-select-arrow svg {
+  fill: var(--color-text) !important;
+}
+
+/* Para selects deshabilitados */
+.mat-mdc-select.mat-mdc-select-disabled {
+  color: var(--color-text-muted) !important;
+}
+
+.mat-mdc-select.mat-mdc-select-disabled .mat-mdc-select-value {
+  color: var(--color-text-muted) !important;
+}
+
+.mat-mdc-select.mat-mdc-select-disabled .mat-mdc-select-value-text {
+  color: var(--color-text-muted) !important;
+}
+
+.mat-mdc-select.mat-mdc-select-disabled .mat-mdc-select-min-line {
+  color: var(--color-text-muted) !important;
+}
+
+/* Para el panel desplegable del select */
+.mat-mdc-select-panel {
+  background-color: var(--mdc-menu-container-color) !important;
+  color: var(--mdc-menu-item-label-text-color) !important;
+}
+
+.mat-mdc-select-panel .mat-mdc-option {
+  color: var(--mdc-menu-item-label-text-color) !important;
+}
+
+.mat-mdc-select-panel .mat-mdc-option:hover {
+  background-color: var(--clr-surface-a10) !important;
+}
+
+.mat-mdc-select-panel .mat-mdc-option.mat-mdc-option-active {
+  background-color: var(--color-primary-darkest) !important;
+  color: var(--color-text-inverse) !important;
 }

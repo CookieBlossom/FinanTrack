@@ -1,0 +1,13 @@
+<div class="current-plan-container" *ngIf="currentPlan">
+  <div class="plan-badge">
+    <div class="plan-icon">
+      <mat-icon>star</mat-icon>
+    </div>
+    <div class="plan-info">
+      <div class="plan-name">{{ getPlanDisplayName(currentPlan.planName) }}</div>
+      <div class="plan-status" [class.active]="isActive">
+        {{ isActive ? 'Activo' : 'Inactivo' }}
+      </div>
+    </div>
+  </div>
+</div> 

@@ -10,5 +10,14 @@ export const config = {
     redis: {
         url: process.env.REDIS_URL || 'redis://localhost:6379',
         enableOfflineQueue: false
-    }
+    },
+    // Configuración para automatización
+    automation: {
+        frontendUrl: process.env.FRONTEND_URL || 'http://localhost:4200',
+        backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
+        timezone: process.env.TIMEZONE || 'America/Santiago'
+    },
+    // Configuración general
+    nodeEnv: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 3000
 }; 

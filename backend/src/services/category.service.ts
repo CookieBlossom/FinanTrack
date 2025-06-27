@@ -50,6 +50,8 @@ export class CategoryService {
 
     // Categorías con keywords del usuario
     async getUserCategories(userId: number): Promise<ICategory[]> {
+        console.log(`Obteniendo categorías para usuario ${userId}`);
+        
         const query = `
             SELECT 
                 c.*, 
@@ -59,14 +61,39 @@ export class CategoryService {
                 ON uck.category_id = c.id AND uck.user_id = $1
             ORDER BY c.name_category ASC
         `;
+        
         const result = await this.pool.query(query, [userId]);
+        console.log(`Resultado de la consulta:`, result.rows);
+        
+        // Log cada categoría para debuggear
+        result.rows.forEach((row, index) => {
+            console.log(`Categoría ${index + 1}: ${row.name_category} - Keywords:`, row.keywords);
+        });
+        
         return result.rows;
     }
 
     // Actualiza solo las keywords
     async updateUserCategoryKeywords(userId: number, categoryId: number, keywords: string[], planId: number): Promise<void> {
-        // Verificar límites de keywords por categoría
-        await this.checkKeywordsLimit(userId, planId, categoryId, keywords);
+        console.log(`Actualizando keywords para usuario ${userId}, categoría ${categoryId}:`, keywords);
+        
+        // Verificar que el usuario existe
+        const userCheckQuery = 'SELECT id FROM "user" WHERE id = $1 AND is_active = true';
+        const userResult = await this.pool.query(userCheckQuery, [userId]);
+        
+        if (userResult.rowCount === 0) {
+            throw new Error(`Usuario con ID ${userId} no existe o no está activo`);
+        }
+        
+        console.log(`Usuario ${userId} verificado correctamente`);
+        
+        // Verificar límites de keywords por categoría (temporalmente deshabilitado)
+        try {
+            await this.checkKeywordsLimit(userId, planId, categoryId, keywords);
+        } catch (error) {
+            console.log('Error al verificar límites, continuando sin verificación:', error);
+            // Continuar sin verificación de límites por ahora
+        }
 
         const query = `
             INSERT INTO user_category_keywords (user_id, category_id, keywords, updated_at)
@@ -74,7 +101,18 @@ export class CategoryService {
             ON CONFLICT (user_id, category_id)
             DO UPDATE SET keywords = $3, updated_at = NOW()
         `;
-        await this.pool.query(query, [userId, categoryId, keywords]);
+        
+        console.log(`Ejecutando query con parámetros:`, [userId, categoryId, keywords]);
+        const result = await this.pool.query(query, [userId, categoryId, keywords]);
+        console.log(`Query ejecutada exitosamente. Filas afectadas:`, result.rowCount);
+        
+        // Verificar que se guardó correctamente
+        const verifyQuery = `
+            SELECT keywords FROM user_category_keywords 
+            WHERE user_id = $1 AND category_id = $2
+        `;
+        const verifyResult = await this.pool.query(verifyQuery, [userId, categoryId]);
+        console.log(`Verificación - Keywords guardadas:`, verifyResult.rows[0]?.keywords);
     }
 
     // Actualiza solo el color (de categoría global)

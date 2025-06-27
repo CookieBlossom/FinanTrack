@@ -4,12 +4,16 @@ import { IMovementCreate, IMovementUpdate, IMovementFilters } from '../interface
 import { AuthRequest } from '../interfaces/AuthRequest';
 import { DatabaseError } from '../utils/errors';
 import multer from 'multer';
+import { Pool } from 'pg';
+import { pool } from '../config/database/connection';
 
 export class MovementController {
     private movementService: MovementService;
+    private pool: Pool;
 
     constructor() {
         this.movementService = new MovementService();
+        this.pool = pool;
     }
 
     public getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -48,6 +52,24 @@ export class MovementController {
         }
     };
 
+    public getCardMovements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const userId = (req as AuthRequest).user?.id;
+            if (!userId) {
+                res.status(401).json({ message: 'Usuario no autenticado' });
+                return;
+            }
+            const cardMovements = await this.movementService.getCardMovementsByUser(userId);
+            res.json(cardMovements);
+        } catch (error) {
+            console.error('Error al obtener movimientos de tarjetas:', error);
+            res.status(500).json({
+                message: 'Error al obtener los movimientos de tarjetas',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    };
+
     public getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const userId = (req as AuthRequest).user?.id;
@@ -56,6 +78,10 @@ export class MovementController {
                 return;
             }
             const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                res.status(400).json({ message: 'ID de movimiento inválido' });
+                return;
+            }
             const movement = await this.movementService.getMovementById(id);
             
             if (!movement) {
@@ -120,6 +146,32 @@ export class MovementController {
                 ...req.body,
                 transactionDate: new Date(req.body.transactionDate)
             };
+            // Si es un movimiento de efectivo (useCashCard = true), asignar automáticamente la tarjeta de efectivo
+            if (req.body.useCashCard) {
+                try {
+                    const efectivoCardQuery = `
+                        SELECT c.id 
+                        FROM cards c 
+                        JOIN card_types ct ON c.card_type_id = ct.id 
+                        WHERE c.user_id = $1 AND c.status_account = 'active' 
+                        AND ct.name = 'Efectivo' 
+                        LIMIT 1
+                    `;
+                    const efectivoCardResult = await this.pool.query(efectivoCardQuery, [user.id]);
+                    const efectivoCardId = efectivoCardResult.rows[0]?.id;
+                    
+                    if (!efectivoCardId) {
+                        res.status(400).json({ message: 'No se encontró una tarjeta de efectivo configurada' });
+                        return;
+                    }
+                    
+                    movementData.cardId = efectivoCardId;
+                } catch (error) {
+                    console.error('Error al obtener tarjeta de efectivo:', error);
+                    res.status(500).json({ message: 'Error al procesar movimiento de efectivo' });
+                    return;
+                }
+            }
             
             if (!this.validateMovementData(movementData)) {
                 res.status(400).json({ message: 'Datos del movimiento incompletos o inválidos' });
@@ -146,6 +198,10 @@ export class MovementController {
             }
 
             const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                res.status(400).json({ message: 'ID de movimiento inválido' });
+                return;
+            }
             const movementData: IMovementUpdate = {
                 ...req.body,
                 transactionDate: req.body.transactionDate ? new Date(req.body.transactionDate) : undefined
@@ -182,6 +238,10 @@ export class MovementController {
             }
 
             const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                res.status(400).json({ message: 'ID de movimiento inválido' });
+                return;
+            }
             await this.movementService.deleteMovement(id, userId);
 
             res.status(200).json({ message: 'Movimiento eliminado correctamente' });
@@ -225,6 +285,22 @@ export class MovementController {
                 message: 'Error al procesar la cartola',
                 error: error instanceof Error ? error.message : 'Error desconocido'
             });
+        }
+    };
+
+    public getMonthlySummary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const userId = (req as AuthRequest).user?.id;
+            const { month } = req.query;
+            if (!userId || !month || typeof month !== 'string') {
+                res.status(400).json({ message: 'Faltan parámetros' });
+                return;
+            }
+            const summary = await this.movementService.getMonthlySummary(userId, month);
+            res.json(summary);
+        } catch (error) {
+            console.error('Error al obtener resumen mensual:', error);
+            res.status(500).json({ message: 'Error al obtener el resumen mensual' });
         }
     };
 

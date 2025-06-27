@@ -10,83 +10,95 @@
                         [scheme]="colorScheme2"
                         [legend]="true"
                         [legendTitle]="'Leyenda'"
+                        [legendPosition]="legendPosition"
                         [xAxis]="true"
                         [yAxis]="true"
                         [animations]="true"
                         [autoScale]="true"
                         [curve]="curve"
-                        [yAxisTickFormatting]="formatCurrency">
+                        [yAxisTickFormatting]="formatCurrency"
+                        [showGridLines]="false"
+                        [gradient]="false"
+                        [showXAxisLabel]="true"
+                        [showYAxisLabel]="true"
+                        xAxisLabel="Mes"
+                        yAxisLabel="Monto ($)">
                     </ngx-charts-line-chart>
                 </ng-container>
                 <ng-template #noIngresosVsCostos>
                     <div class="empty-state">
                         <i class="fas fa-chart-line"></i>
-                        <p>No hay datos de ingresos y costos para mostrar</p>
-                        <button class="action-button primary" routerLink="/card">
-                            <i class="fas fa-credit-card"></i>
-                            Ir a Tarjetas
-                        </button>
-                    </div>
-                </ng-template>
-            </div>
-        </div>
-        <div class="movimientos">
-            <h2 class="title-section">Próximos Movimientos</h2>
-            <div class="table-container">
-                <ng-container *ngIf="showMovimientos; else noMovimientos">
-                    <ag-grid-angular
-                        class="ag-theme-alpine"
-                        [columnDefs]="columnDefs"
-                        [rowData]="rowData"
-                        [theme]="myTheme"
-                        rowModelType="clientSide"
-                        [pagination]="true"
-                        [paginationPageSize]="10"
-                        [paginationPageSizeSelector]="[10, 20, 50]"
-                        [rowSelection]="'single'"
-                        (gridReady)="onGridReady($event)"
-                        (gridSizeChanged)="onGridSizeChanged($event)">
-                    </ag-grid-angular>
-                </ng-container>
-                <ng-template #noMovimientos>
-                    <div class="empty-state">
-                        <i class="fas fa-receipt"></i>
-                        <p>No hay movimientos próximos para mostrar</p>
-                        <button class="action-button primary" routerLink="/movements">
+                        <p>No hay datos de ingresos y costos para mostrar en el gráfico</p>
+                        <button class="action-button" routerLink="/movements">
                             <i class="fas fa-plus-circle"></i>
-                            Ir a Movimientos
+                            Agregar Movimientos
                         </button>
                     </div>
                 </ng-template>
             </div>
         </div>
-        <div class="gastosPorCategoria">
-            <h2 class="title-section">Gastos por Categoría (Mes Actual)</h2>
-            <div class="chart-container">
-                <ng-container *ngIf="showGastosPorCategoria; else noGastosPorCategoria">
-                    <ngx-charts-pie-chart
-                        [results]="gastosPorCategoria"
-                        [scheme]="colorScheme"
-                        [legend]="true"
-                        [legendTitle]="'Leyenda'"
-                        [explodeSlices]="false"
-                        [labels]="true"
-                        [animations]="true"
-                        [doughnut]="true"
-                        [view]="pieChartView"
-                        [tooltipText]="formatTooltip">
-                    </ngx-charts-pie-chart>
-                </ng-container>
-                <ng-template #noGastosPorCategoria>
-                    <div class="empty-state">
-                        <i class="fas fa-chart-pie"></i>
-                        <p>No hay datos de gastos por categoría para mostrar</p>
-                        <button class="action-button primary" routerLink="/categories">
-                            <i class="fas fa-tags"></i>
-                            Ir a Categorías
-                        </button>
-                    </div>
-                </ng-template>
+        <div class="bottom-row">
+            <div class="gastosPorCategoria">
+                <h2 class="title-section">Gastos por Categoría</h2>
+                <div class="chart-container">
+                    <ng-container *ngIf="showGastosPorCategoria; else noGastosPorCategoria">
+                        <ngx-charts-pie-chart
+                            [results]="gastosPorCategoria"
+                            [scheme]="colorScheme"
+                            [legend]="false"
+                            [explodeSlices]="false"
+                            [labels]="true"
+                            [animations]="true"
+                            [doughnut]="false"
+                            [view]="pieChartView"
+                            [tooltipText]="formatTooltip"
+                            [tooltipDisabled]="false"
+                            (activate)="onPieChartSelect($event)"
+                            [gradient]="false"
+                            [trimLabels]="false">
+                        </ngx-charts-pie-chart>
+                    </ng-container>
+                    <ng-template #noGastosPorCategoria>
+                        <div class="empty-state">
+                            <i class="fas fa-chart-pie"></i>
+                            <p>No hay datos de gastos por categoría para mostrar</p>
+                            <button class="action-button" routerLink="/movements">
+                                <i class="fas fa-plus-circle"></i>
+                                Agregar Gastos
+                            </button>
+                        </div>
+                    </ng-template>
+                </div>
+            </div>
+            <div class="movimientos">
+                <h2 class="title-section">Próximos Movimientos</h2>
+                <div class="table-container">
+                    <ng-container *ngIf="showMovimientos; else noMovimientos">
+                        <ag-grid-angular
+                            class="ag-theme-alpine"
+                            [columnDefs]="columnDefs"
+                            [rowData]="rowData"
+                            [theme]="myTheme"
+                            rowModelType="clientSide"
+                            [pagination]="true"
+                            [paginationPageSize]="10"
+                            [paginationPageSizeSelector]="[10, 20, 50]"
+                            [rowSelection]="'single'"
+                            (gridReady)="onGridReady($event)"
+                            (gridSizeChanged)="onGridSizeChanged($event)">
+                        </ag-grid-angular>
+                    </ng-container>
+                    <ng-template #noMovimientos>
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-alt"></i>
+                            <p>No hay movimientos futuros programados para mostrar</p>
+                            <button class="action-button" routerLink="/upcoming-transactions">
+                                <i class="fas fa-plus-circle"></i>
+                                Programar Movimientos
+                            </button>
+                        </div>
+                    </ng-template>
+                </div>
             </div>
         </div>
     </div>

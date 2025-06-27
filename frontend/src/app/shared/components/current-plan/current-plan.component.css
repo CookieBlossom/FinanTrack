@@ -1,0 +1,105 @@
+.current-plan-container {
+  display: flex;
+  align-items: center;
+}
+
+.plan-badge {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  background: var(--clr-surface-a10);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--clr-surface-a20);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 140px;
+}
+
+.plan-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  background: var(--clr-surface-a20);
+}
+
+.plan-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: var(--color-accent);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.plan-icon mat-icon {
+  color: white;
+  align-items: center;
+  text-align: center;
+  align-content: center;
+}
+
+.plan-info {
+    display: flex;
+    flex-direction: row;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.plan-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary-darkest);
+  line-height: 1.2;
+}
+
+.plan-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  line-height: 1.2;
+}
+
+.plan-status.active {
+  color: var(--color-success);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .plan-badge {
+    padding: 0.5rem 0.75rem;
+    min-width: 120px;
+  }
+
+  .plan-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .plan-icon mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .plan-name {
+    font-size: 0.8rem;
+  }
+
+  .plan-status {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-badge {
+    padding: 0.5rem;
+    min-width: 100px;
+  }
+
+  .plan-info {
+    gap: 0.125rem;
+  }
+} 

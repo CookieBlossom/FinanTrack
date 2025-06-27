@@ -46,13 +46,19 @@ export class DashboardController {
             months.forEach(month => monthlyData.set(month, { ingresos: 0, gastos: 0 }));
 
             movements.forEach((movement: IMovement) => {
+                const amount = Number(movement.amount);
+                if (isNaN(amount) || amount === null || amount === undefined) {
+                    console.warn(`Movimiento con amount inválido: ${movement.id}, amount: ${movement.amount}`);
+                    return;
+                }
+
                 const date = new Date(movement.transactionDate);
                 const month = months[date.getMonth()];
                 if (monthlyData.has(month)) {
                     if (movement.movementType === 'income') {
-                        monthlyData.get(month)!.ingresos += movement.amount;
+                        monthlyData.get(month)!.ingresos += amount;
                     } else if (movement.movementType === 'expense') {
-                        monthlyData.get(month)!.gastos += Math.abs(movement.amount);
+                        monthlyData.get(month)!.gastos += Math.abs(amount);
                     }
                 }
             });
@@ -73,6 +79,8 @@ export class DashboardController {
                     }))
                 }
             ];
+
+            console.log('Datos formateados para ingresos vs gastos:', formattedData);
             return res.json(formattedData);
         } catch (error) {
             console.error('Error en getIncomeVsExpenses:', error);
@@ -93,12 +101,23 @@ export class DashboardController {
             const movements: IMovement[] = await this.movementService.getMovements(filters);
 
             const categoryData = movements.reduce((acc: { [key: string]: number }, mov: IMovement) => {
-                const categoryName = mov.category?.nameCategory || 'Sin Categoría';
-                acc[categoryName] = (acc[categoryName] || 0) + Math.abs(mov.amount);
+                const amount = Number(mov.amount);
+                if (isNaN(amount) || amount === null || amount === undefined) {
+                    console.warn(`Movimiento con amount inválido: ${mov.id}, amount: ${mov.amount}`);
+                    return acc;
+                }
+
+                const categoryName = mov.category?.nameCategory || 'Otros';
+                acc[categoryName] = (acc[categoryName] || 0) + Math.abs(amount);
                 return acc;
             }, {});
 
-            const result = Object.entries(categoryData).map(([categoryName, value]) => ({ name: categoryName, value }));
+            const result = Object.entries(categoryData).map(([categoryName, value]) => ({ 
+                name: categoryName, 
+                value: Number(value) || 0 
+            }));
+
+            console.log('Datos formateados para gastos por categoría:', result);
             return res.json(result);
         } catch (error) {
             console.error('Error en getCategoryExpenses:', error);

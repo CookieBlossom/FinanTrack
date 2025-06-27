@@ -8,12 +8,21 @@
           Cargar Cartola
         </button>
         <h3>Movimientos de Cuenta</h3>
+        
+        <!-- Indicador de carga -->
+        <div *ngIf="(historyCard$ | async) === null" class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando movimientos...</p>
+        </div>
+        
         <ag-grid-angular
+            *ngIf="(historyCard$ | async) !== null"
             class="ag-theme-alpine"
-            [rowData]="historyCard"
+            [rowData]="historyCard$ | async"
             [columnDefs]="columnDefsCard"
             [pagination]="true"
             [paginationPageSize]="5"
+            [paginationPageSizeSelector]="[5, 10, 20, 50]"
             [singleClickEdit]="true"
             [stopEditingWhenCellsLoseFocus]="true"
             [rowSelection]="'single'"
@@ -23,16 +32,51 @@
             (gridReady)="onGridReady($event)"
             (gridSizeChanged)="onGridSizeChanged($event)">
         </ag-grid-angular>
-        <button class="btn-add" (click)="openAddMovementDialog()">+ Agregar Movimiento</button>
+        
+        <!-- Mostrar botón de agregar tarjeta si solo tiene tarjetas de efectivo -->
+        <button 
+          class="btn-add" 
+          (click)="openAddCardDialog()" 
+          *ngIf="hasOnlyCashCards$ | async">
+          <mat-icon>add_card</mat-icon>
+          + Agregar Tarjeta
+        </button>
+        
+        <!-- Mostrar botón de agregar movimiento si tiene tarjetas no-efectivo -->
+        <button 
+          class="btn-add" 
+          (click)="openAddMovementDialog()" 
+          *ngIf="hasNonCashCards$ | async">
+          <mat-icon>add</mat-icon>
+          + Agregar Movimiento
+        </button>
+        
+        <!-- Mostrar mensaje si no tiene tarjetas -->
+        <div *ngIf="!(hasOnlyCashCards$ | async) && !(hasNonCashCards$ | async)" class="no-cards-message">
+          <p>No tienes tarjetas configuradas. Agrega una tarjeta para comenzar a registrar movimientos.</p>
+          <button class="btn-add" (click)="openAddCardDialog()">
+            <mat-icon>add_card</mat-icon>
+            + Agregar Tarjeta
+          </button>
+        </div>
     </div>
     <div class="table">
         <h3>Movimientos en Efectivo</h3>
+        
+        <!-- Indicador de carga -->
+        <div *ngIf="(historyCash$ | async) === null" class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando movimientos en efectivo...</p>
+        </div>
+        
         <ag-grid-angular
+            *ngIf="(historyCash$ | async) !== null"
             class="ag-theme-alpine"
-            [rowData]="historyCash"
+            [rowData]="historyCash$ | async"
             [columnDefs]="columnDefsCash"
             [pagination]="true"
             [paginationPageSize]="5"
+            [paginationPageSizeSelector]="[5, 10, 20, 50]"
             [stopEditingWhenCellsLoseFocus]="true"
             [rowSelection]="'single'"
             [theme]="myTheme"

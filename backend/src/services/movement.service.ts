@@ -120,7 +120,9 @@ export class MovementService {
       let query = `
         SELECT 
           m.id, m.card_id as "cardId", m.category_id as "categoryId",
-          cat.name_category as "category",
+          cat.name_category as "categoryName",
+          cat.icon as "categoryIcon",
+          cat.color as "categoryColor",
           m.amount, m.description, m.movement_type as "movementType",
           m.movement_source as "movementSource", 
           m.transaction_date as "transactionDate",
@@ -145,7 +147,13 @@ export class MovementService {
       const result = await this.pool.query(query, values);
       return result.rows.map(row => ({
         ...row,
-        transactionDate: new Date(row.transactionDate)
+        transactionDate: new Date(row.transactionDate),
+        category: row.categoryId ? {
+          id: row.categoryId,
+          nameCategory: row.categoryName,
+          icon: row.categoryIcon,
+          color: row.categoryColor
+        } : undefined
       }));
     } catch (error) {
       console.error('[MovementService] Error al obtener movimientos:', error);
@@ -158,7 +166,9 @@ export class MovementService {
       const query = `
         SELECT 
           m.id, m.card_id as "cardId", m.category_id as "categoryId",
-          cat.name_category as "category",
+          cat.name_category as "categoryName",
+          cat.icon as "categoryIcon",
+          cat.color as "categoryColor",
           m.amount, m.description, m.movement_type as "movementType",
           m.movement_source as "movementSource",
           m.transaction_date as "transactionDate", 
@@ -170,7 +180,17 @@ export class MovementService {
       `;
       const result = await this.pool.query(query, [id]);
       if (result.rows.length === 0) return null;
-      return { ...result.rows[0], transactionDate: new Date(result.rows[0].transactionDate) };
+      const row = result.rows[0];
+      return { 
+        ...row, 
+        transactionDate: new Date(row.transactionDate),
+        category: row.categoryId ? {
+          id: row.categoryId,
+          nameCategory: row.categoryName,
+          icon: row.categoryIcon,
+          color: row.categoryColor
+        } : undefined
+      };
     } catch (error) {
       console.error('[MovementService] Error al obtener movimiento por ID:', error);
       throw new DatabaseError('Error al obtener el movimiento');
@@ -190,19 +210,86 @@ export class MovementService {
     if (!efectivoCardId) return [];
   
     const movementsQuery = `
-      SELECT * FROM movements 
-      WHERE card_id = $1 AND movement_source = 'manual'
-      ORDER BY transaction_date DESC;
+      SELECT 
+        m.id, m.card_id as "cardId", m.category_id as "categoryId",
+        cat.name_category as "categoryName",
+        cat.icon as "categoryIcon",
+        cat.color as "categoryColor",
+        m.amount, m.description, m.movement_type as "movementType",
+        m.movement_source as "movementSource", 
+        m.transaction_date as "transactionDate", 
+        m.metadata,
+        m.created_at as "createdAt", m.updated_at as "updatedAt",
+        c.name_account as "cardName"
+      FROM movements m
+      JOIN cards c ON m.card_id = c.id
+      LEFT JOIN categories cat ON m.category_id = cat.id
+      WHERE m.card_id = $1 AND m.movement_source = 'manual'
+      ORDER BY m.transaction_date DESC, m.created_at DESC
     `;
     const result = await this.pool.query(movementsQuery, [efectivoCardId]);
-    return result.rows;
+    return result.rows.map(row => ({ 
+      ...row, 
+      transactionDate: new Date(row.transactionDate),
+      card: { nameAccount: row.cardName },
+      category: row.categoryId ? {
+        id: row.categoryId,
+        nameCategory: row.categoryName,
+        icon: row.categoryIcon,
+        color: row.categoryColor
+      } : undefined
+    }));
   }
+
+  public async getCardMovementsByUser(userId: number): Promise<IMovement[]> {
+    try {
+      const query = `
+        SELECT 
+          m.id, m.card_id as "cardId", m.category_id as "categoryId",
+          cat.name_category as "categoryName",
+          cat.icon as "categoryIcon",
+          cat.color as "categoryColor",
+          m.amount, m.description, m.movement_type as "movementType",
+          m.movement_source as "movementSource", 
+          m.transaction_date as "transactionDate", 
+          m.metadata,
+          m.created_at as "createdAt", m.updated_at as "updatedAt",
+          c.name_account as "cardName"
+        FROM movements m
+        JOIN cards c ON m.card_id = c.id
+        LEFT JOIN categories cat ON m.category_id = cat.id
+        WHERE c.user_id = $1 
+        AND c.card_type_id != (
+          SELECT id FROM card_types WHERE name = 'Efectivo' LIMIT 1
+        )
+        ORDER BY m.transaction_date DESC, m.created_at DESC
+      `;
+      const result = await this.pool.query(query, [userId]);
+      return result.rows.map(row => ({ 
+        ...row, 
+        transactionDate: new Date(row.transactionDate),
+        card: { nameAccount: row.cardName },
+        category: row.categoryId ? {
+          id: row.categoryId,
+          nameCategory: row.categoryName,
+          icon: row.categoryIcon,
+          color: row.categoryColor
+        } : undefined
+      }));
+    } catch (error) {
+      console.error('[MovementService] Error al obtener movimientos de tarjetas:', error);
+      throw new DatabaseError('Error al obtener los movimientos de tarjetas');
+    }
+  }
+
   async getMovementsByMonth(userId: number, month: number, year: number): Promise<IMovement[]> {
     try {
       const query = `
         SELECT 
           m.id, m.card_id as "cardId", m.category_id as "categoryId",
-          cat.name_category as "category",
+          cat.name_category as "categoryName",
+          cat.icon as "categoryIcon",
+          cat.color as "categoryColor",
           m.amount, m.description, m.movement_type as "movementType",
           m.movement_source as "movementSource", 
           m.transaction_date as "transactionDate", 
@@ -217,7 +304,16 @@ export class MovementService {
         ORDER BY m.transaction_date DESC, m.created_at DESC
       `;
       const result = await this.pool.query(query, [userId, month, year]);
-      return result.rows.map(row => ({ ...row, transactionDate: new Date(row.transactionDate) }));
+      return result.rows.map(row => ({ 
+        ...row, 
+        transactionDate: new Date(row.transactionDate),
+        category: row.categoryId ? {
+          id: row.categoryId,
+          nameCategory: row.categoryName,
+          icon: row.categoryIcon,
+          color: row.categoryColor
+        } : undefined
+      }));
     } catch (error) {
       console.error('[MovementService] Error al obtener movimientos por mes:', error);
       throw new DatabaseError('Error al obtener los movimientos del mes');
@@ -311,14 +407,27 @@ export class MovementService {
       const newMovement = result.rows[0];
 
       let categoryName: string | undefined = undefined;
+      let categoryIcon: string | undefined = undefined;
+      let categoryColor: string | undefined = undefined;
       if (newMovement.categoryId) {
-        const category = await this.pool.query('SELECT name_category FROM categories WHERE id = $1', [newMovement.categoryId]);
+        const category = await this.pool.query('SELECT name_category, icon, color FROM categories WHERE id = $1', [newMovement.categoryId]);
         if (category.rows.length > 0) {
           categoryName = category.rows[0].name_category;
+          categoryIcon = category.rows[0].icon;
+          categoryColor = category.rows[0].color;
         }
       }
 
-      return { ...newMovement, category: categoryName, transactionDate: new Date(newMovement.transactionDate) };
+      return { 
+        ...newMovement, 
+        transactionDate: new Date(newMovement.transactionDate),
+        category: newMovement.categoryId ? {
+          id: newMovement.categoryId,
+          nameCategory: categoryName || '',
+          icon: categoryIcon,
+          color: categoryColor
+        } : undefined
+      };
     } catch (error) {
       console.error('[MovementService] Error al crear movimiento:', error);
       throw new DatabaseError('Error al crear el movimiento');
@@ -385,13 +494,22 @@ export class MovementService {
 
       const updatedMovement = result.rows[0];
       let categoryName: string | undefined = undefined;
+      let categoryIcon: string | undefined = undefined;
+      let categoryColor: string | undefined = undefined;
       if (updatedMovement.categoryId) {
-        const category = await this.pool.query('SELECT name_category FROM categories WHERE id = $1', [updatedMovement.categoryId]);
+        const category = await this.pool.query('SELECT name_category, icon, color FROM categories WHERE id = $1', [updatedMovement.categoryId]);
         if (category.rows.length > 0) {
           categoryName = category.rows[0].name_category;
+          categoryIcon = category.rows[0].icon;
+          categoryColor = category.rows[0].color;
         }
       }
-      return { ...updatedMovement, category: categoryName, transactionDate: new Date(updatedMovement.transactionDate) };
+      return { ...updatedMovement, category: updatedMovement.categoryId ? {
+        id: updatedMovement.categoryId,
+        nameCategory: categoryName || '',
+        icon: categoryIcon,
+        color: categoryColor
+      } : undefined, transactionDate: new Date(updatedMovement.transactionDate) };
 
     } catch (error) {
       console.error('[MovementService] Error al actualizar movimiento:', error);
@@ -464,5 +582,84 @@ export class MovementService {
       console.error('[MovementService] Error al procesar movimientos de cartola:', error);
       throw new DatabaseError('Error al procesar los movimientos de la cartola');
     }
+  }
+
+  async getMonthlySummary(userId: number, month: string): Promise<any> {
+    // month: 'YYYY-MM'
+    const [year, monthNum] = month.split('-').map(Number);
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 1);
+
+    // Solo tarjetas activas
+    const cardIdsResult = await this.pool.query(
+      `SELECT id FROM cards WHERE user_id = $1 AND status_account = 'active'`,
+      [userId]
+    );
+    const cardIds = cardIdsResult.rows.map((row: any) => row.id);
+    if (cardIds.length === 0) {
+      return {
+        month,
+        totalIngresos: 0,
+        totalEgresos: 0,
+        movimientosTotales: 0,
+        categoriaMayorGasto: null,
+        diaMayorGasto: null,
+        hasData: false
+      };
+    }
+
+    // Totales
+    const totalsResult = await this.pool.query(`
+      SELECT
+        SUM(CASE WHEN movement_type = 'income' THEN amount ELSE 0 END) AS total_ingresos,
+        SUM(CASE WHEN movement_type = 'expense' THEN amount ELSE 0 END) AS total_egresos,
+        COUNT(*) AS movimientos_totales
+      FROM movements
+      WHERE card_id = ANY($1)
+        AND transaction_date >= $2
+        AND transaction_date < $3
+    `, [cardIds, startDate, endDate]);
+    const totals = totalsResult.rows[0];
+
+    // Categoría mayor gasto
+    const catResult = await this.pool.query(`
+      SELECT c.id, c.name_category, SUM(m.amount) AS monto
+      FROM movements m
+      JOIN categories c ON m.category_id = c.id
+      WHERE m.card_id = ANY($1)
+        AND m.movement_type = 'expense'
+        AND m.transaction_date >= $2
+        AND m.transaction_date < $3
+      GROUP BY c.id, c.name_category
+      ORDER BY monto DESC
+      LIMIT 1
+    `, [cardIds, startDate, endDate]);
+    const categoriaMayorGasto = catResult.rows[0] || null;
+
+    // Día mayor gasto
+    const dayResult = await this.pool.query(`
+      SELECT DATE(transaction_date) AS fecha, SUM(amount) AS monto
+      FROM movements
+      WHERE card_id = ANY($1)
+        AND movement_type = 'expense'
+        AND transaction_date >= $2
+        AND transaction_date < $3
+      GROUP BY fecha
+      ORDER BY monto DESC
+      LIMIT 1
+    `, [cardIds, startDate, endDate]);
+    const diaMayorGasto = dayResult.rows[0] || null;
+
+    const hasData = Number(totals.movimientos_totales) > 0;
+
+    return {
+      month,
+      totalIngresos: Number(totals.total_ingresos) || 0,
+      totalEgresos: Number(totals.total_egresos) || 0,
+      movimientosTotales: Number(totals.movimientos_totales) || 0,
+      categoriaMayorGasto,
+      diaMayorGasto,
+      hasData
+    };
   }
 } 

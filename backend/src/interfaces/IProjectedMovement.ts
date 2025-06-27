@@ -13,6 +13,19 @@ export interface IProjectedMovement {
   recurrenceType?: 'monthly' | 'yearly' | 'weekly' | null;
   createdAt?: Date;
   updatedAt?: Date;
+  
+  // Datos expandidos opcionales
+  category?: {
+    id: number;
+    nameCategory: string;
+    icon?: string;
+    color?: string;
+  };
+  card?: {
+    id: number;
+    nameAccount: string;
+    aliasAccount?: string;
+  };
 }
 
 export interface IProjectedMovementCreate {

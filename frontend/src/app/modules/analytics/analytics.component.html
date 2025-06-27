@@ -61,64 +61,73 @@
     <div class="summary">
       <h3 class="summary-title">{{ selectedMonth ? 'Resumen de ' + selectedMonth : 'Resumen General' }}</h3>
       <div class="summary-content">
-        <div class="summary-left">
-          <div class="summary-item">
-            <div class="summary-label">Mayor Gasto</div>
-            <div class="summary-block">
-              <div class="grid-header">Categoría</div>
-              <div class="grid-header">Monto</div>
-              <div class="grid-header">% del gasto</div>
-            
-              <div class="grid-cell">{{ monthlySummary?.highestExpense?.category?.name || 'No hay datos' }}</div>
-              <div class="grid-cell">{{ formatAmount(monthlySummary?.highestExpense?.category?.amount) }}</div>
-              <div class="grid-cell">{{ formatPercentage(monthlySummary?.highestExpense?.category?.percentage) }}</div>
-            
-              <div class="grid-header">Método de Pago</div>
-              <div class="grid-header">Monto</div>
-              <div class="grid-header">% del gasto</div>
-            
-              <div class="grid-cell">{{ monthlySummary?.highestExpense?.paymentMethod?.name || 'No hay datos' }}</div>
-              <div class="grid-cell">{{ formatAmount(monthlySummary?.highestExpense?.paymentMethod?.amount) }}</div>
-              <div class="grid-cell">{{ formatPercentage(monthlySummary?.highestExpense?.paymentMethod?.percentage) }}</div>
-            
-              <div class="grid-header">Fecha</div>
-              <div class="grid-header">Monto</div>
-              <div class="grid-header">% del gasto</div>
-            
-              <div class="grid-cell">{{ formatDate(monthlySummary?.highestExpense?.date?.date) }}</div>
-              <div class="grid-cell">{{ formatAmount(monthlySummary?.highestExpense?.date?.amount) }}</div>
-              <div class="grid-cell">{{ formatPercentage(monthlySummary?.highestExpense?.date?.percentage) }}</div>
+        <ng-container *ngIf="monthlySummary && hasData; else noSummaryData">
+          <div class="summary-left">
+            <div class="summary-item">
+              <div class="summary-label">Mayor Gasto</div>
+              <div class="summary-block">
+                <div class="grid-header">Categoría</div>
+                <div class="grid-header">Monto</div>
+                <div class="grid-header">% del gasto</div>
+              
+                <div class="grid-cell">{{ monthlySummary.highestExpense.category.name || 'No hay datos' }}</div>
+                <div class="grid-cell">{{ formatAmount(monthlySummary.highestExpense.category.amount) }}</div>
+                <div class="grid-cell">{{ formatPercentage(monthlySummary.highestExpense.category.percentage) }}</div>
+              
+                <div class="grid-header">Método de Pago</div>
+                <div class="grid-header">Monto</div>
+                <div class="grid-header">% del gasto</div>
+              
+                <div class="grid-cell">{{ monthlySummary.highestExpense.paymentMethod.name || 'No hay datos' }}</div>
+                <div class="grid-cell">{{ formatAmount(monthlySummary.highestExpense.paymentMethod.amount) }}</div>
+                <div class="grid-cell">{{ formatPercentage(monthlySummary.highestExpense.paymentMethod.percentage) }}</div>
+              
+                <div class="grid-header">Fecha</div>
+                <div class="grid-header">Monto</div>
+                <div class="grid-header">% del gasto</div>
+              
+                <div class="grid-cell">{{ formatDate(monthlySummary.highestExpense.date.date) }}</div>
+                <div class="grid-cell">{{ formatAmount(monthlySummary.highestExpense.date.amount) }}</div>
+                <div class="grid-cell">{{ formatPercentage(monthlySummary.highestExpense.date.percentage) }}</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Menor Gasto</div>
+              <div class="summary-block">
+                <div class="grid-header">Categoría</div>
+                <div class="grid-header">Monto</div>
+                <div class="grid-header">% del gasto</div>
+              
+                <div class="grid-cell">{{ monthlySummary.lowestExpense.category.name || 'No hay datos' }}</div>
+                <div class="grid-cell">{{ formatAmount(monthlySummary.lowestExpense.category.amount) }}</div>
+                <div class="grid-cell">{{ formatPercentage(monthlySummary.lowestExpense.category.percentage) }}</div>
+              
+                <div class="grid-header">Método de Pago</div>
+                <div class="grid-header">Monto</div>
+                <div class="grid-header">% del gasto</div>
+              
+                <div class="grid-cell">{{ monthlySummary.lowestExpense.paymentMethod.name || 'No hay datos' }}</div>
+                <div class="grid-cell">{{ formatAmount(monthlySummary.lowestExpense.paymentMethod.amount) }}</div>
+                <div class="grid-cell">{{ formatPercentage(monthlySummary.lowestExpense.paymentMethod.percentage) }}</div>
+              
+                <div class="grid-header">Fecha</div>
+                <div class="grid-header">Monto</div>
+                <div class="grid-header">% del gasto</div>
+              
+                <div class="grid-cell">{{ formatDate(monthlySummary.lowestExpense.date.date) }}</div>
+                <div class="grid-cell">{{ formatAmount(monthlySummary.lowestExpense.date.amount) }}</div>
+                <div class="grid-cell">{{ formatPercentage(monthlySummary.lowestExpense.date.percentage) }}</div>
+              </div>
             </div>
           </div>
-          <div class="summary-item">
-            <div class="summary-label">Menor Gasto</div>
-            <div class="summary-block">
-              <div class="grid-header">Categoría</div>
-              <div class="grid-header">Monto</div>
-              <div class="grid-header">% del gasto</div>
-            
-              <div class="grid-cell">{{ monthlySummary?.lowestExpense?.category?.name || 'No hay datos' }}</div>
-              <div class="grid-cell">{{ formatAmount(monthlySummary?.lowestExpense?.category?.amount) }}</div>
-              <div class="grid-cell">{{ formatPercentage(monthlySummary?.lowestExpense?.category?.percentage) }}</div>
-            
-              <div class="grid-header">Método de Pago</div>
-              <div class="grid-header">Monto</div>
-              <div class="grid-header">% del gasto</div>
-            
-              <div class="grid-cell">{{ monthlySummary?.lowestExpense?.paymentMethod?.name || 'No hay datos' }}</div>
-              <div class="grid-cell">{{ formatAmount(monthlySummary?.lowestExpense?.paymentMethod?.amount) }}</div>
-              <div class="grid-cell">{{ formatPercentage(monthlySummary?.lowestExpense?.paymentMethod?.percentage) }}</div>
-            
-              <div class="grid-header">Fecha</div>
-              <div class="grid-header">Monto</div>
-              <div class="grid-header">% del gasto</div>
-            
-              <div class="grid-cell">{{ formatDate(monthlySummary?.lowestExpense?.date?.date) }}</div>
-              <div class="grid-cell">{{ formatAmount(monthlySummary?.lowestExpense?.date?.amount) }}</div>
-              <div class="grid-cell">{{ formatPercentage(monthlySummary?.lowestExpense?.date?.percentage) }}</div>
-            </div>
+        </ng-container>
+        <ng-template #noSummaryData>
+          <div class="no-data-state">
+            <i class="fas fa-chart-pie"></i>
+            <p>No hay datos de resumen para este período.</p>
+            <p class="sub-text">Cuando registres movimientos, aquí verás un resumen mensual de tus gastos e ingresos.</p>
           </div>
-        </div>
+        </ng-template>
       </div>
     </div>
 </div>

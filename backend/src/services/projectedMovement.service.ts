@@ -21,34 +21,118 @@ export class ProjectedMovementService {
     async getAllProjectedMovements(userId: number): Promise<IProjectedMovement[]> {
         const query = `
             SELECT 
-                id, user_id as "userId", category_id as "categoryId",
-                card_id as "cardId", amount, description,
-                movement_type as "movementType", expected_date as "expectedDate",
-                probability, status, actual_movement_id as "actualMovementId",
-                recurrence_type as "recurrenceType",
-                created_at as "createdAt", updated_at as "updatedAt"
-            FROM projected_movements
-            WHERE user_id = $1
-            ORDER BY expected_date DESC
+                pm.id, pm.user_id as "userId", pm.category_id as "categoryId",
+                pm.card_id as "cardId", pm.amount, pm.description,
+                pm.movement_type as "movementType", pm.expected_date as "expectedDate",
+                pm.probability, pm.status, pm.actual_movement_id as "actualMovementId",
+                pm.recurrence_type as "recurrenceType",
+                pm.created_at as "createdAt", pm.updated_at as "updatedAt",
+                -- Datos de la categoría
+                c.id as "category.id",
+                c.name_category as "category.nameCategory",
+                c.icon as "category.icon",
+                c.color as "category.color",
+                -- Datos de la tarjeta
+                card.id as "card.id",
+                card.name_account as "card.nameAccount",
+                card.alias_account as "card.aliasAccount"
+            FROM projected_movements pm
+            LEFT JOIN categories c ON pm.category_id = c.id
+            LEFT JOIN cards card ON pm.card_id = card.id
+            WHERE pm.user_id = $1
+            ORDER BY pm.expected_date DESC
         `;
         const result = await this.pool.query(query, [userId]);
-        return result.rows;
+        
+        // Transformar los resultados para que coincidan con la estructura esperada
+        return result.rows.map(row => ({
+            id: row.id,
+            userId: row.userId,
+            categoryId: row.categoryId,
+            cardId: row.cardId,
+            amount: row.amount,
+            description: row.description,
+            movementType: row.movementType,
+            expectedDate: row.expectedDate,
+            probability: row.probability,
+            status: row.status,
+            actualMovementId: row.actualMovementId,
+            recurrenceType: row.recurrenceType,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            // Datos expandidos de categoría
+            category: row['category.id'] ? {
+                id: row['category.id'],
+                nameCategory: row['category.nameCategory'],
+                icon: row['category.icon'],
+                color: row['category.color']
+            } : undefined,
+            // Datos expandidos de tarjeta
+            card: row['card.id'] ? {
+                id: row['card.id'],
+                nameAccount: row['card.nameAccount'],
+                aliasAccount: row['card.aliasAccount']
+            } : undefined
+        }));
     }
 
     async getProjectedMovementById(id: number, userId: number): Promise<IProjectedMovement | null> {
         const query = `
             SELECT 
-                id, user_id as "userId", category_id as "categoryId",
-                card_id as "cardId", amount, description,
-                movement_type as "movementType", expected_date as "expectedDate",
-                probability, status, actual_movement_id as "actualMovementId",
-                recurrence_type as "recurrenceType",
-                created_at as "createdAt", updated_at as "updatedAt"
-            FROM projected_movements
-            WHERE id = $1 AND user_id = $2
+                pm.id, pm.user_id as "userId", pm.category_id as "categoryId",
+                pm.card_id as "cardId", pm.amount, pm.description,
+                pm.movement_type as "movementType", pm.expected_date as "expectedDate",
+                pm.probability, pm.status, pm.actual_movement_id as "actualMovementId",
+                pm.recurrence_type as "recurrenceType",
+                pm.created_at as "createdAt", pm.updated_at as "updatedAt",
+                -- Datos de la categoría
+                c.id as "category.id",
+                c.name_category as "category.nameCategory",
+                c.icon as "category.icon",
+                c.color as "category.color",
+                -- Datos de la tarjeta
+                card.id as "card.id",
+                card.name_account as "card.nameAccount",
+                card.alias_account as "card.aliasAccount"
+            FROM projected_movements pm
+            LEFT JOIN categories c ON pm.category_id = c.id
+            LEFT JOIN cards card ON pm.card_id = card.id
+            WHERE pm.id = $1 AND pm.user_id = $2
         `;
         const result = await this.pool.query(query, [id, userId]);
-        return result.rows[0] || null;
+        
+        if (!result.rows[0]) return null;
+        
+        const row = result.rows[0];
+        return {
+            id: row.id,
+            userId: row.userId,
+            categoryId: row.categoryId,
+            cardId: row.cardId,
+            amount: row.amount,
+            description: row.description,
+            movementType: row.movementType,
+            expectedDate: row.expectedDate,
+            probability: row.probability,
+            status: row.status,
+            actualMovementId: row.actualMovementId,
+            recurrenceType: row.recurrenceType,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            // Datos expandidos de categoría
+            category: row['category.id'] ? {
+                id: row['category.id'],
+                nameCategory: row['category.nameCategory'],
+                icon: row['category.icon'],
+                color: row['category.color']
+            } : undefined,
+            // Datos expandidos de tarjeta
+            card: row['card.id'] ? {
+                id: row['card.id'],
+                nameAccount: row['card.nameAccount'],
+                aliasAccount: row['card.aliasAccount']
+            } : undefined
+        };
     }
 
     async getProjectedMovementsByFilters(filters: IProjectedMovementFilters): Promise<IProjectedMovement[]> {
@@ -126,19 +210,60 @@ export class ProjectedMovementService {
 
         const query = `
             SELECT 
-                id, user_id as "userId", category_id as "categoryId",
-                card_id as "cardId", amount, description,
-                movement_type as "movementType", expected_date as "expectedDate",
-                probability, status, actual_movement_id as "actualMovementId",
-                recurrence_type as "recurrenceType",
-                created_at as "createdAt", updated_at as "updatedAt"
-            FROM projected_movements
+                pm.id, pm.user_id as "userId", pm.category_id as "categoryId",
+                pm.card_id as "cardId", pm.amount, pm.description,
+                pm.movement_type as "movementType", pm.expected_date as "expectedDate",
+                pm.probability, pm.status, pm.actual_movement_id as "actualMovementId",
+                pm.recurrence_type as "recurrenceType",
+                pm.created_at as "createdAt", pm.updated_at as "updatedAt",
+                -- Datos de la categoría
+                c.id as "category.id",
+                c.name_category as "category.nameCategory",
+                c.icon as "category.icon",
+                c.color as "category.color",
+                -- Datos de la tarjeta
+                card.id as "card.id",
+                card.name_account as "card.nameAccount",
+                card.alias_account as "card.aliasAccount"
+            FROM projected_movements pm
+            LEFT JOIN categories c ON pm.category_id = c.id
+            LEFT JOIN cards card ON pm.card_id = card.id
             ${whereClause}
-            ORDER BY expected_date DESC
+            ORDER BY pm.expected_date DESC
         `;
 
         const result = await this.pool.query(query, values);
-        return result.rows;
+        
+        // Transformar los resultados para que coincidan con la estructura esperada
+        return result.rows.map(row => ({
+            id: row.id,
+            userId: row.userId,
+            categoryId: row.categoryId,
+            cardId: row.cardId,
+            amount: row.amount,
+            description: row.description,
+            movementType: row.movementType,
+            expectedDate: row.expectedDate,
+            probability: row.probability,
+            status: row.status,
+            actualMovementId: row.actualMovementId,
+            recurrenceType: row.recurrenceType,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            // Datos expandidos de categoría
+            category: row['category.id'] ? {
+                id: row['category.id'],
+                nameCategory: row['category.nameCategory'],
+                icon: row['category.icon'],
+                color: row['category.color']
+            } : undefined,
+            // Datos expandidos de tarjeta
+            card: row['card.id'] ? {
+                id: row['card.id'],
+                nameAccount: row['card.nameAccount'],
+                aliasAccount: row['card.aliasAccount']
+            } : undefined
+        }));
     }
     async createProjectedMovement(params: {
         userId: number;

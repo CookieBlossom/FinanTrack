@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
@@ -23,11 +23,19 @@ import {
   themeQuartz,
   ValidationModule,
   PaginationModule,
+  TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
+  CustomFilterModule
 } from 'ag-grid-community';
 import { AddCashComponent } from './add-cash/add-cash.component';
 import { UploadStatementComponent } from './upload-statement/upload-statement.component';
 import { MatIconModule } from '@angular/material/icon';
 import { FeatureControlDirective } from '../../shared/directives/feature-control.directive';
+import { CardService } from '../../services/card.service';
+import { Card } from '../../models/card.model';
+import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
+import { map, switchMap, tap, catchError } from 'rxjs/operators';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -37,12 +45,18 @@ ModuleRegistry.registerModules([
   ValidationModule,
   PaginationModule,
   RowSelectionModule,
+  TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
+  CustomFilterModule
 ]);
+
 @Component({
   selector: 'app-movements',
   templateUrl: './movements.component.html',
   styleUrls: ['./movements.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     RouterModule,
@@ -56,88 +70,123 @@ ModuleRegistry.registerModules([
   ]
 })
 export class MovementsComponent implements OnInit {
-  historyCard: Movement[] = [];
-  historyCash: Movement[] = [];
+  // Observables reactivos para los datos
+  private refreshTrigger$ = new BehaviorSubject<void>(undefined);
+  
+  historyCard$: Observable<Movement[]>;
+  historyCash$: Observable<Movement[]>;
+  cards$: Observable<Card[]>;
+  
+  // Propiedades computadas reactivas
+  hasOnlyCashCards$: Observable<boolean>;
+  hasNonCashCards$: Observable<boolean>;
 
   constructor(
     private movementService: MovementService,
-    private dialog: MatDialog
-  ) {}
+    private cardService: CardService,
+    private dialog: MatDialog,
+    private cdr: ChangeDetectorRef
+  ) {
+    // Configurar observables reactivos con manejo de errores
+    this.historyCard$ = this.refreshTrigger$.pipe(
+      switchMap(() => this.movementService.getCardMovements().pipe(
+        catchError(error => {
+          console.error('Error al cargar movimientos de tarjetas:', error);
+          return of([]);
+        })
+      ))
+    );
 
-  ngOnInit() {
-    this.loadMovements();
-    this.movementService.getCashMovements().subscribe(
-      movements => this.historyCash = movements,
-      error => console.error('Error al cargar movimientos en efectivo:', error)
+    this.historyCash$ = this.refreshTrigger$.pipe(
+      switchMap(() => this.movementService.getCashMovements().pipe(
+        catchError(error => {
+          console.error('Error al cargar movimientos en efectivo:', error);
+          return of([]);
+        })
+      ))
+    );
+
+    this.cards$ = this.refreshTrigger$.pipe(
+      switchMap(() => this.cardService.getCards().pipe(
+        catchError(error => {
+          console.error('Error al cargar tarjetas:', error);
+          return of([]);
+        })
+      ))
+    );
+
+    // Computar propiedades reactivas
+    this.hasOnlyCashCards$ = this.cards$.pipe(
+      map(cards => {
+        const nonCashCards = cards.filter(card => 
+          card.statusAccount === 'active' && 
+          card.nameAccount.toLowerCase() !== 'efectivo'
+        );
+        const cashCards = cards.filter(card => 
+          card.statusAccount === 'active' && 
+          card.nameAccount.toLowerCase() === 'efectivo'
+        );
+        return nonCashCards.length === 0 && cashCards.length > 0;
+      })
+    );
+
+    this.hasNonCashCards$ = this.cards$.pipe(
+      map(cards => {
+        const nonCashCards = cards.filter(card => 
+          card.statusAccount === 'active' && 
+          card.nameAccount.toLowerCase() !== 'efectivo'
+        );
+        return nonCashCards.length > 0;
+      })
     );
   }
 
-  loadMovements() {
-    this.movementService.getMovements('cartola').subscribe(
-      movements => {
-        this.historyCard = movements;
-      },
-      error => {
-        console.error('Error al cargar movimientos de cartola:', error);
-      }
-    );
+  ngOnInit() {
+    // El trigger inicial ya está configurado en el constructor
+  }
 
-    this.movementService.getMovements('manual').subscribe(
-      movements => {
-        this.historyCash = movements;
-      },
-      error => {
-        console.error('Error al cargar movimientos manuales:', error);
-      }
-    );
+  // Método para refrescar todos los datos
+  refreshData(): void {
+    this.refreshTrigger$.next();
+    this.cdr.markForCheck();
   }
 
   openAddMovementDialog() {
     const dialogRef = this.dialog.open(AddMovementComponent);
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        if (result === true) {
-          this.loadMovements();
-        } else {
-          this.movementService.addMovement({
-            ...result,
-            movementSource: 'manual'
-          }).subscribe(
-            newMovement => {
-              this.historyCash.push(newMovement);
-            },
-            error => {
-              console.error('Error al agregar movimiento:', error);
-            }
-          );
-        }
+        this.refreshData();
       }
     });
   }
+
   openAddCashMovementDialog() {
     const dialogRef = this.dialog.open(AddCashComponent, {
       data: { isCash: true }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        if (result === true) {
-          this.loadMovements();
-        } else {
-          this.movementService.addMovement({
-            ...result,
-            movementSource: 'manual',
-          }).subscribe(
-            newMovement => {
-              this.historyCash.push(newMovement);
-            },
-            error => {
-              console.error('Error al agregar movimiento en efectivo:', error);
-            }
-          );
-        }
+        this.refreshData();
       }
     });
   }
+
+  openAddCardDialog(): void {
+    // Importar dinámicamente el componente AddCardDialogComponent
+    import('../card/add-card-dialog/add-card-dialog.component').then(({ AddCardDialogComponent }) => {
+      const dialogRef = this.dialog.open(AddCardDialogComponent, {
+        width: '600px',
+        maxHeight: '90vh'
+      });
+    
+      dialogRef.afterClosed().subscribe(result => {
+        if (result === true) {
+          this.refreshData();
+        }
+      });
+    });
+  }
+
   openUploadStatementDialog(): void {
     const dialogRef = this.dialog.open(UploadStatementComponent, {
       width: '500px'
@@ -145,10 +194,11 @@ export class MovementsComponent implements OnInit {
   
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        this.loadMovements(); // Recarga si se subió correctamente
+        this.refreshData();
       }
     });
   }
+
   columnDefsCard: ColDef[] = [
     { field: 'transactionDate', headerName: 'Fecha' },
     { field: 'description', headerName: 'Descripción' },
@@ -162,13 +212,13 @@ export class MovementsComponent implements OnInit {
         }).format(params.value);
       }
     },
-    { field: 'category.name', headerName: 'Categoría' },
+    { field: 'category', headerName: 'Categoría' },
     { field: 'card.nameAccount', headerName: 'Método de Pago' }
   ];
 
   columnDefsCash: ColDef[] = [
     { field: 'transactionDate', headerName: 'Fecha' },
-    { field: 'description', headerName: 'Método de Pago' }, // caja chica, banca, etc.
+    { field: 'description', headerName: 'Descripción' },
     {
       field: 'amount',
       headerName: 'Monto',
@@ -177,7 +227,7 @@ export class MovementsComponent implements OnInit {
         currency: 'CLP'
       }).format(params.value)
     },
-    { field: 'category.name', headerName: 'Categoría' },
+    { field: 'category', headerName: 'Categoría' },
     { field: 'card.nameAccount', headerName: 'Tarjeta Asociada' }
   ];
 

@@ -1,17 +1,40 @@
-<button mat-icon-button (click)="toggleSidebar()">
-  <mat-icon>menu</mat-icon>
-</button>
-
-<span class="toolbar-title">Finantrack</span>
-
-<div class="toolbar-actions">
-  <app-current-plan></app-current-plan>
-  
-  <button mat-icon-button (click)="toggleTheme()">
-    <mat-icon>dark_mode</mat-icon>
+<div class="toolbar-container">
+  <!-- Botón de menú con efecto glassmorphism -->
+  <button class="menu-btn glass-effect" (click)="toggleSidebar()" mat-icon-button>
+    <mat-icon>menu</mat-icon>
+    <div class="btn-ripple"></div>
   </button>
 
-  <button mat-icon-button routerLink="/profile" routerLinkActive="active">
-    <mat-icon>account_circle</mat-icon>
-  </button>
+  <!-- Título con gradiente y animación -->
+  <div class="title-container">
+    <span class="toolbar-title">
+      <span class="title-text">Finan</span>
+      <span class="title-accent">Track</span>
+    </span>
+    <div class="title-underline"></div>
+  </div>
+
+  <!-- Acciones del toolbar -->
+  <div class="toolbar-actions">
+    <!-- Plan actual con diseño mejorado -->
+    <div class="plan-section">
+      <app-current-plan></app-current-plan>
+    </div>
+    
+    <!-- Botones de acción con efectos -->
+    <div class="action-buttons">
+      <!-- Botón de tema con animación -->
+      <button class="action-btn theme-btn glass-effect" (click)="toggleTheme()" mat-icon-button>
+        <mat-icon class="theme-icon">dark_mode</mat-icon>
+        <div class="btn-ripple"></div>
+      </button>
+
+      <!-- Botón de perfil con indicador -->
+      <button class="action-btn profile-btn glass-effect" routerLink="/profile" routerLinkActive="active" mat-icon-button>
+        <mat-icon>account_circle</mat-icon>
+        <div class="btn-ripple"></div>
+        <div class="profile-indicator"></div>
+      </button>
+    </div>
+  </div>
 </div>

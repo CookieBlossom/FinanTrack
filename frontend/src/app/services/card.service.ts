@@ -30,15 +30,9 @@ export class CardService {
   ) {}
 
   private transformCard(card: Card): Card {
-    console.log('🔄 Transformando tarjeta:', card);
-    console.log('🔄 card.balance original:', card.balance, 'tipo:', typeof card.balance);
-    
     const transformedBalance = card.balance !== undefined && card.balance !== null
       ? Number(card.balance)
       : 0;
-    
-    console.log('🔄 balance transformado:', transformedBalance, 'tipo:', typeof transformedBalance);
-    console.log('🔄 isNaN(transformedBalance):', isNaN(transformedBalance));
     
     const result = {
       ...card,
@@ -47,7 +41,6 @@ export class CardService {
       updatedAt: card.updatedAt ? new Date(card.updatedAt) : undefined
     };
     
-    console.log('🔄 Tarjeta transformada:', result);
     return result;
   }
 

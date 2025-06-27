@@ -24,7 +24,9 @@ const upload = multer({
 // Las rutas aquí ya están protegidas por authMiddleware desde routes/index.ts
 router.get('/', movementController.getAll);
 router.get('/cash', movementController.getCashMovements);
+router.get('/card-movements', movementController.getCardMovements);
 router.get('/filter', movementController.getByFilters);
+router.get('/monthly-summary', movementController.getMonthlySummary);
 router.get('/:id', movementController.getById);
 router.post('/', movementController.create);
 router.put('/:id', movementController.update);

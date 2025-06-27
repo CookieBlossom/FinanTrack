@@ -85,9 +85,11 @@
             type="date" 
             class="form-input"
             formControlName="expectedDate"
+            [min]="minDate"
             [class.is-invalid]="upcomingForm.get('expectedDate')?.invalid && upcomingForm.get('expectedDate')?.touched">
           <div class="error-message" *ngIf="upcomingForm.get('expectedDate')?.invalid && upcomingForm.get('expectedDate')?.touched">
             <span *ngIf="upcomingForm.get('expectedDate')?.errors?.['required']">La fecha es requerida</span>
+            <span *ngIf="upcomingForm.get('expectedDate')?.errors?.['minDate']">La fecha no puede ser anterior a hoy</span>
           </div>
         </div>
 
@@ -146,6 +148,41 @@
           </select>
           <div class="error-message" *ngIf="upcomingForm.get('recurrenceType')?.invalid && upcomingForm.get('recurrenceType')?.touched">
             <span *ngIf="upcomingForm.get('recurrenceType')?.errors?.['required']">El tipo de recurrencia es requerido</span>
+          </div>
+        </div>
+
+        <!-- Resumen del movimiento -->
+        <div class="movement-summary" *ngIf="upcomingForm.valid && upcomingForm.get('description')?.value">
+          <h4>📋 Resumen del Movimiento</h4>
+          <div class="summary-content">
+            <div class="summary-item">
+              <span class="summary-label">Descripción:</span>
+              <span class="summary-value">{{ upcomingForm.get('description')?.value }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Tipo:</span>
+              <span class="summary-value" [class.expense]="upcomingForm.get('movementType')?.value === 'expense'" [class.income]="upcomingForm.get('movementType')?.value === 'income'">
+                {{ getMovementTypeLabel(upcomingForm.get('movementType')?.value) }}
+              </span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Monto:</span>
+              <span class="summary-value" [class.expense]="upcomingForm.get('movementType')?.value === 'expense'" [class.income]="upcomingForm.get('movementType')?.value === 'income'">
+                ${{ upcomingForm.get('amount')?.value | number:'1.0-0' }}
+              </span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Fecha:</span>
+              <span class="summary-value">{{ upcomingForm.get('expectedDate')?.value | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Probabilidad:</span>
+              <span class="summary-value">{{ upcomingForm.get('probability')?.value }}%</span>
+            </div>
+            <div class="summary-item" *ngIf="upcomingForm.get('recurrenceType')?.value">
+              <span class="summary-label">Recurrencia:</span>
+              <span class="summary-value">{{ getRecurrenceLabel(upcomingForm.get('recurrenceType')?.value) }}</span>
+            </div>
           </div>
         </div>
 
