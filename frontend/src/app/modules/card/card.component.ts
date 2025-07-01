@@ -60,7 +60,7 @@ export class CardComponent implements OnInit, OnDestroy {
   };
 
   // Tamaño responsive del gráfico
-  chartView: [number, number] = [350, 250];
+  chartView: [number, number] = [0, 0]; // Se calculará dinámicamente
 
   constructor(
     private cardService: CardService,
@@ -75,16 +75,22 @@ export class CardComponent implements OnInit, OnDestroy {
   
   async ngOnInit(): Promise<void> {
     await this.loadInitialData();
-    this.updateChartSize();
+    this.calculateChartSize();
+    
+    // Escuchar cambios de tamaño de ventana con debounce
+    let resizeTimeout: any;
     window.addEventListener('resize', () => {
-      setTimeout(() => this.updateChartSize(), 100);
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        this.calculateChartSize();
+      }, 250);
     });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    window.removeEventListener('resize', () => this.updateChartSize());
+    window.removeEventListener('resize', () => this.calculateChartSize());
   }
 
   // Método público para cargar datos iniciales y reintentar
@@ -117,40 +123,33 @@ export class CardComponent implements OnInit, OnDestroy {
   
   private async loadLimitsInfo(): Promise<void> {
     try {
+      // Suscribirse al observable de límites para recibir actualizaciones
       this.planLimitsService.currentUsage$.pipe(
         takeUntil(this.destroy$)
       ).subscribe({
         next: (usage) => {
+          console.log('🔄 Límites actualizados:', usage);
           this.limitsInfo = usage;
         },
         error: (error) => {
           console.error('Error al cargar límites:', error);
-          // No establecer error global, solo log
         }
       });
     } catch (error) {
       console.error('Error al cargar información de límites:', error);
-      // No establecer error global, solo log
     }
   }
-  
   private async loadCardsAndBalance(): Promise<void> {
     try {
-      // Cargar tarjetas primero
       await this.loadCards();
-      
-      // Calcular balance total basado en las tarjetas cargadas
       this.totalBalance = this.getTotalBalance();
-      
     } catch (error) {
       console.error('Error al cargar tarjetas y balance:', error);
-      // Si falla la carga de tarjetas, establecer arrays vacíos
       this.cards = [];
       this.totalBalance = 0;
-      throw error; // Re-lanzar para manejo en loadInitialData
+      throw error;
     }
   }
-  
   private async loadCards(): Promise<void> {
     try {
       console.log('📞 Llamando al servicio de tarjetas...');
@@ -158,7 +157,6 @@ export class CardComponent implements OnInit, OnDestroy {
       console.log('📋 Tarjetas cargadas:', this.cards.length);
     } catch (error) {
       console.error('❌ Error al cargar tarjetas:', error);
-      // Si falla, establecer array vacío
       this.cards = [];
       throw error; // Re-lanzar para manejo en loadCardsAndBalance
     }
@@ -166,14 +164,12 @@ export class CardComponent implements OnInit, OnDestroy {
 
   private async updateData(): Promise<void> {
     try {
-      // Limpiar error antes de actualizar
       this.error = null;
-      
-      // Forzar recarga completa de datos
       await this.loadCardsAndBalance();
-      
-      // Actualizar límites también
-      await this.loadLimitsInfo();
+      this.planLimitsService.refreshUsage();
+      setTimeout(() => {
+        this.calculateChartSize();
+      }, 100);
       
     } catch (error) {
       console.error('Error al actualizar datos:', error);
@@ -188,8 +184,10 @@ export class CardComponent implements OnInit, OnDestroy {
 
   openAddCardDialog(): void {
     const dialogRef = this.dialog.open(AddCardDialogComponent, {
-      width: '60vw',
-      height: '90vh',
+      width: 'min(800px, 90vw)',
+      height: 'min(700px, 90vh)',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
       panelClass: 'custom-dialog'
     });
 
@@ -219,8 +217,14 @@ export class CardComponent implements OnInit, OnDestroy {
       card.statusAccount === 'active' && 
       card.nameAccount.toLowerCase() !== 'efectivo'
     );
+    
+    // Si no hay tarjetas activas, retornar array vacío
+    if (activeCards.length === 0) {
+      console.log('📊 No hay tarjetas activas para mostrar en el gráfico');
+      return [];
+    }
+    
     const chartData = activeCards.map(card => {
-
       let balance = 0;
       if (typeof card.balance === 'number' && !isNaN(card.balance)) {
         balance = card.balance;
@@ -256,19 +260,20 @@ export class CardComponent implements OnInit, OnDestroy {
       }
       
       // Usar nombre corto para la leyenda (sin el balance)
-      const legendName = displayName.length > 20 ? displayName.substring(0, 20) + '...' : displayName;
+      const legendName = displayName.length > 15 ? displayName.substring(0, 15) + '...' : displayName;
       
       const result = {
         name: legendName, // Nombre corto para la leyenda
         value: Math.abs(balance), // Usar valor absoluto para el gráfico
         originalValue: balance, // Guardar el valor original para referencias
         cardName: displayName, // Nombre completo para tooltip
-        fullName: `${displayName} (${formattedBalance})` // Nombre completo con balance
+        fullName: `${displayName} (${formattedBalance})`, // Nombre completo con balance
+        formattedBalance: formattedBalance // Balance formateado para tooltip
       };
       
       console.log(`📊 Resultado final para gráfico:`, result);
       return result;
-    });
+    }).filter(item => item.value > 0); // Solo incluir tarjetas con saldo positivo para el gráfico
     
     console.log('📊 Datos finales del gráfico:', chartData);
     return chartData;
@@ -310,6 +315,26 @@ export class CardComponent implements OnInit, OnDestroy {
       return 'CLP 0';
     }
   }
+
+  formatTooltip = (value: any): string => {
+    if (value && value.data) {
+      const cardName = value.data.cardName || value.data.name;
+      const amount = value.data.originalValue || value.data.value;
+      const formattedAmount = value.data.formattedBalance || this.formatLabel(amount);
+      
+      // Calcular el porcentaje del total
+      const totalBalance = this.getTotalBalance();
+      const percentage = totalBalance > 0 ? ((Math.abs(amount) / totalBalance) * 100).toFixed(1) : '0';
+      const totalFormatted = this.formatLabel(totalBalance);
+      
+      return `<div style="font-size: 12px; line-height: 1.4;">
+        <strong>${cardName}</strong><br>
+        ${formattedAmount} (${percentage}%)<br>
+        <small>Total: ${totalFormatted}</small>
+      </div>`;
+    }
+    return '';
+  }
   
   async deleteCard(cardId: number, cardName?: string): Promise<void> {
     const dialogRef = this.dialog.open(DeleteCardDialogComponent, {
@@ -321,9 +346,20 @@ export class CardComponent implements OnInit, OnDestroy {
     if (!confirmed) return;
   
     try {
+      console.log('🗑️ Eliminando tarjeta:', cardId, cardName);
       this.snackBar.open('Eliminando tarjeta...', 'Cerrar', { duration: 2000 });
       await firstValueFrom(this.cardService.deleteCard(cardId));
+      
+      console.log('✅ Tarjeta eliminada del backend, actualizando datos...');
+      // Actualizar datos
       await this.updateData();
+      
+      // Esperar un poco para que el backend procese la eliminación
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Forzar actualización de límites específicamente para tarjetas
+      this.planLimitsService.refreshUsage();
+      
       this.snackBar.open('Tarjeta eliminada exitosamente', 'Cerrar', { duration: 3000 });
     } catch (error) {
       console.error('Error al eliminar tarjeta:', error);
@@ -397,20 +433,24 @@ export class CardComponent implements OnInit, OnDestroy {
     await this.forceRefresh();
   }
 
-  // Método para actualizar el tamaño del gráfico según el contenedor
-  updateChartSize(): void {
+  // Método para calcular el tamaño del gráfico según el contenedor
+  calculateChartSize(): void {
     // Usar setTimeout para asegurar que el DOM esté actualizado
     setTimeout(() => {
       const chartContainer = document.querySelector('.chart-wrapper');
       if (chartContainer) {
         const rect = chartContainer.getBoundingClientRect();
-        const width = Math.max(rect.width, 300); // 40px de padding
-        const height = Math.max(rect.height, 250); // 40px de padding
+        const containerWidth = rect.width;
+        const containerHeight = rect.height;
+        
+        // Sin leyenda, usar casi todo el espacio disponible
+        const width = Math.max(containerWidth - 20, 250); // Solo 10px de padding a cada lado
+        const height = Math.max(containerHeight - 20, 250); // Solo 10px de padding arriba y abajo
         
         this.chartView = [width, height];
-        console.log(`📏 Gráfico redimensionado a: ${width}x${height}`);
+        console.log(`📏 Gráfico redimensionado a: ${width}x${height} (contenedor: ${containerWidth}x${containerHeight})`);
         this.changeDetectorRef.detectChanges();
       }
-    }, 100);
+    }, 300); // Aumentar el timeout para asegurar que los elementos estén completamente renderizados
   }
 }

@@ -15,6 +15,8 @@ import { Category } from '../../../models/category.model';
 import { PlanLimitsService } from '../../../services/plan-limits.service';
 import { LimitNotificationComponent, LimitNotificationData } from '../../../shared/components/limit-notification/limit-notification.component';
 import { PLAN_LIMITS } from '../../../models/plan.model';
+import { PlanLimitAlertService } from '../../../shared/services/plan-limit-alert.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-add-cash',
@@ -40,6 +42,7 @@ export class AddCashComponent {
   methodOptions = ['Caja chica', 'Banca', 'Cheque', 'Transferencia', 'Otro'];
   typeOptions = ['income', 'expense'];
   isLoading = false;
+  minDate: string; // Fecha mínima para el input de fecha
 
   // Variables para límites
   limitsInfo: any = null;
@@ -60,13 +63,18 @@ export class AddCashComponent {
     public dialogRef: MatDialogRef<AddCashComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
     private snackBar: MatSnackBar,
-    private planLimitsService: PlanLimitsService
+    private planLimitsService: PlanLimitsService,
+    private planLimitAlertService: PlanLimitAlertService,
+    private router: Router
   ) {
+    // Obtener fecha mínima (hoy)
+    this.minDate = new Date().toISOString().split('T')[0];
+    
     this.cashForm = this.fb.group({
       categoryId: ['', Validators.required],
       description: ['', Validators.required],
       amount: [0, [Validators.required, Validators.min(1)]],
-      transactionDate: [new Date().toISOString().substring(0, 10), Validators.required],
+      transactionDate: [this.minDate, [Validators.required, this.minDateValidator(this.minDate)]],
       movementType: ['expense', Validators.required]
     });
 
@@ -98,6 +106,18 @@ export class AddCashComponent {
     });
   }
 
+  // Validador personalizado para fecha mínima
+  private minDateValidator(minDate: string) {
+    return (control: any) => {
+      if (!control.value) {
+        return null;
+      }
+      const selectedDate = new Date(control.value);
+      const minDateObj = new Date(minDate);
+      return selectedDate < minDateObj ? { minDate: true } : null;
+    };
+  }
+
   getProgressPercentage(limitKey: string): number {
     if (!this.limitsInfo || !this.limitsInfo[limitKey]) return 0;
     const limit = this.limitsInfo[limitKey];
@@ -113,6 +133,14 @@ export class AddCashComponent {
     this.showLimitNotification = false;
   }
 
+  // Método para abrir el selector de fecha
+  openDatePicker(): void {
+    const dateInput = document.querySelector('.cash-date-input') as HTMLInputElement;
+    if (dateInput) {
+      dateInput.showPicker();
+    }
+  }
+
   submit() {
     if (this.cashForm.invalid) {
       this.cashForm.markAllAsTouched();
@@ -123,13 +151,14 @@ export class AddCashComponent {
     this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MANUAL_MOVEMENTS).subscribe({
       next: (limitStatus) => {
         if (limitStatus.currentUsage >= limitStatus.limit) {
-          this.displayLimitNotification({
-            type: 'error',
-            title: 'Límite de Movimientos Alcanzado',
-            message: `Has alcanzado el límite de ${limitStatus.limit} movimientos manuales por mes. Actualiza tu plan para agregar más movimientos.`,
-            limit: limitStatus.limit,
-            current: limitStatus.currentUsage,
-            showUpgradeButton: true
+          // Mostrar alerta modal en lugar de notificación
+          this.planLimitAlertService.showMovementLimitAlert(limitStatus.currentUsage, limitStatus.limit).subscribe({
+            next: (result) => {
+              if (result.action === 'upgrade') {
+                this.router.navigate(['/plans']);
+              }
+              // Si es dismiss, no hacer nada y dejar que el usuario continúe
+            }
           });
           return;
         }

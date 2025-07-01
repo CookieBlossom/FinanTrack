@@ -16,6 +16,32 @@
   margin: 0;
 }
 
+@media (max-width: 850px) {
+  .container-analytics {
+    padding: 0;
+    gap: 5px;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .analytics {
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .chart-wrapper {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+  
+  .summary {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+}
+
 .analytics {
   background-color: var(--clr-surface-a10);
   display: grid;

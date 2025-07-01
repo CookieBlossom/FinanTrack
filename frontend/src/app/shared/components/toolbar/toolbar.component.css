@@ -74,7 +74,7 @@
 
 .menu-btn mat-icon {
   color: var(--color-accent);
-  font-size: 24px;
+  font-size: var(--font-size-xl);
   width: 24px;
   height: 24px;
   transition: var(--transition-smooth);
@@ -299,4 +299,8 @@ button:active .btn-ripple {
 /* Efectos adicionales para el plan actual */
 :host::ng-deep app-current-plan {
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.action-btn mat-icon {
+  font-size: var(--font-size-lg);
 }

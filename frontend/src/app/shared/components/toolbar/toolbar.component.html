@@ -1,6 +1,6 @@
 <div class="toolbar-container">
   <!-- Botón de menú con efecto glassmorphism -->
-  <button class="menu-btn glass-effect" (click)="toggleSidebar()" mat-icon-button>
+  <button class="menu-btn glass-effect" (click)="toggleSidebar()" mat-icon-button *ngIf="!isTopNav">
     <mat-icon>menu</mat-icon>
     <div class="btn-ripple"></div>
   </button>

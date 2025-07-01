@@ -109,9 +109,104 @@ ag-grid-angular {
   overflow: auto;
 }
 
+/* Estilos específicos para ag-grid */
+::ng-deep .ag-theme-quartz {
+  --ag-font-family: var(--font-family-normal);
+  --ag-font-size: var(--font-size-xs);
+  --ag-font-weight: 400;
+  --ag-line-height: 1.5;
+  
+  /* Colores de encabezados */
+  --ag-header-background-color: var(--color-accent);
+  --ag-header-foreground-color: var(--color-text-inverse);
+  --ag-header-height: 50px;
+  --ag-header-cell-hover-background-color: var(--color-primary-dark);
+  
+  /* Colores de filas */
+  --ag-row-hover-color: var(--clr-surface-a20);
+  --ag-selected-row-background-color: var(--clr-primary-50);
+  --ag-row-height: 60px;
+  
+  /* Colores de bordes */
+  --ag-border-color: var(--color-border);
+  --ag-cell-horizontal-border: var(--color-border);
+  
+  /* Colores de texto */
+  --ag-foreground-color: var(--color-text);
+  --ag-secondary-foreground-color: var(--color-text-secondary);
+  
+  /* Colores de fondo */
+  --ag-background-color: var(--clr-surface-a10);
+  --ag-odd-row-background-color: var(--clr-surface-a10);
+  --ag-row-border-color: var(--color-border);
+}
+
+/* Estilos para encabezados personalizados */
+::ng-deep .ag-header-cell-custom {
+  font-size: var(--font-size-xs) !important;
+  font-family: var(--font-family-normal) !important;
+  font-weight: 600 !important;
+  color: var(--color-text-inverse) !important;
+  background-color: var(--color-accent) !important;
+  border-bottom: 2px solid var(--color-primary) !important;
+}
+
+/* Estilos para celdas personalizadas */
+::ng-deep .ag-cell-custom {
+  font-size: var(--font-size-sm) !important;
+  font-family: var(--font-family-normal) !important;
+  color: var(--color-text) !important;
+  padding: 8px 12px !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+/* Estilos para filtros */
+::ng-deep .ag-filter-toolpanel-header {
+  font-size: var(--font-size-sm) !important;
+  font-family: var(--font-family-normal) !important;
+  color: var(--color-text) !important;
+}
+
+/* Estilos para paginación */
+::ng-deep .ag-paging-panel {
+  font-size: var(--font-size-xs) !important;
+  font-family: var(--font-family-normal) !important;
+  color: var(--color-text) !important;
+  background-color: var(--clr-surface-a10) !important;
+  border-top: 1px solid var(--color-border) !important;
+}
+
+/* Estilos para botones de paginación */
+::ng-deep .ag-paging-button {
+  font-size: var(--font-size-sm) !important;
+  font-family: var(--font-family-normal) !important;
+  color: var(--color-text) !important;
+  background-color: var(--clr-surface-a0) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+}
+
+::ng-deep .ag-paging-button:hover {
+  background-color: var(--clr-surface-a20) !important;
+  color: var(--color-primary) !important;
+}
+
+::ng-deep .ag-paging-button:disabled {
+  color: var(--color-text-muted) !important;
+  background-color: var(--clr-surface-a10) !important;
+  cursor: not-allowed !important;
+}
+
+@media (max-width: 750px) {
+  .container-movements {
+    padding: 0;
+  }
+}
+
 @media (max-width: 1000px) {
   .container-movements {
-    padding: 0px;
+    padding: 0;
   }
   
   .container-tables {
@@ -153,5 +248,23 @@ ag-grid-angular {
   
   .text-card h3 {
     font-size: var(--font-size-md);
+  }
+}
+
+@media (max-width: 850px) {
+  .container-movements {
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .movements-header {
+    flex-shrink: 0;
+  }
+  
+  .container-tables {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
   }
 }

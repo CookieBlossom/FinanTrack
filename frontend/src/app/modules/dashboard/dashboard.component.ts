@@ -99,9 +99,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
       headerName: 'Fecha Esperada',
       valueFormatter: params => {
         return new Date(params.value).toLocaleDateString('es-CL');
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     },
-    { field: 'description', headerName: 'Descripción' },
+    { 
+      field: 'description', 
+      headerName: 'Descripción',
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    },
     { 
       field: 'amount', 
       headerName: 'Monto',
@@ -110,6 +123,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
           style: 'currency',
           currency: 'CLP'
         }).format(params.value);
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)',
+        fontWeight: '500'
       }
     },
     { 
@@ -117,6 +136,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       headerName: 'Tipo',
       valueFormatter: params => {
         return params.value === 'income' ? 'Ingreso' : 'Gasto';
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     },
     { 
@@ -129,6 +153,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
           case 'cancelled': return 'Cancelado';
           default: return params.value;
         }
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     },
     { 
@@ -136,6 +165,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       headerName: 'Probabilidad',
       valueFormatter: params => {
         return `${params.value}%`;
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)',
+        fontWeight: '500'
       }
     }
   ];
@@ -150,6 +185,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     headerBackgroundColor: 'var(--color-accent)',
     oddRowBackgroundColor: 'var(--clr-surface-a10)',
     headerColumnResizeHandleColor: 'var(--color-highlight)',
+    // Configuración de fuentes usando variables CSS
+    fontSize: 'var(--font-size-sm)',
+    fontFamily: 'var(--font-family-normal)',
+    // Configuración adicional para mejor legibilidad
+    rowHeight: 60,
+    headerHeight: 50,
+    // Colores adicionales
+    rowHoverColor: 'var(--clr-surface-a20)',
+    selectedRowBackgroundColor: 'var(--clr-primary-50)',
   });
 
   constructor(

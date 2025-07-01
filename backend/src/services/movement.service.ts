@@ -121,7 +121,6 @@ export class MovementService {
         SELECT 
           m.id, m.card_id as "cardId", m.category_id as "categoryId",
           cat.name_category as "categoryName",
-          cat.icon as "categoryIcon",
           cat.color as "categoryColor",
           m.amount, m.description, m.movement_type as "movementType",
           m.movement_source as "movementSource", 
@@ -133,8 +132,7 @@ export class MovementService {
       `;
 
       if (filters.userId) {
-        query += ` JOIN cards c ON m.card_id = c.id`;
-        conditions.push(`c.user_id = $${values.length + 1}`);
+        query += ` JOIN cards c ON m.card_id = c.id AND c.user_id = $${values.length + 1}`;
         values.push(filters.userId);
       }
 
@@ -151,7 +149,6 @@ export class MovementService {
         category: row.categoryId ? {
           id: row.categoryId,
           nameCategory: row.categoryName,
-          icon: row.categoryIcon,
           color: row.categoryColor
         } : undefined
       }));
@@ -167,7 +164,6 @@ export class MovementService {
         SELECT 
           m.id, m.card_id as "cardId", m.category_id as "categoryId",
           cat.name_category as "categoryName",
-          cat.icon as "categoryIcon",
           cat.color as "categoryColor",
           m.amount, m.description, m.movement_type as "movementType",
           m.movement_source as "movementSource",
@@ -187,7 +183,6 @@ export class MovementService {
         category: row.categoryId ? {
           id: row.categoryId,
           nameCategory: row.categoryName,
-          icon: row.categoryIcon,
           color: row.categoryColor
         } : undefined
       };
@@ -213,7 +208,6 @@ export class MovementService {
       SELECT 
         m.id, m.card_id as "cardId", m.category_id as "categoryId",
         cat.name_category as "categoryName",
-        cat.icon as "categoryIcon",
         cat.color as "categoryColor",
         m.amount, m.description, m.movement_type as "movementType",
         m.movement_source as "movementSource", 
@@ -235,7 +229,6 @@ export class MovementService {
       category: row.categoryId ? {
         id: row.categoryId,
         nameCategory: row.categoryName,
-        icon: row.categoryIcon,
         color: row.categoryColor
       } : undefined
     }));
@@ -247,7 +240,6 @@ export class MovementService {
         SELECT 
           m.id, m.card_id as "cardId", m.category_id as "categoryId",
           cat.name_category as "categoryName",
-          cat.icon as "categoryIcon",
           cat.color as "categoryColor",
           m.amount, m.description, m.movement_type as "movementType",
           m.movement_source as "movementSource", 
@@ -272,7 +264,6 @@ export class MovementService {
         category: row.categoryId ? {
           id: row.categoryId,
           nameCategory: row.categoryName,
-          icon: row.categoryIcon,
           color: row.categoryColor
         } : undefined
       }));
@@ -288,7 +279,6 @@ export class MovementService {
         SELECT 
           m.id, m.card_id as "cardId", m.category_id as "categoryId",
           cat.name_category as "categoryName",
-          cat.icon as "categoryIcon",
           cat.color as "categoryColor",
           m.amount, m.description, m.movement_type as "movementType",
           m.movement_source as "movementSource", 
@@ -310,7 +300,6 @@ export class MovementService {
         category: row.categoryId ? {
           id: row.categoryId,
           nameCategory: row.categoryName,
-          icon: row.categoryIcon,
           color: row.categoryColor
         } : undefined
       }));
@@ -407,13 +396,11 @@ export class MovementService {
       const newMovement = result.rows[0];
 
       let categoryName: string | undefined = undefined;
-      let categoryIcon: string | undefined = undefined;
       let categoryColor: string | undefined = undefined;
       if (newMovement.categoryId) {
-        const category = await this.pool.query('SELECT name_category, icon, color FROM categories WHERE id = $1', [newMovement.categoryId]);
+        const category = await this.pool.query('SELECT name_category, color FROM categories WHERE id = $1', [newMovement.categoryId]);
         if (category.rows.length > 0) {
           categoryName = category.rows[0].name_category;
-          categoryIcon = category.rows[0].icon;
           categoryColor = category.rows[0].color;
         }
       }
@@ -424,7 +411,6 @@ export class MovementService {
         category: newMovement.categoryId ? {
           id: newMovement.categoryId,
           nameCategory: categoryName || '',
-          icon: categoryIcon,
           color: categoryColor
         } : undefined
       };
@@ -494,20 +480,17 @@ export class MovementService {
 
       const updatedMovement = result.rows[0];
       let categoryName: string | undefined = undefined;
-      let categoryIcon: string | undefined = undefined;
       let categoryColor: string | undefined = undefined;
       if (updatedMovement.categoryId) {
-        const category = await this.pool.query('SELECT name_category, icon, color FROM categories WHERE id = $1', [updatedMovement.categoryId]);
+        const category = await this.pool.query('SELECT name_category, color FROM categories WHERE id = $1', [updatedMovement.categoryId]);
         if (category.rows.length > 0) {
           categoryName = category.rows[0].name_category;
-          categoryIcon = category.rows[0].icon;
           categoryColor = category.rows[0].color;
         }
       }
       return { ...updatedMovement, category: updatedMovement.categoryId ? {
         id: updatedMovement.categoryId,
         nameCategory: categoryName || '',
-        icon: categoryIcon,
         color: categoryColor
       } : undefined, transactionDate: new Date(updatedMovement.transactionDate) };
 

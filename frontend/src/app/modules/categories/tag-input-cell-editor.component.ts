@@ -265,7 +265,8 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   }
 
   upgradePlan(): void {
-    window.location.href = '/plans';
+    // La redirección se manejará desde el componente padre
+    // Este método se mantiene por compatibilidad con el template
   }
 
   getValue(): any {

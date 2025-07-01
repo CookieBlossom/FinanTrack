@@ -77,7 +77,6 @@ CREATE TABLE "user" (
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     name_category VARCHAR(100) NOT NULL UNIQUE,
-    icon VARCHAR(50) DEFAULT 'ellipsis-h',
     color VARCHAR(20) DEFAULT '#9E9E9E',
     is_system BOOLEAN DEFAULT false,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -94,15 +93,15 @@ CREATE TABLE user_category_keywords (
     UNIQUE(user_id, category_id)
 );
 
-INSERT INTO categories (name_category, icon, color, is_system) VALUES
-    ('Alimentacion', 'utensils', '#FF9800', true),
-    ('Transporte', 'bus', '#9C27B0', true),
-    ('Vivienda', 'house', '#607D8B', true),
-    ('Salud', 'heart-pulse', '#F44336', true),
-    ('Entretenimiento', 'film', '#2196F3', true),
-    ('Compras', 'shopping-cart', '#4CAF50', true),
-    ('Educacion', 'graduation-cap', '#3F51B5', true),
-    ('Otros', 'ellipsis', '#9E9E9E', true)
+INSERT INTO categories (name_category, color, is_system) VALUES
+    ('Alimentacion', '#FF9800', true),
+    ('Transporte', '#9C27B0', true),
+    ('Vivienda', '#607D8B', true),
+    ('Salud', '#F44336', true),
+    ('Entretenimiento', '#2196F3', true),
+    ('Compras', '#4CAF50', true),
+    ('Educacion', '#3F51B5', true),
+    ('Otros', '#9E9E9E', true)
 ON CONFLICT (name_category) DO NOTHING;
 
 -- Tipos de tarjetas

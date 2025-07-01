@@ -29,7 +29,7 @@ import { LimitNotificationsComponent } from '../limit-notifications/limit-notifi
 export class LayoutComponent implements OnInit {
   isSidebarOpen = true;
   isMobile = false;
-  isTablet = false;
+  isTopNav = false;
 
   ngOnInit() {
     this.checkScreenSize();
@@ -42,15 +42,12 @@ export class LayoutComponent implements OnInit {
 
   private checkScreenSize() {
     const width = window.innerWidth;
-    this.isMobile = width < 768;
-    this.isTablet = width >= 768 && width < 1024;
+    this.isMobile = width < 850;
+    this.isTopNav = width < 850;
     
-    // En móviles, el sidebar está cerrado por defecto
-    if (this.isMobile) {
-      this.isSidebarOpen = false;
-    } else if (this.isTablet) {
-      // En tablets, sidebar colapsado por defecto
-      this.isSidebarOpen = true;
+    // En pantallas menores a 850px, usar top navigation
+    if (width < 850) {
+      this.isSidebarOpen = true; // Siempre visible en top nav
     } else {
       // En desktop, sidebar abierto por defecto
       this.isSidebarOpen = true;

@@ -18,6 +18,8 @@ import { PlanLimitsService } from '../../../services/plan-limits.service';
 import { FeatureControlService } from '../../../services/feature-control.service';
 import { LimitNotificationComponent, LimitNotificationData } from '../../../shared/components/limit-notification/limit-notification.component';
 import { PLAN_LIMITS } from '../../../models/plan.model';
+import { PlanLimitAlertService } from '../../../shared/services/plan-limit-alert.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-add-movement',
@@ -45,6 +47,7 @@ export class AddMovementComponent implements OnInit {
   uploadError: string | null = null;
   isUploading = false;
   cards: Card[] = [];
+  minDate: string; // Fecha mínima para el input de fecha
 
   // Variables para límites
   limitsInfo: any = null;
@@ -67,11 +70,16 @@ export class AddMovementComponent implements OnInit {
     private snackBar: MatSnackBar,
     private limitNotificationsService: LimitNotificationsService,
     private planLimitsService: PlanLimitsService,
-    private featureControlService: FeatureControlService
+    private featureControlService: FeatureControlService,
+    private planLimitAlertService: PlanLimitAlertService,
+    private router: Router
   ) {
+    // Obtener fecha mínima (hoy)
+    this.minDate = new Date().toISOString().split('T')[0];
+    
     this.manualForm = this.fb.group({
       cardId: ['', Validators.required],
-      transactionDate: ['', Validators.required],
+      transactionDate: [this.minDate, [Validators.required, this.minDateValidator(this.minDate)]],
       description: ['', Validators.required],
       amount: [0, [Validators.required, Validators.min(0)]],
       movementType: ['', Validators.required],
@@ -81,6 +89,18 @@ export class AddMovementComponent implements OnInit {
   ngOnInit() {
     this.loadCards();
     this.loadLimitsInfo();
+  }
+
+  // Validador personalizado para fecha mínima
+  private minDateValidator(minDate: string) {
+    return (control: any) => {
+      if (!control.value) {
+        return null;
+      }
+      const selectedDate = new Date(control.value);
+      const minDateObj = new Date(minDate);
+      return selectedDate < minDateObj ? { minDate: true } : null;
+    };
   }
 
   loadLimitsInfo(): void {
@@ -108,6 +128,14 @@ export class AddMovementComponent implements OnInit {
 
   hideLimitNotification(): void {
     this.showLimitNotification = false;
+  }
+
+  // Método para abrir el selector de fecha
+  openDatePicker(): void {
+    const dateInput = document.querySelector('.date-input') as HTMLInputElement;
+    if (dateInput) {
+      dateInput.showPicker();
+    }
   }
 
   normalizeCardName(name: string): string {
@@ -181,13 +209,14 @@ export class AddMovementComponent implements OnInit {
       this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MANUAL_MOVEMENTS).subscribe({
         next: (limitStatus) => {
           if (limitStatus.currentUsage >= limitStatus.limit) {
-            this.displayLimitNotification({
-              type: 'error',
-              title: 'Límite de Movimientos Alcanzado',
-              message: `Has alcanzado el límite de ${limitStatus.limit} movimientos manuales por mes. Actualiza tu plan para agregar más movimientos.`,
-              limit: limitStatus.limit,
-              current: limitStatus.currentUsage,
-              showUpgradeButton: true
+            // Mostrar alerta modal en lugar de notificación
+            this.planLimitAlertService.showMovementLimitAlert(limitStatus.currentUsage, limitStatus.limit).subscribe({
+              next: (result) => {
+                if (result.action === 'upgrade') {
+                  this.router.navigate(['/plans']);
+                }
+                // Si es dismiss, no hacer nada y dejar que el usuario continúe
+              }
             });
             return;
           }
@@ -254,7 +283,15 @@ export class AddMovementComponent implements OnInit {
     // Verificar permisos antes de subir cartola
     this.limitNotificationsService.checkLimitBeforeAction('upload_cartola').subscribe(result => {
       if (!result.canProceed) {
-        this.uploadError = result.notification?.message || 'No puedes subir cartolas con tu plan actual';
+        // Mostrar alerta modal en lugar de error simple
+        this.planLimitAlertService.showCartolaLimitAlert(0, 0).subscribe({
+          next: (alertResult) => {
+            if (alertResult.action === 'upgrade') {
+              this.router.navigate(['/plans']);
+            }
+            // Si es dismiss, no hacer nada
+          }
+        });
         return;
       }
 

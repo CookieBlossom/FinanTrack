@@ -23,6 +23,8 @@ import { PlanLimitsService } from '../../../services/plan-limits.service';
 import { LimitNotificationComponent, LimitNotificationData } from '../../../shared/components/limit-notification/limit-notification.component';
 import { PLAN_LIMITS } from '../../../models/plan.model';
 import { FeatureControlService } from '../../../services/feature-control.service';
+import { PlanLimitAlertService } from '../../../shared/services/plan-limit-alert.service';
+import { Router } from '@angular/router';
 
 interface CardCredentials {
   rut: string;
@@ -92,7 +94,9 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     private authTokenService: AuthTokenService,
     private snackBar: MatSnackBar,
     private planLimitsService: PlanLimitsService,
-    private featureControlService: FeatureControlService
+    private featureControlService: FeatureControlService,
+    private planLimitAlertService: PlanLimitAlertService,
+    private router: Router
   ) {
     // Scraper form
     this.cardForm = this.fb.group({
@@ -190,7 +194,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   }
 
   upgradePlan(): void {
-    window.location.href = '/plans';
+    this.router.navigate(['/plans']);
   }
 
   // --- Scraper TAB
@@ -218,30 +222,42 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Verificar límites antes de agregar tarjeta
-    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MAX_CARDS).subscribe({
-      next: (limitStatus) => {
-        if (limitStatus.currentUsage >= limitStatus.limit) {
-          this.displayLimitNotification({
-            type: 'error',
-            title: 'Límite de Tarjetas Alcanzado',
-            message: `Has alcanzado el límite de ${limitStatus.limit} tarjetas activas. Actualiza tu plan para agregar más tarjetas.`,
-            limit: limitStatus.limit,
-            current: limitStatus.currentUsage,
-            showUpgradeButton: true
+    // Verificar límites usando datos ya cargados
+    if (this.limitsInfo?.max_cards?.used >= this.limitsInfo?.max_cards?.limit) {
+      // Mostrar alerta modal en lugar de notificación
+      this.planLimitAlertService.showCardLimitAlert(
+        this.limitsInfo.max_cards.used, 
+        this.limitsInfo.max_cards.limit
+      ).subscribe({
+        next: (result) => {
+          if (result.action === 'upgrade') {
+            this.router.navigate(['/plans']);
+          }
+          // Si es dismiss, no hacer nada y dejar que el usuario continúe
+        }
+      });
+      return;
+    }
+
+    // Verificar también límites del scraper si están disponibles
+    if (this.limitsInfo?.monthly_scrapes?.used >= this.limitsInfo?.monthly_scrapes?.limit) {
+      // Mostrar alerta modal para límite de scraper
+      this.planLimitAlertService.showScraperLimitAlert(
+        this.limitsInfo.monthly_scrapes.used, 
+        this.limitsInfo.monthly_scrapes.limit
+      ).subscribe({
+        next: (result) => {
+          if (result.action === 'upgrade') {
+            this.router.navigate(['/plans']);
+          }
+          // Si es dismiss, no hacer nada
+        }
           });
           return;
         }
 
         // Continuar con la sincronización
         this.proceedWithScraperSync();
-      },
-      error: (error) => {
-        console.error('Error al verificar límites:', error);
-        // Continuar sin verificación en caso de error
-        this.proceedWithScraperSync();
-      }
-    });
   }
 
   private proceedWithScraperSync(): void {
@@ -289,30 +305,23 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   onManualSubmit(): void {
     if (this.manualForm.invalid) return;
 
-    // Verificar límites antes de agregar tarjeta manual
-    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MAX_CARDS).subscribe({
-      next: (limitStatus) => {
-        if (limitStatus.currentUsage >= limitStatus.limit) {
-          this.displayLimitNotification({
-            type: 'error',
-            title: 'Límite de Tarjetas Alcanzado',
-            message: `Has alcanzado el límite de ${limitStatus.limit} tarjetas activas. Actualiza tu plan para agregar más tarjetas.`,
-            limit: limitStatus.limit,
-            current: limitStatus.currentUsage,
-            showUpgradeButton: true
+    // Verificar límites solo si no se ha verificado recientemente
+    if (this.limitsInfo?.max_cards?.used >= this.limitsInfo?.max_cards?.limit) {
+      // Mostrar alerta modal en lugar de notificación
+      this.planLimitAlertService.showCardLimitAlert(
+        this.limitsInfo.max_cards.used, 
+        this.limitsInfo.max_cards.limit
+      ).subscribe({
+        next: (result) => {
+          if (result.action === 'upgrade') {
+            this.router.navigate(['/plans']);
+          }
+          // Si es dismiss, no hacer nada y dejar que el usuario continúe
+        }
           });
           return;
         }
-
-        // Continuar con la creación manual
         this.proceedWithManualCard();
-      },
-      error: (error) => {
-        console.error('Error al verificar límites:', error);
-        // Continuar sin verificación en caso de error
-        this.proceedWithManualCard();
-      }
-    });
   }
 
   private proceedWithManualCard(): void {

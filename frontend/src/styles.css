@@ -57,13 +57,13 @@ body {
   --clr-danger-700: #dc3545;
   
   /* Tipografía */
-  --font-size-xxs: 0.5rem;
-  --font-size-xs: 0.70rem;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.5rem;
-  --font-size-xxl: 2rem;
+  --font-size-xxs: 0.7rem;
+  --font-size-xs: 0.875rem;
+  --font-size-sm: 1.2rem;
+  --font-size-md: 1.5rem;
+  --font-size-lg: 1.75rem;
+  --font-size-xl: 2.25rem;
+  --font-size-xxl: 3rem;
   --font-family-normal: "QuickSand", sans-serif;
   --font-family-bold: "QuickSand-Bold", sans-serif;
 
@@ -77,7 +77,7 @@ body {
   --mdc-dialog-subhead-color: rgba(0, 0, 0, 0.87);
   --mdc-dialog-subhead-font: inherit;
   --mdc-dialog-subhead-line-height: 1.5rem;
-  --mdc-dialog-subhead-size: 1rem;
+  --mdc-dialog-subhead-size: 1.5rem;
   --mdc-dialog-subhead-weight: 400;
   --mdc-dialog-subhead-tracking: 0.03125em;
   
@@ -222,7 +222,7 @@ body {
   --mdc-dialog-subhead-color: rgba(255, 255, 255, 0.87);
   --mdc-dialog-subhead-font: inherit;
   --mdc-dialog-subhead-line-height: 1.5rem;
-  --mdc-dialog-subhead-size: 1rem;
+  --mdc-dialog-subhead-size: 1.5rem;
   --mdc-dialog-subhead-weight: 400;
   --mdc-dialog-subhead-tracking: 0.03125em;
   
@@ -449,6 +449,35 @@ mat-icon {
 .mat-mdc-form-field textarea.mat-mdc-input-element::placeholder {
   color: var(--color-text-muted) !important;
   opacity: 0.7 !important;
+}
+
+/* Estilos específicos para mejorar la visibilidad de placeholders */
+.mat-mdc-form-field .mat-mdc-form-field-label {
+  color: var(--mdc-form-field-label-text-color) !important;
+  font-weight: 500 !important;
+}
+
+.mat-mdc-form-field.mat-focused .mat-mdc-form-field-label {
+  color: var(--mdc-form-field-focus-label-text-color) !important;
+}
+
+/* Asegurar que los placeholders sean visibles */
+.mat-mdc-form-field input::placeholder,
+.mat-mdc-form-field textarea::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+}
+
+/* Estilos para inputs con placeholder */
+.mat-mdc-form-field input:not(:focus)::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 0.6 !important;
+}
+
+.mat-mdc-form-field input:focus::placeholder {
+  color: var(--color-text-muted) !important;
+  opacity: 0.4 !important;
 }
 
 /* Tabs específicos */

@@ -11,7 +11,6 @@ export type CategoryType =
 export interface ICategory {
   id: number;
   name_category: string;
-  icon: string;
   color: string;
   is_system: boolean;
   created_at: Date;

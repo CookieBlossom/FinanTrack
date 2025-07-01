@@ -11,7 +11,6 @@ export type CategoryType =
   export interface Category {
     id: number;
     name_category: string;
-    icon: string;
     color: string;
     is_system: boolean;
     created_at: Date;
@@ -30,7 +29,6 @@ export type CategoryType =
 
   export interface CategoryUpdate {
     nameCategory?: string;
-    icon?: string;
     color?: string;
   }
   export interface UserCategoryKeyword {
@@ -38,4 +36,9 @@ export type CategoryType =
     category_id: number;
     keywords: string[];
     updated_at: Date;
+  }
+
+  export interface CategoryCreate {
+    nameCategory: string;
+    color?: string;
   }

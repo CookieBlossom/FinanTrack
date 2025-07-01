@@ -180,10 +180,6 @@ export class PlanLimitsService {
       })
     );
   }
-
-  /**
-   * Verifica un permiso específico
-   */
   private checkPermission(permissionKey: string, featureName: string): Observable<PermissionCheck> {
     return this.planService.hasPermission(permissionKey).pipe(
       map(hasPermission => ({
@@ -192,31 +188,16 @@ export class PlanLimitsService {
       }))
     );
   }
-
-  /**
-   * Refresca el uso actual
-   */
   refreshUsage(): void {
+    // Siempre cargar datos actualizados cuando se solicita explícitamente
     this.loadCurrentUsage();
   }
-
-  /**
-   * Obtiene el uso actual desde el BehaviorSubject
-   */
   getCurrentUsage(): PlanUsage | null {
     return this.currentUsageSubject.value;
   }
-
-  /**
-   * Obtiene el uso actual como Observable
-   */
   getCurrentUsageObservable(): Observable<PlanUsage | null> {
     return this.currentUsage$;
   }
-
-  /**
-   * Obtiene el porcentaje de uso de un límite específico
-   */
   getUsagePercentage(limitKey: string): Observable<number> {
     return combineLatest([
       this.planService.getPlanLimits(),

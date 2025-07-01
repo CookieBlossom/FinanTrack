@@ -11,16 +11,6 @@
     <router-outlet></router-outlet>
   </main>
 
-  <!-- Botón flotante para móviles -->
-  <button 
-    class="mobile-menu-btn" 
-    (click)="toggleSidebar()"
-    *ngIf="isMobile && !isSidebarOpen"
-    mat-fab
-    color="primary">
-    <mat-icon>menu</mat-icon>
-  </button>
-
   <!-- Componentes de límites y notificaciones -->
   <app-limit-notifications></app-limit-notifications>
 </div>

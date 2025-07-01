@@ -113,14 +113,16 @@
             <ngx-charts-pie-chart
               [results]="getPieChartData()"
               [view]="chartView"
-              [legend]="true"
-              [doughnut]="true"
-              [labels]="false"
+              [legend]="false"
+              [doughnut]="false"
+              [labels]="true"
               [explodeSlices]="false"
               [animations]="true"
               [scheme]="colorScheme"
               [tooltipDisabled]="false"
-              [legendTitle]="'Tarjetas'">
+              [gradient]="false"
+              [trimLabels]="false"
+              [tooltipText]="formatTooltip">
             </ngx-charts-pie-chart>
           </div>
         </div>

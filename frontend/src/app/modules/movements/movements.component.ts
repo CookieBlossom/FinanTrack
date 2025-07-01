@@ -26,7 +26,8 @@ import {
   TextFilterModule,
   NumberFilterModule,
   DateFilterModule,
-  CustomFilterModule
+  CustomFilterModule,
+  CellStyleModule
 } from 'ag-grid-community';
 import { AddCashComponent } from './add-cash/add-cash.component';
 import { UploadStatementComponent } from './upload-statement/upload-statement.component';
@@ -45,6 +46,7 @@ ModuleRegistry.registerModules([
   ValidationModule,
   PaginationModule,
   RowSelectionModule,
+  CellStyleModule,
   TextFilterModule,
   NumberFilterModule,
   DateFilterModule,
@@ -200,8 +202,24 @@ export class MovementsComponent implements OnInit {
   }
 
   columnDefsCard: ColDef[] = [
-    { field: 'transactionDate', headerName: 'Fecha' },
-    { field: 'description', headerName: 'Descripción' },
+    { 
+      field: 'transactionDate', 
+      headerName: 'Fecha',
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    },
+    { 
+      field: 'description', 
+      headerName: 'Descripción',
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    },
     {
       field: 'amount',
       headerName: 'Monto',
@@ -210,32 +228,105 @@ export class MovementsComponent implements OnInit {
           style: 'currency',
           currency: 'CLP'
         }).format(params.value);
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)',
+        fontWeight: '500'
       }
     },
-    { field: 'category', headerName: 'Categoría' },
-    { field: 'card.nameAccount', headerName: 'Método de Pago' }
+    { 
+      field: 'category', 
+      headerName: 'Categoría',
+      valueGetter: params => {
+        return params.data?.category?.nameCategory || 'Sin categoría';
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    },
+    { 
+      field: 'card.nameAccount', 
+      headerName: 'Método de Pago',
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    }
   ];
 
   columnDefsCash: ColDef[] = [
-    { field: 'transactionDate', headerName: 'Fecha' },
-    { field: 'description', headerName: 'Descripción' },
+    { 
+      field: 'transactionDate', 
+      headerName: 'Fecha',
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    },
+    { 
+      field: 'description', 
+      headerName: 'Descripción',
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    },
     {
       field: 'amount',
       headerName: 'Monto',
       valueFormatter: params => new Intl.NumberFormat('es-CL', {
         style: 'currency',
         currency: 'CLP'
-      }).format(params.value)
+      }).format(params.value),
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)',
+        fontWeight: '500'
+      }
     },
-    { field: 'category', headerName: 'Categoría' },
-    { field: 'card.nameAccount', headerName: 'Tarjeta Asociada' }
+    { 
+      field: 'category', 
+      headerName: 'Categoría',
+      valueGetter: params => {
+        return params.data?.category?.nameCategory || 'Sin categoría';
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    },
+    { 
+      field: 'card.nameAccount', 
+      headerName: 'Tarjeta Asociada',
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
+    }
   ];
 
   defaultColDef: ColDef = {
     editable: false,
     filter: true,
     resizable: true,
-    sortable: true
+    sortable: true,
+    cellStyle: {
+      fontSize: 'var(--font-size-sm)',
+      fontFamily: 'var(--font-family-normal)',
+      color: 'var(--color-text)'
+    },
+    headerClass: 'ag-header-cell-custom',
+    cellClass: 'ag-cell-custom'
   };
 
   myTheme = themeQuartz.withParams({
@@ -248,6 +339,15 @@ export class MovementsComponent implements OnInit {
     oddRowBackgroundColor: 'var(--clr-surface-a10)',
     headerColumnResizeHandleColor: 'var(--color-highlight)',
     textColor: 'var(--color-text)',
+    // Configuración de fuentes usando variables CSS
+    fontSize: 'var(--font-size-sm)',
+    fontFamily: 'var(--font-family-normal)',
+    // Configuración adicional para mejor legibilidad
+    rowHeight: 60,
+    headerHeight: 50,
+    // Colores adicionales
+    rowHoverColor: 'var(--clr-surface-a20)',
+    selectedRowBackgroundColor: 'var(--clr-primary-50)',
   });
 
   onGridSizeChanged(params: GridSizeChangedEvent) {

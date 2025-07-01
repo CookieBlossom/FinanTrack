@@ -27,7 +27,6 @@ export interface Movement {
   category?: {
     id: number;
     nameCategory: string;
-    icon?: string;
     color?: string;
   };
 }

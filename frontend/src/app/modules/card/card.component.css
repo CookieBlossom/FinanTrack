@@ -11,9 +11,28 @@
   padding: 0.5rem;
   max-width: 2000px;
   margin: 0 auto;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 850px) {
+  .card-panel-container {
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .card-header {
+    flex-shrink: 0;
+  }
+  
+  .card-content {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
 }
 
 /* Header de tarjetas */
@@ -42,7 +61,7 @@
 }
 
 .title-section h2 {
-  font-size: 1.8rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
@@ -66,7 +85,7 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin: 0;
   font-family: var(--font-family-normal);
@@ -159,7 +178,7 @@
 }
 
 .error-container p {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   color: var(--color-text);
   margin: 0 0 1rem 0;
   text-align: center;
@@ -194,7 +213,7 @@
 }
 
 .empty-state h3 {
-  font-size: 1.5rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
   margin: 0 0 0.5rem 0;
@@ -202,7 +221,7 @@
 }
 
 .empty-state p {
-  font-size: 1rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
   margin: 0px;
   font-family: var(--font-family-normal);
@@ -237,7 +256,7 @@
 }
 
 .section-title {
-  font-size: 1.2rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
   text-align: center;
@@ -305,7 +324,7 @@
 }
 
 .carousel-card mat-card-title {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
@@ -314,7 +333,7 @@
 
 .carousel-card mat-card-subtitle {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   margin: 0;
   font-family: var(--font-family-normal);
 }
@@ -324,7 +343,7 @@
 }
 
 .balance {
-  font-size: 1.2rem;
+  font-size: var(--font-size-md);
   font-weight: 700;
   color: var(--color-success-600);
   text-align: right;
@@ -337,7 +356,7 @@
 }
 
 .card-status {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   text-align: right;
   color: var(--color-text-secondary);
@@ -380,7 +399,7 @@
 
 .summary-card mat-card-title {
   color: var(--color-text);
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   margin: 0px;
   text-align: center;
@@ -405,7 +424,7 @@
 }
 
 .total-balance h3 {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
   margin: 0px;
@@ -415,7 +434,7 @@
 }
 
 .total-balance .amount {
-  font-size: 1.8rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-success-600);
   margin: 0;
@@ -427,7 +446,7 @@
 }
 
 .total-balance .currency {
-  font-size: 1rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-left: 0.25rem;
   font-family: var(--font-family-normal);
@@ -445,10 +464,11 @@
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  min-height: 400px;
 }
 
 .chart-title {
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
@@ -459,30 +479,35 @@
 
 .chart-wrapper {
   flex: 1;
-  min-height: 300px;
+  min-height: 350px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 0.5rem;
   margin: 0;
+  overflow: hidden;
 }
 
 /* Estilos para ngx-charts */
 ::ng-deep .chart-wrapper ngx-charts-pie-chart {
   display: block;
-  height: 100%;
-  width: 100%;
+  height: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 ::ng-deep .chart-wrapper .pie-chart {
-  height: 100%;
-  width: 100%;
+  height: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 ::ng-deep .chart-wrapper .pie-chart .pie-label {
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
   fill: var(--color-text);
   font-family: var(--font-family-normal);
 }
@@ -511,59 +536,7 @@
   filter: brightness(1.1);
 }
 
-::ng-deep .chart-wrapper .legend {
-  margin: 0;
-  padding: 0;
-}
 
-::ng-deep .chart-wrapper .legend .legend-title {
-  margin: 0;
-  padding: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-text);
-  font-family: var(--font-family-bold);
-}
-
-::ng-deep .chart-wrapper .legend .legend-labels {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--color-text);
-}
-
-::ng-deep .chart-wrapper .legend .legend-label {
-  margin: 0;
-  padding: 0.25rem 0;
-  font-size: 0.8rem;
-  color: var(--color-text);
-  font-family: var(--font-family-normal);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-::ng-deep .chart-wrapper .legend .legend-label .legend-label-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  margin: 0;
-  padding: 0;
-}
-
-::ng-deep .chart-wrapper .legend .legend-label .legend-label-text {
-  margin: 0;
-  padding: 0;
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-::ng-deep .chart-wrapper .legend .legend-label .legend-label-value {
-  margin: 0;
-  padding: 0;
-  font-weight: 600;
-  color: var(--color-primary-darkest);
-}
 
 /* Gráfico vacío */
 .empty-chart {
@@ -581,7 +554,7 @@
 }
 
 .empty-chart mat-icon {
-  font-size: 3rem;
+  font-size: var(--font-size-lg);
   width: 3rem;
   height: 3rem;
   color: var(--color-text-secondary);
@@ -589,7 +562,7 @@
 }
 
 .empty-chart p {
-  font-size: 1rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
   margin: 0 0 0.5rem 0;
@@ -597,7 +570,7 @@
 }
 
 .empty-chart small {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin: 0;
   font-family: var(--font-family-normal);
@@ -628,6 +601,7 @@
   }
 }
 
+/* Responsive mejorado para el gráfico */
 @media (max-width: 768px) {
   .card-panel-container {
     padding: 1rem;
@@ -682,6 +656,46 @@
   .chart-container {
     min-height: 350px;
   }
+  
+  .chart-container {
+    min-height: 350px;
+  }
+  
+  .chart-wrapper {
+    min-height: 300px;
+    padding: 0.5rem;
+  }
+  
+
+}
+
+/* Estilos específicos para el gráfico de pastel */
+::ng-deep ngx-charts-pie-chart {
+  background-color: var(--clr-surface-a0) !important;
+}
+
+::ng-deep ngx-charts-pie-chart svg {
+  background-color: var(--clr-surface-a0) !important;
+}
+
+::ng-deep ngx-charts-pie-chart .pie-label {
+  fill: var(--color-text) !important;
+  font-family: var(--font-family-normal) !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: bold !important;
+}
+
+::ng-deep ngx-charts-pie-chart .pie-label-line {
+  stroke: var(--color-text) !important;
+  stroke-width: 1px !important;
+}
+
+/* Estilos para tooltips personalizados */
+::ng-deep .tooltip-label,
+::ng-deep .tooltip-value {
+  font-family: var(--font-family-bold) !important;
+  font-size: var(--font-size-sm) !important;
+  color: var(--color-text) !important;
 }
 
 @media (max-width: 480px) {

@@ -12,6 +12,8 @@ import { PlanLimitsService } from '../../services/plan-limits.service';
 import { FeatureControlService } from '../../services/feature-control.service';
 import { PLAN_LIMITS } from '../../models/plan.model';
 import { LimitNotificationComponent, LimitNotificationData } from '../../shared/components/limit-notification/limit-notification.component';
+import { PlanLimitAlertService } from '../../shared/services/plan-limit-alert.service';
+import { Router } from '@angular/router';
 import {
   ColDef,
   GridReadyEvent,
@@ -35,7 +37,8 @@ import {
   RenderApiModule,
   UndoRedoEditModule,
   ValueFormatterFunc,
-  ValueFormatterParams
+  ValueFormatterParams,
+  CellStyleModule
 } from 'ag-grid-community';
 import { TagInputCellEditorComponent } from './tag-input-cell-editor.component';
 
@@ -43,6 +46,7 @@ ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   ColumnApiModule,
   ColumnAutoSizeModule,
+  CellStyleModule,
   ClientSideRowModelApiModule,
   ValidationModule,
   RowSelectionModule,
@@ -117,42 +121,83 @@ export class CategoriesComponent implements OnInit {
     headerBackgroundColor: 'var(--color-accent)',
     oddRowBackgroundColor: 'var(--clr-surface-a10)',
     headerColumnResizeHandleColor: 'var(--color-highlight)',
+    fontSize: 'var(--font-size-sm)',
+    fontFamily: 'var(--font-family-normal)',
+    rowHeight: 50,
+    headerHeight: 50,
+    rowHoverColor: 'var(--clr-surface-a20)',
+    selectedRowBackgroundColor: 'var(--clr-primary-50)',
   });
-
   columnDefs: ColDef[] = [
     {
       field: 'name_category',
       headerName: 'Categoría',
-      minWidth: 100,
-      maxWidth: 150,
-      flex: 1
+      minWidth: 120,
+      maxWidth: 180,
+      flex: 1,
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        fontWeight: '500',
+        color: 'var(--color-text)'
+      }
     },
     {
-      field: 'icon',
+      field: 'name_category',
       headerName: 'Icono',
-      minWidth: 90,
+      minWidth: 100,
       maxWidth: 120,
-      flex: 0.5,
+      flex: 1,
       cellRenderer: (params: { value: any }) => {
-        const iconName = params.value || 'more-horizontal';
-        return `<img src="/assets/icons/${iconName}.svg" alt="${iconName}" width="24" height="24" style="vertical-align:middle;" />`;
+        const iconMap: { [key: string]: string } = {
+          'Alimentacion': '🍽️',
+          'Transporte': '🚌',
+          'Vivienda': '🏠',
+          'Salud': '❤️',
+          'Entretenimiento': '🎬',
+          'Compras': '🛒',
+          'Educacion': '🎓',
+          'Servicios': '🔧',
+          'Deportes': '⚽',
+          'Viajes': '✈️',
+          'Tecnologia': '💻',
+          'Ropa': '👕',
+          'Mascotas': '🐾',
+          'Regalos': '🎁',
+          'Impuestos': '📄',
+          'Ahorros': '💰',
+          'Inversiones': '📈',
+          'Otros': '📋'
+        };
+        const icon = iconMap[params.value] || '📋';
+        return `<div class="icon-emoji">${icon}</div>`;
+      },
+      cellStyle: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }
     },
     {
       field: 'color',
       headerName: 'Color',
-      minWidth: 90,
+      minWidth: 100,
       maxWidth: 120,
-      flex: 0.5,
+      flex: 1,
       editable: false,
       cellRenderer: ColorPickerCellRendererComponent,
       cellRendererParams: {},
+      cellStyle: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
     },
     {
       field: 'keywords',
       headerName: 'Palabras clave',
-      minWidth: 180,
-      flex: 3,
+      minWidth: 150,
+      flex: 2,
       editable: true,
       cellEditor: TagInputCellEditorComponent,
       cellRenderer: (params: { value: any }) => {
@@ -160,12 +205,17 @@ export class CategoriesComponent implements OnInit {
           return params.value
             .map((keyword: any) => {
               const keywordText = typeof keyword === 'string' ? keyword : (keyword.value ?? '');
-              return `<span style="display: inline-flex; align-items: center; background: var(--color-primary); color: var(--color-text-inverse); padding: 3px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 500; margin: 1px 3px 1px 0; border: 1px solid var(--color-primary-darkest); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); transition: all 0.2s ease;">${keywordText}</span>`;
+              return `<span style="display: inline-flex; align-items: center; background: var(--color-primary); color: var(--color-text-inverse); padding: 4px 10px; border-radius: 12px; font-size: var(--font-size-xs); font-weight: 500; margin: 2px 4px 2px 0; border: 1px solid var(--color-primary-darkest); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); transition: all 0.2s ease; font-family: var(--font-family-normal);">${keywordText}</span>`;
             })
             .join('');
         } else {
-          return '<span style="color: var(--color-text-muted); font-style: italic; font-size: 0.8rem;">Agrega palabras clave...</span>';
+          return `<span style="color: var(--color-text-muted); font-style: italic; font-size: var(--font-size-xs); font-family: var(--font-family-normal);">Agrega palabras clave...</span>`;
         }
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        padding: '8px 12px'
       },
       valueParser: params => {
         if (Array.isArray(params.newValue)) {
@@ -181,7 +231,14 @@ export class CategoriesComponent implements OnInit {
   defaultColDef: ColDef = {
     filter: true,
     resizable: true,
-    minWidth: 100
+    minWidth: 100,
+    cellStyle: {
+      fontSize: 'var(--font-size-sm)',
+      fontFamily: 'var(--font-family-normal)',
+      color: 'var(--color-text)'
+    },
+    headerClass: 'ag-header-cell-custom',
+    cellClass: 'ag-cell-custom'
   };
 
   @HostListener('window:resize', ['$event'])
@@ -194,7 +251,9 @@ export class CategoriesComponent implements OnInit {
   constructor(
     private categoryService: CategoryService,
     private planLimitsService: PlanLimitsService,
-    private featureControlService: FeatureControlService
+    private featureControlService: FeatureControlService,
+    private planLimitAlertService: PlanLimitAlertService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -230,7 +289,7 @@ export class CategoriesComponent implements OnInit {
   }
 
   upgradePlan(): void {
-    window.location.href = '/plans';
+    this.router.navigate(['/plans']);
   }
 
   displayLimitNotification(data: LimitNotificationData): void {
@@ -356,17 +415,16 @@ export class CategoriesComponent implements OnInit {
       
       // Verificar límite antes de guardar
       if (Array.isArray(newKeywords) && newKeywords.length > this.keywordsLimit) {
-        this.displayLimitNotification({
-          type: 'error',
-          title: 'Límite de Keywords Alcanzado',
-          message: `Has alcanzado el límite de ${this.keywordsLimit} keywords por categoría. Actualiza tu plan para agregar más keywords.`,
-          limit: this.keywordsLimit,
-          current: newKeywords.length,
-          showUpgradeButton: true
+        // Mostrar alerta modal en lugar de notificación
+        this.planLimitAlertService.showKeywordLimitAlert(newKeywords.length, this.keywordsLimit).subscribe({
+          next: (result) => {
+            if (result.action === 'upgrade') {
+              this.router.navigate(['/plans']);
+            }
+            // Si es dismiss, revertir el cambio en la UI
+            event.api.undoCellEditing();
+          }
         });
-        
-        // Revertir el cambio en la UI
-        event.api.undoCellEditing();
         return;
       }
       

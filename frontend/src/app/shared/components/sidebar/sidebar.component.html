@@ -1,19 +1,19 @@
 <!-- Overlay para móviles -->
 <div class="sidebar-overlay" 
-     [class.visible]="isMobile && !isCollapsed" 
+     [class.visible]="isMobile && !isCollapsed && !isTopNav" 
      (click)="toggleSidebar()">
 </div>
 
 <div class="sidebar-container" [class.mobile]="isMobile" [class.collapsed]="isCollapsed" [class.top-nav]="isTopNav">
   
-  <!-- Header/Brand -->
-  <div class="sidebar-header" [class.collapsed]="isCollapsed">
+  <!-- Header/Brand solo en desktop -->
+  <div class="sidebar-header" [class.collapsed]="isCollapsed" *ngIf="!isTopNav">
     <div class="brand-container">
       <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
       <span class="brand-name" *ngIf="!isCollapsed">FinanTrack</span>
     </div>
     <button 
-      *ngIf="isMobile" 
+      *ngIf="isMobile && !isTopNav" 
       class="toggle-btn" 
       (click)="toggleSidebar()"
       mat-icon-button>
@@ -21,69 +21,62 @@
     </button>
   </div>
 
-  <!-- Navigation Menu -->
+  <!-- Navigation Menu SIEMPRE visible -->
   <nav class="sidebar-nav" [class.collapsed]="isCollapsed">
-    
-    <!-- Main Menu Items -->
     <div class="menu-section">
       <a class="nav-item" 
          routerLink="/dashboard" 
          routerLinkActive="active"
-         [matTooltip]="isCollapsed ? 'Panel de Control' : ''"
+         [matTooltip]="isCollapsed && !isTopNav ? 'Panel de Control' : ''"
          [matTooltipPosition]="'right'">
         <mat-icon>dashboard</mat-icon>
-        <span *ngIf="!isCollapsed">Panel de Control</span>
+        <span *ngIf="!isCollapsed && !isTopNav">Panel de Control</span>
       </a>
-
       <a class="nav-item" 
          routerLink="/cards" 
          routerLinkActive="active"
-         [matTooltip]="isCollapsed ? 'Tarjetas' : ''"
+         [matTooltip]="isCollapsed && !isTopNav ? 'Tarjetas' : ''"
          [matTooltipPosition]="'right'">
         <mat-icon>credit_card</mat-icon>
-        <span *ngIf="!isCollapsed">Tarjetas</span>
+        <span *ngIf="!isCollapsed && !isTopNav">Tarjetas</span>
       </a>
-
       <a class="nav-item" 
          routerLink="/movements" 
          routerLinkActive="active"
-         [matTooltip]="isCollapsed ? 'Historial de Movimientos' : ''"
+         [matTooltip]="isCollapsed && !isTopNav ? 'Historial de Movimientos' : ''"
          [matTooltipPosition]="'right'">
         <mat-icon>receipt_long</mat-icon>
-        <span *ngIf="!isCollapsed">Historial de Movimientos</span>
+        <span *ngIf="!isCollapsed && !isTopNav">Historial de Movimientos</span>
       </a>
-
       <a class="nav-item" 
          routerLink="/analytics" 
          routerLinkActive="active"
-         [matTooltip]="isCollapsed ? 'Análisis y Proyección' : ''"
+         [matTooltip]="isCollapsed && !isTopNav ? 'Análisis y Proyección' : ''"
          [matTooltipPosition]="'right'">
         <mat-icon>analytics</mat-icon>
-        <span *ngIf="!isCollapsed">Análisis y Proyección</span>
+        <span *ngIf="!isCollapsed && !isTopNav">Análisis y Proyección</span>
       </a>
-
       <a class="nav-item" 
          routerLink="/categories" 
          routerLinkActive="active"
-         [matTooltip]="isCollapsed ? 'Categorización' : ''"
+         [matTooltip]="isCollapsed && !isTopNav ? 'Categorización' : ''"
          [matTooltipPosition]="'right'">
         <mat-icon>category</mat-icon>
-        <span *ngIf="!isCollapsed">Categorización</span>
+        <span *ngIf="!isCollapsed && !isTopNav">Categorización</span>
       </a>
-
       <a class="nav-item" 
          routerLink="/upcoming-transactions" 
          routerLinkActive="active"
-         [matTooltip]="isCollapsed ? 'Próximos Movimientos' : ''"
+         [matTooltip]="isCollapsed && !isTopNav ? 'Próximos Movimientos' : ''"
          [matTooltipPosition]="'right'">
         <mat-icon>schedule</mat-icon>
-        <span *ngIf="!isCollapsed">Próximos Movimientos</span>
+        <span *ngIf="!isCollapsed && !isTopNav">Próximos Movimientos</span>
       </a>
     </div>
   </nav>
 
-  <!-- Footer -->
-  <div class="sidebar-footer" [class.collapsed]="isCollapsed">
+  <!-- Footer solo en desktop -->
+  <div class="sidebar-footer" [class.collapsed]="isCollapsed" *ngIf="!isTopNav">
     <a class="nav-item footer-item" 
        routerLink="/about-company"
        [matTooltip]="isCollapsed ? 'Acerca de la empresa' : ''"
@@ -91,7 +84,6 @@
       <mat-icon>info</mat-icon>
       <span *ngIf="!isCollapsed">Acerca de la empresa</span>
     </a>
-    
     <a class="nav-item footer-item" 
        routerLink="/home"
        [matTooltip]="isCollapsed ? 'Cerrar sesión' : ''"

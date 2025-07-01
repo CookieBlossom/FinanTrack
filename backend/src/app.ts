@@ -9,7 +9,6 @@ import { cronSetup } from './utils/cron-setup';
 
 // Cargar variables de entorno
 dotenv.config();
-console.log('Variables de entorno cargadas');
 console.log('Puerto configurado:', process.env.PORT || 3000);
 console.log('Base de datos:', process.env.DB_NAME || 'finantrack');
 

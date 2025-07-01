@@ -22,6 +22,17 @@
 <div mat-dialog-content>
   <form [formGroup]="cashForm" (ngSubmit)="submit()">
     <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Tipo de Movimiento</mat-label>
+      <mat-select formControlName="movementType" required>
+        <mat-option value="income">💰 Ingreso</mat-option>
+        <mat-option value="expense">💸 Gasto</mat-option>
+      </mat-select>
+      <mat-error *ngIf="cashForm.get('movementType')?.hasError('required')">
+        El tipo es requerido
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Categoría</mat-label>
       <mat-select formControlName="categoryId" required>
           <mat-option *ngFor="let cat of categories" [value]="cat.id">
@@ -47,7 +58,12 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Monto</mat-label>
-      <input matInput type="number" formControlName="amount" required />
+      <input matInput 
+             type="number" 
+             placeholder="Ej: 25000" 
+             formControlName="amount" 
+             min="1"
+             required />
       <mat-error *ngIf="cashForm.get('amount')?.hasError('required')">
         El monto es requerido
       </mat-error>
@@ -58,21 +74,18 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Fecha</mat-label>
-      <input matInput type="date" formControlName="transactionDate" required />
+      <input matInput 
+             type="date" 
+             formControlName="transactionDate" 
+             [min]="minDate"
+             class="cash-date-input"
+             required />
+      <mat-icon matSuffix class="date-icon" (click)="openDatePicker()">calendar_today</mat-icon>
       <mat-error *ngIf="cashForm.get('transactionDate')?.hasError('required')">
         La fecha es requerida
       </mat-error>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Tipo</mat-label>
-      <mat-select formControlName="movementType" required>
-        <mat-option *ngFor="let type of typeOptions" [value]="type">
-          {{ type === 'income' ? 'Ingreso' : 'Gasto' }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="cashForm.get('movementType')?.hasError('required')">
-        El tipo es requerido
+      <mat-error *ngIf="cashForm.get('transactionDate')?.hasError('minDate')">
+        La fecha no puede ser anterior a hoy
       </mat-error>
     </mat-form-field>
 

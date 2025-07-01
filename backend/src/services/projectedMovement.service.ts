@@ -30,7 +30,6 @@ export class ProjectedMovementService {
                 -- Datos de la categoría
                 c.id as "category.id",
                 c.name_category as "category.nameCategory",
-                c.icon as "category.icon",
                 c.color as "category.color",
                 -- Datos de la tarjeta
                 card.id as "card.id",
@@ -64,7 +63,6 @@ export class ProjectedMovementService {
             category: row['category.id'] ? {
                 id: row['category.id'],
                 nameCategory: row['category.nameCategory'],
-                icon: row['category.icon'],
                 color: row['category.color']
             } : undefined,
             // Datos expandidos de tarjeta
@@ -85,12 +83,9 @@ export class ProjectedMovementService {
                 pm.probability, pm.status, pm.actual_movement_id as "actualMovementId",
                 pm.recurrence_type as "recurrenceType",
                 pm.created_at as "createdAt", pm.updated_at as "updatedAt",
-                -- Datos de la categoría
                 c.id as "category.id",
                 c.name_category as "category.nameCategory",
-                c.icon as "category.icon",
                 c.color as "category.color",
-                -- Datos de la tarjeta
                 card.id as "card.id",
                 card.name_account as "card.nameAccount",
                 card.alias_account as "card.aliasAccount"
@@ -123,7 +118,6 @@ export class ProjectedMovementService {
             category: row['category.id'] ? {
                 id: row['category.id'],
                 nameCategory: row['category.nameCategory'],
-                icon: row['category.icon'],
                 color: row['category.color']
             } : undefined,
             // Datos expandidos de tarjeta
@@ -219,7 +213,6 @@ export class ProjectedMovementService {
                 -- Datos de la categoría
                 c.id as "category.id",
                 c.name_category as "category.nameCategory",
-                c.icon as "category.icon",
                 c.color as "category.color",
                 -- Datos de la tarjeta
                 card.id as "card.id",
@@ -254,7 +247,6 @@ export class ProjectedMovementService {
             category: row['category.id'] ? {
                 id: row['category.id'],
                 nameCategory: row['category.nameCategory'],
-                icon: row['category.icon'],
                 color: row['category.color']
             } : undefined,
             // Datos expandidos de tarjeta

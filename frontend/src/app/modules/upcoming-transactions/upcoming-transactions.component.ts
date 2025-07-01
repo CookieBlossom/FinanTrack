@@ -83,12 +83,16 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         return '';
       },
       cellStyle: params => {
+        const baseStyle = {
+          fontSize: 'var(--font-size-sm)',
+          fontFamily: 'var(--font-family-normal)'
+        };
         const today = new Date();
         const expectedDate = new Date(params.value);
         if (expectedDate < today) {
-          return { color: '#d32f2f', fontWeight: 'bold' };
+          return { ...baseStyle, color: '#d32f2f', fontWeight: 'bold' };
         }
-        return null;
+        return baseStyle;
       }
     },
     { 
@@ -97,12 +101,22 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
       flex: 1,
       valueGetter: params => {
         return params.data.card?.nameAccount || 'No especificado';
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     },
     { 
       field: 'description', 
       headerName: 'Descripción',
-      flex: 1.5
+      flex: 1.5,
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
+      }
     },
     { 
       field: 'amount', 
@@ -115,9 +129,14 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         }).format(params.value);
       },
       cellStyle: params => {
+        const baseStyle = {
+          fontSize: 'var(--font-size-sm)',
+          fontFamily: 'var(--font-family-normal)',
+          fontWeight: '500'
+        };
         return params.data.movementType === 'expense' 
-          ? { color: '#d32f2f' } 
-          : { color: '#2e7d32' };
+          ? { ...baseStyle, color: '#d32f2f' } 
+          : { ...baseStyle, color: '#2e7d32' };
       }
     },
     { 
@@ -126,6 +145,11 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
       flex: 1,
       valueGetter: params => {
         return params.data.category?.nameCategory || 'Otros';
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     },
     { 
@@ -140,6 +164,11 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
           'yearly': 'Anual'
         };
         return types[params.value as keyof typeof types] || params.value;
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     },
     { 
@@ -150,10 +179,15 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         return `${params.value}%`;
       },
       cellStyle: params => {
+        const baseStyle = {
+          fontSize: 'var(--font-size-sm)',
+          fontFamily: 'var(--font-family-normal)',
+          fontWeight: '500'
+        };
         const prob = params.value;
-        if (prob >= 75) return { color: '#2e7d32' };
-        if (prob >= 50) return { color: '#f57c00' };
-        return { color: '#d32f2f' };
+        if (prob >= 75) return { ...baseStyle, color: '#2e7d32' };
+        if (prob >= 50) return { ...baseStyle, color: '#f57c00' };
+        return { ...baseStyle, color: '#d32f2f' };
       }
     },
     { 
@@ -168,7 +202,12 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
           'cancelled': { text: 'Cancelado', class: 'status-cancelled' }
         };
         const config = statusConfig[status as keyof typeof statusConfig] || { text: status, class: '' };
-        return `<span class="status-badge ${config.class}">${config.text}</span>`;
+        return `<span class="status-badge ${config.class}" style="font-size: var(--font-size-xs); font-family: var(--font-family-normal);">${config.text}</span>`;
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     },
     {
@@ -181,14 +220,19 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         let buttons = '';
         
         if (isPending && isOverdue) {
-          buttons += `<button class="action-btn complete-btn" onclick="window.completeMovement(${params.data.id})">✓ Completar</button>`;
+          buttons += `<button class="action-btn complete-btn" style="font-size: var(--font-size-xs); font-family: var(--font-family-normal);" onclick="window.completeMovement(${params.data.id})">✓ Completar</button>`;
         }
         
         if (isPending) {
-          buttons += `<button class="action-btn cancel-btn" onclick="window.cancelMovement(${params.data.id})">✕ Cancelar</button>`;
+          buttons += `<button class="action-btn cancel-btn" style="font-size: var(--font-size-xs); font-family: var(--font-family-normal);" onclick="window.cancelMovement(${params.data.id})">✕ Cancelar</button>`;
         }
         
         return buttons || '-';
+      },
+      cellStyle: {
+        fontSize: 'var(--font-size-sm)',
+        fontFamily: 'var(--font-family-normal)',
+        color: 'var(--color-text)'
       }
     }
   ];
@@ -203,6 +247,15 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     headerBackgroundColor: 'var(--color-accent)',
     oddRowBackgroundColor: 'var(--clr-surface-a10)',
     headerColumnResizeHandleColor: 'var(--color-highlight)',
+    // Configuración de fuentes usando variables CSS
+    fontSize: 'var(--font-size-sm)',
+    fontFamily: 'var(--font-family-normal)',
+    // Configuración adicional para mejor legibilidad
+    rowHeight: 60,
+    headerHeight: 50,
+    // Colores adicionales
+    rowHoverColor: 'var(--clr-surface-a20)',
+    selectedRowBackgroundColor: 'var(--clr-primary-50)',
   });
 
   // Variables para gráficos

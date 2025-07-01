@@ -33,13 +33,13 @@ export class SidebarComponent implements OnInit {
   }
 
   private checkScreenSize() {
-    this.isMobile = window.innerWidth < 768;
-    this.isTopNav = window.innerWidth < 1024;
-    this.isCollapsed = window.innerWidth < 480;
+    this.isMobile = window.innerWidth < 850;
+    this.isTopNav = window.innerWidth < 850;
+    this.isCollapsed = false;
   }
 
   toggleSidebar() {
-    if (this.isMobile) {
+    if (this.isMobile && !this.isTopNav) {
       this.isCollapsed = !this.isCollapsed;
     }
   }
