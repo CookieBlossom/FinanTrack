@@ -379,7 +379,7 @@ export class UserService {
   async getUserById(id: number): Promise<IUser | null> {
     const query = `
       SELECT id, email, name, password, created_at as "createdAt", updated_at as "updatedAt"
-      FROM users
+      FROM "user"
       WHERE id = $1
     `;
     const result = await this.pool.query(query, [id]);
@@ -389,7 +389,7 @@ export class UserService {
   async getUserByEmail(email: string): Promise<IUser | null> {
     const query = `
       SELECT id, email, name, password, created_at as "createdAt", updated_at as "updatedAt"
-      FROM users
+      FROM "user"
       WHERE email = $1
     `;
     const result = await this.pool.query(query, [email]);

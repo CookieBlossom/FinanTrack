@@ -19,13 +19,13 @@ export interface ICartola {
 
 export interface IMovimiento {
   fecha: Date;
-  numeroOperacion: string;
   descripcion: string;
   abonos: number | null;
   cargos: number | null;
-  saldo: number;
-  tipo: TipoMovimiento;
-  categoria?: string; // Categoría asignada automáticamente
+  numeroOperacion?: string;
+  saldo?: number;
+  tipo?: TipoMovimiento;
+  categoria?: string;
 }
 
 export enum TipoMovimiento {

@@ -59,13 +59,11 @@ class BancoEstadoScraper:
 
             print("[🚀 Scraper BancoEstado iniciado]")
             async with async_playwright() as p:
-                # Iniciar navegador
+                # Iniciar navegador con configuración mejorada
                 update_task_status(self.redis_client, task_id, 'processing', 'Iniciando navegador', 10)
-                
                 # Configurar directorio para datos persistentes
                 user_data_dir = os.path.join(os.path.dirname(__file__), 'user_data')
                 os.makedirs(user_data_dir, exist_ok=True)
-
                 # Generar un user agent aleatorio basado en versiones recientes de Chrome
                 chrome_version = random.randint(110, 122)
                 build_version = random.randint(0, 9999)
@@ -93,11 +91,15 @@ class BancoEstadoScraper:
                         "--no-first-run",
                         "--no-service-autorun",
                         "--password-store=basic",
+                        "--disable-web-security",
+                        "--disable-features=IsolateOrigins,site-per-process",
+                        "--disable-site-isolation-trials",
+                        "--disable-features=BlockInsecurePrivateNetworkRequests",
                         f"--user-agent={user_agent}"
                     ]
                 )
 
-                # Script de evasión mejorado basado en undetected-chromedriver
+                # Script de evasión mejorado
                 await context.add_init_script("""
                     // Función para definir propiedades de manera segura
                     const safeDefineProperty = (obj, prop, value) => {
@@ -108,15 +110,13 @@ class BancoEstadoScraper:
                                 configurable: false,
                                 enumerable: true
                             });
-                        } catch (e) {
-                            console.log(`Error setting ${prop}:`, e);
-                        }
+                        } catch (e) {}
                     };
 
-                    // Ocultar webdriver
-                    safeDefineProperty(navigator, 'webdriver', undefined);
+                    // Ocultar webdriver completamente
+                    delete Object.getPrototypeOf(navigator).webdriver;
                     
-                    // Simular Chrome
+                    // Simular Chrome real
                     const originalChrome = window.chrome || {};
                     safeDefineProperty(window, 'chrome', {
                         ...originalChrome,
@@ -140,7 +140,7 @@ class BancoEstadoScraper:
                         runtime: originalChrome.runtime || {}
                     });
                     
-                    // Simular plugins con estructura realista
+                    // Simular plugins realistas
                     const plugins = [
                         {
                             name: 'Chrome PDF Viewer',
@@ -158,18 +158,13 @@ class BancoEstadoScraper:
                         }
                     ];
                     
-                    // Hacer que plugins parezca un array pero con propiedades de PluginArray
                     plugins.__proto__ = Array.prototype;
                     plugins.item = function(index) { return this[index]; };
                     plugins.namedItem = function(name) { return this[0]; };
                     plugins.refresh = function() {};
                     
                     safeDefineProperty(navigator, 'plugins', plugins);
-                    
-                    // Simular lenguajes
                     safeDefineProperty(navigator, 'languages', ['es-CL', 'es', 'en-US', 'en']);
-                    
-                    // Simular plataforma
                     safeDefineProperty(navigator, 'platform', 'Win32');
                     
                     // Simular conexión
@@ -180,10 +175,8 @@ class BancoEstadoScraper:
                         saveData: false
                     });
                     
-                    // Simular memoria
+                    // Simular hardware
                     safeDefineProperty(navigator, 'deviceMemory', 8);
-                    
-                    // Simular hardware concurrency
                     safeDefineProperty(navigator, 'hardwareConcurrency', 8);
                     
                     // Simular permisos
@@ -194,15 +187,17 @@ class BancoEstadoScraper:
                             : originalQuery(parameters)
                     );
                     
-                    // Ocultar automation
-                    safeDefineProperty(window, 'domAutomation', undefined);
-                    safeDefineProperty(window, 'domAutomationController', undefined);
-                    safeDefineProperty(window, '_WEBDRIVER_ELEM_CACHE', undefined);
+                    // Ocultar automation completamente
+                    delete window.domAutomation;
+                    delete window.domAutomationController;
+                    delete window._WEBDRIVER_ELEM_CACHE;
+                    delete window.webdriver;
+                    delete window.navigator.webdriver;
                     
                     // Simular funciones de debugging
                     window.console.debug = () => {};
                     
-                    // Simular performance
+                    // Simular performance realista
                     if (!window.performance) {
                         window.performance = {
                             memory: {
@@ -222,38 +217,43 @@ class BancoEstadoScraper:
                     }
                 """)
                 
-                # Crear página con evasión adicional
                 page = await context.new_page()
                 
-                # Configurar interceptor para modificar headers
+                # Configurar interceptor para headers más realistas
                 await page.route("**/*", lambda route: route.continue_(
                     headers={
                         **route.request.headers,
                         "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
                         "sec-ch-ua-mobile": "?0",
                         "sec-ch-ua-platform": '"Windows"',
-                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                         "Accept-Language": "es-CL,es;q=0.9,en-US;q=0.8,en;q=0.7",
+                        "Accept-Encoding": "gzip, deflate, br",
                         "Sec-Fetch-Dest": "document",
                         "Sec-Fetch-Mode": "navigate",
                         "Sec-Fetch-Site": "none",
                         "Sec-Fetch-User": "?1",
-                        "Upgrade-Insecure-Requests": "1"
+                        "Upgrade-Insecure-Requests": "1",
+                        "Cache-Control": "no-cache",
+                        "Pragma": "no-cache"
                     }
                 ))
 
                 try:
-                    # Login
+                    # Login con tiempos mejorados
                     update_task_status(self.redis_client, task_id, 'processing', 'Iniciando sesión', 20)
                     await self.login_banco_estado(page, {'rut': rut, 'password': password})
+                    await page.wait_for_timeout(random.randint(400, 1200))  # Espera adicional después del login
 
                     # Obtener saldos
                     update_task_status(self.redis_client, task_id, 'processing', 'Obteniendo saldos', 40)
                     cuentas = await self.extract_cuentas(page)
+                    await page.wait_for_timeout(random.randint(400, 1200))
 
                     # Obtener movimientos generales
                     update_task_status(self.redis_client, task_id, 'processing', 'Obteniendo movimientos generales', 60)
                     movimientos_generales = await self.extract_ultimos_movimientos(page)
+                    await page.wait_for_timeout(random.randint(400, 1200))
 
                     # Obtener movimientos por cuenta y actualizar las cuentas
                     update_task_status(self.redis_client, task_id, 'processing', 'Obteniendo movimientos por cuenta', 70)
@@ -263,6 +263,7 @@ class BancoEstadoScraper:
                             **cuenta,
                             'movimientos': movs_cuenta
                         }
+                        await page.wait_for_timeout(random.randint(400, 1200))
 
                     # Procesar resultados
                     update_task_status(self.redis_client, task_id, 'processing', 'Procesando resultados', 80)
@@ -272,8 +273,8 @@ class BancoEstadoScraper:
                         'success': True,
                         'fecha_extraccion': datetime.now().isoformat(),
                         'message': 'Scraping completado exitosamente',
-                        'cuentas': cuentas,  # Cada cuenta tiene sus propios movimientos
-                        'ultimos_movimientos': movimientos_generales,  # Agregamos los últimos movimientos generales
+                        'cuentas': cuentas,
+                        'ultimos_movimientos': movimientos_generales,
                         'metadata': {
                             'banco': 'banco_estado',
                             'tipo_consulta': 'movimientos_recientes'
@@ -291,11 +292,8 @@ class BancoEstadoScraper:
                     update_task_status(self.redis_client, task_id, 'failed', str(e))
                     raise
 
-                finally:
-                    await context.close()
-
         except Exception as e:
-            print(f"❌ Error general: {str(e)}")
+            print(f"❌ Error durante el scraping: {str(e)}")
             update_task_status(self.redis_client, task_id, 'failed', str(e))
             return None
 
@@ -304,35 +302,33 @@ class BancoEstadoScraper:
         self._running = False
 
     async def espera_aleatoria(self, page):
-        # Reducir tiempo base de 100-200ms a 50-100ms
-        base_time = random.randint(50, 100)
-        jitter = random.randint(-10, 10)  # Reducir jitter de ±25ms a ±10ms
+        """Espera aleatoria más realista"""
+        base_time = random.randint(200, 600)  # Más lento para ser más realista
+        jitter = random.randint(-50, 50)
         await page.wait_for_timeout(base_time + jitter)
 
     async def cerrar_modal_infobar(self, page):
+        """Cierra modales de infobar"""
         try:
-            # Primero intentar cerrar usando JavaScript
             await page.evaluate("""
                 const closeButtons = Array.from(document.querySelectorAll('button[aria-label*="Close"]'));
                 for (const button of closeButtons) {
-                    if (button.offsetParent !== null) {  // Verificar si es visible
+                    if (button.offsetParent !== null) {
                         button.click();
                     }
                 }
             """)
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(600)  # Aumentado de 300ms a 600ms
             
-            # Si aún existe el botón, intentar el método tradicional
             modal_btn = page.locator("button.evg-btn-dismissal[aria-label*='Close']")
             if await modal_btn.count() > 0:
                 try:
-                    # Intentar hacer scroll al botón
                     await modal_btn.scroll_into_view_if_needed()
-                    await page.wait_for_timeout(500)
+                    await page.wait_for_timeout(600)  # Aumentado de 300ms a 600ms
                     await modal_btn.click(timeout=5000)
                     print("🔕 Modal de infobar cerrado")
                 except Exception:
-                    print("⚠️ No se pudo cerrar el modal de infobar usando click")
+                    print("⚠️ No se pudo cerrar el modal de infobar")
             else:
                 print("✅ No apareció el modal de infobar")
         except Exception as e:
@@ -392,85 +388,73 @@ class BancoEstadoScraper:
             return False
 
     async def type_like_human(self, page, selector, text, delay=None):
-        """Simula escritura humana con variaciones realistas en el tiempo entre pulsaciones"""
+        """Simula escritura humana más realista"""
         try:
-            # Asegurarse de que el elemento está visible y listo
             element = await page.wait_for_selector(selector, state="visible")
             await element.click()
+            await page.wait_for_timeout(random.randint(300, 700))  # Aumentado de 100-200ms a 300-700ms
             
-            # Limpiar el campo primero
             await element.fill("")
-            await page.wait_for_timeout(random.randint(50, 100))
+            await page.wait_for_timeout(random.randint(350, 400))  # Aumentado de 150-300ms a 350-400ms
             
-            # Configurar delays base según el tipo de campo
             if delay is None:
                 if "pass" in selector.lower():
-                    base_delay = random.randint(100, 150)  # Más lento para contraseñas
+                    base_delay = random.randint(200, 550)  # Aumentado para contraseñas
                 else:
-                    base_delay = random.randint(70, 120)   # Más rápido para otros campos
+                    base_delay = random.randint(250, 550)  # Aumentado para otros campos
             else:
                 base_delay = delay
             
-            # Simular escritura humana con variaciones realistas
             for i, char in enumerate(text):
-                # Calcular delay para este carácter
                 char_delay = base_delay
                 
-                # Simular pausas más largas en ciertos casos
                 if i > 0:
                     prev_char = text[i-1]
-                    # Pausa más larga después de puntos o espacios
                     if prev_char in ['.', ' ', '-']:
                         char_delay *= 1.5
-                    # Pausa más larga al cambiar entre números y letras
                     elif prev_char.isdigit() != char.isdigit():
                         char_delay *= 1.3
-                    # Pausa más corta para caracteres repetidos
                     elif char == prev_char:
                         char_delay *= 0.8
                 
-                # Agregar variación aleatoria (±20%)
-                char_delay *= random.uniform(0.8, 1.2)
+                char_delay *= random.uniform(0.8, 1.3)
                 
-                # Simular error de escritura ocasional (0.5% de probabilidad)
+                # Simular error de escritura ocasional
                 if random.random() < 0.005:
-                    # Escribir un carácter incorrecto
                     wrong_char = random.choice('qwertyuiopasdfghjklzxcvbnm')
                     await element.type(wrong_char, delay=char_delay)
-                    await page.wait_for_timeout(random.randint(200, 400))
-                    # Borrar el carácter incorrecto
+                    await page.wait_for_timeout(random.randint(400, 800))
                     await page.keyboard.press('Backspace')
-                    await page.wait_for_timeout(random.randint(100, 200))
+                    await page.wait_for_timeout(random.randint(200, 400))
                 
-                # Escribir el carácter correcto
                 await element.type(char, delay=char_delay)
                 
-                # Ocasionalmente hacer una pausa más larga (1% de probabilidad)
-                if random.random() < 0.01:
-                    await page.wait_for_timeout(random.randint(200, 500))
+                if random.random() < 0.015:
+                    await page.wait_for_timeout(random.randint(300, 800))
             
-            # Pausa final después de completar la escritura
-            await page.wait_for_timeout(random.randint(100, 200))
+            await page.wait_for_timeout(random.randint(400, 1200))  # Aumentado de 200-400ms a 400-1200ms
             
         except Exception as e:
             print(f"❌ Error en type_like_human: {e}")
-            # Intentar un enfoque más simple si falla el método avanzado
             await page.fill(selector, text)
 
     async def simular_comportamiento_humano(self, page):
-        # Reducir el número de movimientos y los tiempos de espera
-        for _ in range(1):
-            x = random.randint(100, 800)
-            y = random.randint(100, 600)
-            await page.mouse.move(x, y, steps=2)  # Reducir steps de 3-5 a 2
-            await page.wait_for_timeout(random.randint(25, 50))  # Reducir de 50-120 a 25-50
+        """Simula comportamiento humano más realista"""
+        # Movimientos de mouse más naturales
+        for _ in range(random.randint(2, 4)):
+            x = random.randint(100, 1200)
+            y = random.randint(100, 800)
+            await page.mouse.move(x, y, steps=random.randint(3, 6))
+            await page.wait_for_timeout(random.randint(100, 300))
+        
+        # Scroll aleatorio
         await page.evaluate("""
             window.scrollTo({
-                top: Math.random() * document.body.scrollHeight,
+                top: Math.random() * document.body.scrollHeight * 0.3,
                 behavior: 'smooth'
             });
         """)
-        await page.wait_for_timeout(random.randint(150, 300))  # Reducir de 300-700 a 150-300
+        await page.wait_for_timeout(random.randint(400, 1200))  # Aumentado de 300-700ms a 400-1200ms
 
     async def mostrar_saldos(self, page):
         try:

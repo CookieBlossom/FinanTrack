@@ -36,7 +36,7 @@
 }
 
 .form-profile-header h3 {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
     color: var(--color-primary);
     margin: 0;
     text-align: center;
@@ -282,15 +282,15 @@
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 20px;
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .plan-price {
-    color: var(--color-text-secondary);
-    font-size: 0.85rem;
+    color: var(--color-text-inverse);
+    font-size: var(--font-size-sm);
     font-weight: 500;
 }
 
@@ -316,7 +316,7 @@
 .stat-text {
     font-size: var(--font-size-md);
     font-weight: 500;
-    color: var(--color-text);
+    color: var(--color-text-inverse);
 }
 
 /* Media queries */
@@ -444,9 +444,9 @@
 }
 
 .section-title {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     font-weight: 600;
-    color: var(--color-highlight);
+    color: var(--color-text-inverse);
     margin: 0px;
     text-align: center;
 }
@@ -466,7 +466,7 @@
     border-radius: 8px;
     background: #fff;
     color: #333;
-    font-size: 0.9rem;
+    font-size: var(--font-size-md);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -486,7 +486,7 @@
 }
 
 .action-icon {
-    font-size: 1.1rem;
+    font-size: var(--font-size-md);
     width: 20px;
     text-align: center;
 }

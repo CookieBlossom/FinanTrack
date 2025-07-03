@@ -34,43 +34,47 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   ]
 })
 export class UploadStatementComponent {
-  form: FormGroup;
   selectedFile: File | null = null;
   uploadError: string | null = null;
   isUploading = false;
 
   constructor(
-    private fb: FormBuilder,
     private dialogRef: MatDialogRef<UploadStatementComponent>,
     private movementService: MovementService
-  ) {
-    this.form = this.fb.group({
-      bank: ['', Validators.required]
-    });
-  }
+  ) {}
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
+      
+      // Validar tipo de archivo
       if (file.type !== 'application/pdf') {
         this.uploadError = 'Solo se permiten archivos PDF';
         this.selectedFile = null;
         return;
       }
+
+      // Validar tamaño (máximo 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+      if (file.size > maxSize) {
+        this.uploadError = 'El archivo no puede ser mayor a 10MB';
+        this.selectedFile = null;
+        return;
+      }
+
       this.selectedFile = file;
       this.uploadError = null;
     }
   }
 
   upload(): void {
-    if (this.form.invalid || !this.selectedFile) {
-      this.uploadError = !this.selectedFile ? 'Debes seleccionar una cartola en PDF' : null;
+    if (!this.selectedFile) {
+      this.uploadError = 'Debes seleccionar una cartola en PDF';
       return;
     }
 
     const formData = new FormData();
-    formData.append('bank', this.form.value.bank);
     formData.append('cartola', this.selectedFile);
 
     this.isUploading = true;
@@ -79,7 +83,19 @@ export class UploadStatementComponent {
         this.dialogRef.close(true);
       },
       error: (err) => {
-        this.uploadError = err.error?.message || 'Error al cargar cartola';
+        let errorMessage = 'Error al cargar cartola';
+        
+        if (err.error?.message) {
+          errorMessage = err.error.message;
+        } else if (err.status === 413) {
+          errorMessage = 'El archivo es demasiado grande';
+        } else if (err.status === 415) {
+          errorMessage = 'Formato de archivo no válido';
+        } else if (err.status === 400) {
+          errorMessage = 'La cartola no tiene el formato esperado de BancoEstado';
+        }
+        
+        this.uploadError = errorMessage;
         this.isUploading = false;
       }
     });

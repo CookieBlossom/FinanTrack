@@ -1,0 +1,123 @@
+<div class="dialog-container">
+  <div class="form-header">
+    <h2>
+      <span *ngIf="!isCashMovement">Editar Movimiento</span>
+      <span *ngIf="isCashMovement">Editar Movimiento en Efectivo</span>
+    </h2>
+  </div>
+  
+  <div class="form-body">
+    <div class="dialog-content">
+      <form [formGroup]="editForm" (ngSubmit)="onSubmit()" class="edit-form">
+        <!-- Descripción para movimientos normales -->
+        <mat-form-field appearance="outline" class="full-width" *ngIf="!isCashMovement">
+          <mat-label>Descripción</mat-label>
+          <input matInput formControlName="description" placeholder="Ingresa la descripción del movimiento">
+          <mat-error *ngIf="editForm.get('description')?.hasError('required')">
+            La descripción es requerida
+          </mat-error>
+          <mat-error *ngIf="editForm.get('description')?.hasError('maxlength')">
+            La descripción no puede exceder 255 caracteres
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Método de pago para movimientos en efectivo -->
+        <mat-form-field appearance="outline" class="full-width" *ngIf="isCashMovement">
+          <mat-label>Método de Pago</mat-label>
+          <mat-select formControlName="paymentMethod">
+            <mat-option *ngFor="let method of methodOptions" [value]="method">
+              {{ method }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="editForm.get('paymentMethod')?.hasError('required')">
+            El método de pago es requerido
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Descripción para movimientos en efectivo -->
+        <mat-form-field appearance="outline" class="full-width" *ngIf="isCashMovement">
+          <mat-label>Descripción</mat-label>
+          <input matInput formControlName="description" placeholder="Ej: Almuerzo en restaurante, Compra supermercado, etc.">
+          <mat-error *ngIf="editForm.get('description')?.hasError('required')">
+            La descripción es requerida
+          </mat-error>
+          <mat-error *ngIf="editForm.get('description')?.hasError('maxlength')">
+            La descripción no puede exceder 255 caracteres
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Monto -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Monto</mat-label>
+          <input matInput type="text" formControlName="amount" placeholder="0" pattern="[0-9]*">
+          <span matPrefix>$&nbsp;</span>
+          <mat-error *ngIf="editForm.get('amount')?.hasError('required')">
+            El monto es requerido
+          </mat-error>
+          <mat-error *ngIf="editForm.get('amount')?.hasError('pattern')">
+            El monto debe ser un número entero mayor a 0
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Tipo de movimiento -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Tipo de Movimiento</mat-label>
+          <mat-select formControlName="movementType">
+            <mat-option value="income">Ingreso</mat-option>
+            <mat-option value="expense">Gasto</mat-option>
+          </mat-select>
+          <mat-error *ngIf="editForm.get('movementType')?.hasError('required')">
+            El tipo de movimiento es requerido
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Categoría -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Categoría</mat-label>
+          <mat-select formControlName="categoryId">
+            <mat-option [value]="null">Sin categoría</mat-option>
+            <mat-option *ngFor="let category of categories$ | async" [value]="category.id">
+              {{ category.name_category }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Tarjeta -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Tarjeta</mat-label>
+          <mat-select formControlName="cardId">
+            <mat-option *ngFor="let card of cards$ | async" [value]="card.id">
+              {{ card.nameAccount }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="editForm.get('cardId')?.hasError('required')">
+            La tarjeta es requerida
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Fecha de transacción -->
+        <mat-form-field appearance="outline" class="full-width date-field">
+          <mat-label>Fecha</mat-label>
+          <input matInput 
+                 type="date" 
+                 formControlName="transactionDate" 
+                 class="edit-date-input" />
+          <mat-icon matSuffix class="date-icon primary-darkest-icon" (click)="openDatePicker()">calendar_today</mat-icon>
+          <mat-error *ngIf="editForm.get('transactionDate')?.hasError('required')">
+            La fecha es requerida
+          </mat-error>
+        </mat-form-field>
+      </form>
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <button mat-button type="button" (click)="onCancel()" [disabled]="isLoading">
+      Cancelar
+    </button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="editForm.invalid || isLoading">
+      <span *ngIf="isLoading">Guardando...</span>
+      <span *ngIf="!isLoading">Guardar</span>
+    </button>
+  </div>
+</div> 

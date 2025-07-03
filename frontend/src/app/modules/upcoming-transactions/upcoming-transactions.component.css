@@ -11,7 +11,6 @@
 .container-transactions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   padding: 0.5rem;
   height: 100%;
   width: 100%;
@@ -63,14 +62,12 @@
 }
 
 .stat-icon {
-  font-size: 1rem;
-  width: 30px;
-  height: 30px;
+  font-size: var(--font-size-sm);
+  width: var(--font-size-sm);
+  height: var(--font-size-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--color-primary-darkest);
   color: var(--color-text-inverse);
 }
 
@@ -79,14 +76,15 @@
 }
 
 .stat-value {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-bold);
   font-weight: 700;
   color: var(--color-text);
   line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin: 0;
 }
@@ -122,14 +120,15 @@
 }
 
 .table-title h3 {
-  font-size: 1.3rem;
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-bold);
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
 }
 
 .subtitle {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin: 0;
 }
@@ -142,7 +141,7 @@
   border: none;
   border-radius: 6px;
   padding: 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -180,7 +179,8 @@
 }
 
 .info-card h4 {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-bold);
   font-weight: 600;
   color: var(--color-text);
   margin: 0px;
@@ -198,7 +198,8 @@
 .info-card li {
   padding: 0px;
   border-bottom: 1px solid var(--color-border-light);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-normal);
   color: var(--color-text);
 }
 
@@ -214,7 +215,8 @@
 .status-badge {
   padding: 0px;
   border-radius: 10px;
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-normal);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -243,7 +245,8 @@
   padding: 0px;
   border: none;
   border-radius: 5px;
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-normal);
   font-weight: 500;
   cursor: pointer;
   margin: 0px;
@@ -318,14 +321,16 @@
 }
 
 .empty-title {
-  font-size: 1.3rem;
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-bold);
   font-weight: 600;
   color: var(--color-text);
   margin: 0px;
 }
 
 .empty-description {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-normal);
   color: var(--color-text-secondary);
   margin: 0px;
   max-width: 350px;
@@ -338,7 +343,8 @@
   border: none;
   border-radius: 6px;
   padding: 0.5rem;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-normal);
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -818,7 +824,8 @@
   }
   
   .title-section {
-    font-size: 1.3rem;
+    font-size: var(--font-size-md);
+    font-family: var(--font-family-bold);
     margin: 0;
   }
   
@@ -833,17 +840,19 @@
   }
   
   .stat-icon {
-    font-size: 1.1rem;
-    width: 30px;
-    height: 30px;
+    font-size: var(--font-size-xs);
+    width: var(--font-size-xs);
+    height: var(--font-size-xs);
   }
   
   .stat-value {
-    font-size: 1.2rem;
+    font-size: var(--font-size-xs);
+    font-family: var(--font-family-bold);
   }
   
   .stat-label {
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-normal);
   }
   
   .table-transactions {
@@ -852,16 +861,19 @@
   }
   
   .table-title h3 {
-    font-size: 1.1rem;
+    font-size: var(--font-size-md);
+    font-family: var(--font-family-bold);
   }
   
   .subtitle {
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-normal);
   }
   
   .btn-add {
     padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-normal);
   }
   
   .btn-add mat-icon {
@@ -875,12 +887,14 @@
   }
   
   .info-card h4 {
-    font-size: 0.9rem;
+    font-size: var(--font-size-md);
+    font-family: var(--font-family-bold);
     margin: 0 0 0.25rem 0;
   }
   
   .info-card li {
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-normal);
     padding: 0.125rem 0;
   }
   
@@ -895,18 +909,21 @@
   }
   
   .empty-title {
-    font-size: 1rem;
+    font-size: var(--font-size-md);
+    font-family: var(--font-family-bold);
     margin: 0 0 0.25rem 0;
   }
   
   .empty-description {
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-normal);
     margin: 0 0 0.5rem 0;
   }
   
   .btn-add-empty {
     padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-normal);
   }
   
   .btn-add-empty mat-icon {

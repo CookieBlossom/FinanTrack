@@ -73,7 +73,7 @@ export class AnalyticsService {
 
     private async getUserPlan(userId: number): Promise<{ planId: number } | null> {
         try {
-            const query = 'SELECT plan_id FROM users WHERE id = $1';
+            const query = 'SELECT plan_id FROM user WHERE id = $1';
             const result = await this.pool.query(query, [userId]);
             return result.rows[0] || null;
         } catch (error) {
@@ -129,36 +129,112 @@ export class AnalyticsService {
             const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
             const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-            // Obtener el mayor gasto por categoría
-            const highestExpenseByCategoryQuery = `
-                SELECT 
-                    cat.name_category as name,
-                    SUM(mov.amount) as amount,
-                    0 as percentage
+            // Obtener el total de gastos del mes para calcular porcentajes
+            const totalExpensesQuery = `
+                SELECT COALESCE(SUM(ABS(amount)), 0) as total
                 FROM movements mov
                 JOIN cards card ON mov.card_id = card.id
-                JOIN categories cat ON mov.category_id = cat.id
+                WHERE card.user_id = $1
+                AND mov.movement_type = 'expense'
+                AND mov.transaction_date BETWEEN $2 AND $3
+            `;
+            const totalResult = await this.pool.query(totalExpensesQuery, [userId, startOfMonth, endOfMonth]);
+            const totalExpenses = parseFloat(totalResult.rows[0].total) || 0;
+
+            // Obtener gastos por categoría
+            const expensesByCategoryQuery = `
+                SELECT 
+                    cat.name_category as name,
+                    SUM(ABS(mov.amount)) as amount
+                FROM movements mov
+                JOIN cards card ON mov.card_id = card.id
+                LEFT JOIN categories cat ON mov.category_id = cat.id
                 WHERE card.user_id = $1
                 AND mov.movement_type = 'expense'
                 AND mov.transaction_date BETWEEN $2 AND $3
                 GROUP BY cat.name_category
                 ORDER BY amount DESC
-                LIMIT 1
             `;
 
-            const result = await this.pool.query(highestExpenseByCategoryQuery, [userId, startOfMonth, endOfMonth]);
-            const highestCategory = result.rows[0] || { name: 'No hay datos', amount: 0, percentage: 0 };
+            const categoryResult = await this.pool.query(expensesByCategoryQuery, [userId, startOfMonth, endOfMonth]);
+            const highestCategory = categoryResult.rows[0] || { name: 'No hay datos', amount: 0 };
+            const lowestCategory = categoryResult.rows[categoryResult.rows.length - 1] || { name: 'No hay datos', amount: 0 };
+
+            // Obtener gastos por método de pago (tarjeta)
+            const expensesByPaymentMethodQuery = `
+                SELECT 
+                    COALESCE(card.name_account, 'Sin tarjeta') as name,
+                    SUM(ABS(mov.amount)) as amount
+                FROM movements mov
+                JOIN cards card ON mov.card_id = card.id
+                WHERE card.user_id = $1
+                AND mov.movement_type = 'expense'
+                AND mov.transaction_date BETWEEN $2 AND $3
+                GROUP BY card.name_account
+                ORDER BY amount DESC
+            `;
+
+            const paymentMethodResult = await this.pool.query(expensesByPaymentMethodQuery, [userId, startOfMonth, endOfMonth]);
+            const highestPaymentMethod = paymentMethodResult.rows[0] || { name: 'No hay datos', amount: 0 };
+            const lowestPaymentMethod = paymentMethodResult.rows[paymentMethodResult.rows.length - 1] || { name: 'No hay datos', amount: 0 };
+
+            // Obtener gastos por fecha
+            const expensesByDateQuery = `
+                SELECT 
+                    transaction_date as date,
+                    SUM(ABS(amount)) as amount
+                FROM movements mov
+                JOIN cards card ON mov.card_id = card.id
+                WHERE card.user_id = $1
+                AND mov.movement_type = 'expense'
+                AND mov.transaction_date BETWEEN $2 AND $3
+                GROUP BY transaction_date
+                ORDER BY amount DESC
+            `;
+
+            const dateResult = await this.pool.query(expensesByDateQuery, [userId, startOfMonth, endOfMonth]);
+            const highestDate = dateResult.rows[0] || { date: null, amount: 0 };
+            const lowestDate = dateResult.rows[dateResult.rows.length - 1] || { date: null, amount: 0 };
+
+            // Calcular porcentajes
+            const calculatePercentage = (amount: number) => {
+                return totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
+            };
 
             return {
                 highestExpense: {
-                    category: highestCategory,
-                    paymentMethod: { name: 'No hay datos', amount: 0, percentage: 0 },
-                    date: { date: null, amount: 0, percentage: 0 }
+                    category: {
+                        name: highestCategory.name,
+                        amount: parseFloat(highestCategory.amount) || 0,
+                        percentage: calculatePercentage(parseFloat(highestCategory.amount) || 0)
+                    },
+                    paymentMethod: {
+                        name: highestPaymentMethod.name,
+                        amount: parseFloat(highestPaymentMethod.amount) || 0,
+                        percentage: calculatePercentage(parseFloat(highestPaymentMethod.amount) || 0)
+                    },
+                    date: {
+                        date: highestDate.date,
+                        amount: parseFloat(highestDate.amount) || 0,
+                        percentage: calculatePercentage(parseFloat(highestDate.amount) || 0)
+                    }
                 },
                 lowestExpense: {
-                    category: { name: 'No hay datos', amount: 0, percentage: 0 },
-                    paymentMethod: { name: 'No hay datos', amount: 0, percentage: 0 },
-                    date: { date: null, amount: 0, percentage: 0 }
+                    category: {
+                        name: lowestCategory.name,
+                        amount: parseFloat(lowestCategory.amount) || 0,
+                        percentage: calculatePercentage(parseFloat(lowestCategory.amount) || 0)
+                    },
+                    paymentMethod: {
+                        name: lowestPaymentMethod.name,
+                        amount: parseFloat(lowestPaymentMethod.amount) || 0,
+                        percentage: calculatePercentage(parseFloat(lowestPaymentMethod.amount) || 0)
+                    },
+                    date: {
+                        date: lowestDate.date,
+                        amount: parseFloat(lowestDate.amount) || 0,
+                        percentage: calculatePercentage(parseFloat(lowestDate.amount) || 0)
+                    }
                 }
             };
         } catch (error) {

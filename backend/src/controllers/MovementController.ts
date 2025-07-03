@@ -142,10 +142,16 @@ export class MovementController {
                 return;
             }
 
+            console.log(`[MovementController] Datos recibidos del frontend:`, req.body);
+            console.log(`[MovementController] Monto recibido: ${req.body.amount} (tipo: ${typeof req.body.amount})`);
+
             const movementData: IMovementCreate = {
                 ...req.body,
+                amount: Number(req.body.amount), // Asegurar que sea número
                 transactionDate: new Date(req.body.transactionDate)
             };
+            
+            console.log(`[MovementController] Monto después de conversión: ${movementData.amount} (tipo: ${typeof movementData.amount})`);
             // Si es un movimiento de efectivo (useCashCard = true), asignar automáticamente la tarjeta de efectivo
             if (req.body.useCashCard) {
                 try {

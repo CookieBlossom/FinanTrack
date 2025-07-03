@@ -1,0 +1,117 @@
+[
+    {
+        "normalizedName": "Uber Eats",
+        "keywords": ["UBEREATS"],
+        "category": "Alimentacion"
+    },
+    {
+        "normalizedName": "Pedidos Ya",
+        "keywords": ["PEDIDOSYA", "PEDIDOS YA", "PEDIDOSYA CL", "COMPRA WEB PEDIDOSYA"],
+        "category": "Alimentacion"
+    },
+    {
+        "normalizedName": "McDonald's",
+        "keywords": ["MCDONALDS", "ARCOS DORADOS", "MCD"],
+        "category": "Alimentacion"
+    },    
+    {
+        "normalizedName": "KFC",
+        "keywords": ["KFC"],
+        "category": "Alimentacion"
+    },
+    {
+        "normalizedName": "Oxxo",
+        "keywords": ["OXXO"],
+        "category": "Alimentacion"
+    },
+    {
+        "normalizedName": "Subway",
+        "keywords": ["SUBWAY", "SUBWAI"],
+        "category": "Alimentacion"
+    },
+    {
+        "normalizedName": "Paradiso Cafe",
+        "keywords": ["PARADISOCAFE", "PARADISO CAFE"],
+        "category": "Alimentacion"
+    },
+    {
+        "normalizedName": "Crunchyroll",
+        "keywords": ["CRUNCHYROLL"],
+        "category": "Entretenimiento"
+    },
+    {
+        "normalizedName": "Youtube",
+        "keywords": ["YOUTUBE"],
+        "category": "Entretenimiento"
+    },
+    {
+        "normalizedName": "Twitch",
+        "keywords": ["TWITCH"],
+        "category": "Entretenimiento"
+    },
+    {
+        "normalizedName": "Spotify",
+        "keywords": ["SPOTIFY"],
+        "category": "Entretenimiento"
+    },
+    {
+        "normalizedName": "Riot Games",
+        "keywords": ["RIOTGAMES", "RIOT GAMES"],
+        "category": "Entretenimiento"
+    },
+    {
+        "normalizedName": "Steam",
+        "keywords": ["STEAM", "STEAMGAMES", "STEAM GAMES"],
+        "category": "Entretenimiento"
+    },
+    {
+        "normalizedName": "Uber",
+        "keywords": ["UBERTRIP", "UBER TRIP"],
+        "category": "Transporte"
+    },
+    {
+        "normalizedName": "Falabella",
+        "keywords": ["FALABELLA"],
+        "category": "Compras"
+    },    
+    {
+        "normalizedName": "Aliexpress",
+        "keywords": ["ALIPAYSINGAPOREE", "ALIEXPRESS"],
+        "category": "Compras"
+    },
+    {
+        "normalizedName": "Amazon",
+        "keywords": ["AMAZON", "AMAZON.COM"],
+        "category": "Compras"
+    },
+    {
+        "normalizedName": "PC Factory",
+        "keywords": ["PC FACTORY", "PCFACTORY"],
+        "category": "Compras"
+    },
+    {
+        "normalizedName": "MyShop",
+        "keywords": ["MYSHOP"],
+        "category": "Compras"
+    },
+    {
+        "normalizedName": "Temu",
+        "keywords": ["TEMU"],
+        "category": "Compras"
+    },
+    {
+        "normalizedName": "Santa Isabel",
+        "keywords": ["STA ISABEL", "SANTA ISABEL"],
+        "category": "Compras"
+    },
+    {
+        "normalizedName": "Farmacia Belen",
+        "keywords": ["FARM BELEN", "FARMACIA BELEN", "FARMBELEN"],
+        "category": "Salud"
+    },
+    {
+        "normalizedName": "Farmacia Ahumada",
+        "keywords": ["FARM AHUM", "FARMACIA AHUMADA", "AHUM", "AHUMADA"],
+        "category": "Salud"
+    }
+] 

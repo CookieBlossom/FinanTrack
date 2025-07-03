@@ -58,34 +58,43 @@ export class CartolaService {
 
   async procesarCartolaPDF(buffer: Buffer): Promise<ICartola> {
     try {
+      console.log("🔍 Iniciando procesamiento de PDF...");
       const data = await pdfParse(buffer);
+      console.log("📄 Texto extraído del PDF:", data.text.substring(0, 500) + "...");
       return this.extraerDatosCartola(data.text);
     } catch (error) {
-      console.error('Error al procesar PDF:', error);
+      console.error('❌ Error al procesar PDF:', error);
       throw new Error('Error al procesar el archivo PDF de la cartola');
     }
   }
   private async extraerDatosCartola(texto: string): Promise<ICartola> {
+    console.log("🔍 Iniciando extracción de datos de la cartola...");
     await this.loadCardTypes();
 
     const tituloCartola = this.extraerTituloCartola(texto);
+    console.log("📌 Título de cartola encontrado:", tituloCartola);
     if (!tituloCartola) throw new Error('No se pudo extraer el título de la cartola');
 
     const tipoCuenta = this.detectCardTypeFromTitle(tituloCartola);
+    console.log("💳 Tipo de cuenta detectado:", tipoCuenta);
     if (!tipoCuenta) throw new Error('No se pudo determinar el tipo de cuenta');
 
     const clienteInfo = this.extraerInfoCliente(texto);
+    console.log("👤 Información del cliente:", clienteInfo);
     if (!clienteInfo.clienteNombre || !clienteInfo.clienteRut || !clienteInfo.fechaHoraConsulta) {
       throw new Error('Información del cliente incompleta');
     }
 
     const cartolaInfo = this.extraerInfoCartola(texto);
+    console.log("📊 Información de la cartola:", cartolaInfo);
     if (!cartolaInfo.numero || !cartolaInfo.fechaEmision || !cartolaInfo.fechaInicio || !cartolaInfo.fechaFinal) {
       throw new Error('Información de la cartola incompleta');
     }
-
-    const movimientos = this.extraerMovimientos(texto);
+    const añoCartola = cartolaInfo.fechaEmision.getFullYear();
+    const movimientos = this.extraerMovimientos(texto, añoCartola);
+    console.log(`📝 Movimientos extraídos: ${movimientos.length}`);
     if (movimientos.length === 0) {
+      console.log("❌ No se encontraron movimientos. Texto de la cartola:", texto);
       throw new Error('No se encontraron movimientos en la cartola');
     }
 
@@ -128,11 +137,30 @@ export class CartolaService {
     for (const patron of patrones) {
       const match = texto.match(patron);
       if (match) {
-        return match[0].trim();
+        // Extraer el tipo de cuenta del título
+        let tipoCuenta = '';
+        if (match[0].toUpperCase().includes('CUENTARUT')) {
+          tipoCuenta = 'CuentaRUT';
+        } else if (match[0].toUpperCase().includes('CUENTA VISTA')) {
+          tipoCuenta = 'Cuenta Vista';
+        } else if (match[0].toUpperCase().includes('CREDITO')) {
+          tipoCuenta = 'Crédito';
+        } else if (match[0].toUpperCase().includes('CUENTA AHORRO')) {
+          tipoCuenta = 'Cuenta Ahorro';
+        } else {
+          tipoCuenta = 'Cuenta';
+        }
+
+        // Extraer el número de cuenta si existe
+        const numeroMatch = match[0].match(/N°\s*(\d+)/i);
+        const numeroCuenta = numeroMatch ? numeroMatch[1] : '';
+
+        // Generar un nombre más amigable
+        return `${tipoCuenta}${numeroCuenta ? ` - ${numeroCuenta}` : ''}`;
       }
     }
 
-    return null;
+    return 'Cuenta Bancaria';
   }
   private extraerInfoCliente(texto: string): Partial<ICartola> {
     // Patrones específicos para el formato de la cartola
@@ -306,83 +334,54 @@ export class CartolaService {
       totalAbonos
     };
   }
-
-  /**
-   * Extrae los movimientos de la cartola
-   */
-  private extraerMovimientos(texto: string): IMovimiento[] {
+  private extraerMovimientos(texto: string, añoCartola: number): IMovimiento[] {
     const movimientos: IMovimiento[] = [];
-    
-    // Agregar logs para depuración
-    console.log('Texto completo:', texto);
-    
-    // Buscar la sección de movimientos
-    const posiblesInicios = [
-      'Detalle de movimientos:',
-      'Detalle de Movimientos',
-      'Movimientos',
-      'Fecha N°'
-    ];
-
-    let inicioMovimientos = -1;
-    let textoMovimientos = texto;
-
-    for (const inicio of posiblesInicios) {
-      inicioMovimientos = texto.indexOf(inicio);
-      if (inicioMovimientos !== -1) {
-        console.log('Sección de movimientos encontrada con:', inicio);
-        textoMovimientos = texto.substring(inicioMovimientos);
-        break;
-      }
-    }
-
-    if (inicioMovimientos === -1) {
-      console.log('No se encontró la sección de movimientos');
-      return movimientos;
-    }
-
-    // Normalizar el texto: reemplazar múltiples espacios y saltos de línea con un solo espacio
-    textoMovimientos = textoMovimientos
-      .replace(/\n+/g, ' ')  // Reemplazar saltos de línea con espacios
-      .replace(/\s+/g, ' ')  // Normalizar espacios múltiples
+  
+    // 1) Aísla el bloque de “Detalle de movimientos” hasta que aparezca “Subtotales” (si existe)
+    const inicio = texto.search(/Detalle de movimientos:/i);
+    const fin    = texto.search(/Subtotales/i);
+    if (inicio < 0) return movimientos;
+    const bloque = texto.substring(inicio, fin > 0 ? fin : undefined);
+  
+    // 2) Normaliza saltos de línea y espacios
+    const normalizado = bloque
+      .replace(/\r\n|\r/g, '\n')   // unifica saltos
+      .replace(/[ \t]+/g, ' ')     // tabs y múltiples espacios → 1 espacio
       .trim();
-
-    console.log('Texto de movimientos normalizado:', textoMovimientos);
-    
-    // Patrón actualizado para el formato específico
-    const regexMovimientos = /(\d{2}\/[A-Za-z]{3})\s*(\d+)\s*([^$]+?)(?:\$\s*([\d,.]+))?\s*(?:\$\s*([\d,.]+))?\s*\$\s*([\d,.]+)/g;
-    
+  
+    // 3) Patrón para cada entrada:
+    //    - (\d{2}\/[A-Za-z]{3}) fecha dd/MMM
+    //    - (\d+) número de operación
+    //    - ([\s\S]*?) descripción + montos hasta el primer “$”
+    const entryRE = /(\d{2}\/[A-Za-z]{3})\s+(\d+)\s+([\s\S]*?)(?=\$\s*\d)/g;
     let match;
-    while ((match = regexMovimientos.exec(textoMovimientos)) !== null) {
-      console.log('Match encontrado:', match);
-      
-      const descripcion = match[3].trim();
-      const abono = match[4] ? this.convertirMonto(match[4]) : null;
-      const cargo = match[5] ? this.convertirMonto(match[5]) : null;
-      
-      // Validar que la descripción no sea un encabezado
-      if (descripcion.toUpperCase().includes('DESCRIPCIÓN') || 
-          descripcion.toUpperCase().includes('OPERACIÓN') ||
-          descripcion.toUpperCase().includes('SUBTOTALES')) {
-        continue;
-      }
-      
-      const movimiento: IMovimiento = {
-        fecha: new Date(this.convertirFecha(match[1])),
-        numeroOperacion: match[2],
-        descripcion: descripcion,
+    while ((match = entryRE.exec(normalizado)) !== null) {
+      const [_, fechaStr, opStr, descYMontos] = match;
+  
+      // Dentro de descYMontos, busca abono, cargo y saldo: $x.xxx $y.yyy $z.zzz
+      const montosRE = /\$\s*([\d.]+)\s*\$\s*([\d.]+)\s*\$\s*([\d.]+)/;
+      const m = montosRE.exec(descYMontos);
+      if (!m) continue;
+      const [__, montoAbonoStr, montoCargoStr, saldoStr] = m;
+  
+      // La descripción es lo que viene antes del primer “$”
+      const descripcion = descYMontos.split(/\$/)[0].trim();
+  
+      const abono = parseFloat(montoAbonoStr.replace(/\./g, '')) || null;
+      const cargo = parseFloat(montoCargoStr.replace(/\./g, '')) || null;
+      const saldo = parseFloat(saldoStr.replace(/\./g, '')) || undefined;
+  
+      movimientos.push({
+        fecha: this.parseFechaContextual(fechaStr, añoCartola),
+        numeroOperacion: opStr,
+        descripcion,
         abonos: abono,
         cargos: cargo,
-        saldo: this.convertirMonto(match[6]),
-        tipo: this.determinarTipoMovimiento(descripcion),
-        categoria: this.determinarCategoria(descripcion)
-      };
-
-      console.log('Movimiento procesado:', movimiento);
-      movimientos.push(movimiento);
+        saldo,
+        tipo: this.determinarTipoMovimiento(descripcion)
+      });
     }
-
-    console.log('Total de movimientos encontrados:', movimientos.length);
+  
     return movimientos;
   }
 
@@ -413,6 +412,20 @@ export class CartolaService {
     }
     return fecha;
   }
+  private parseFechaContextual(fecha: string, añoCartola: number): Date {
+    const [dd, MMM] = fecha.split('/');
+    const mesesMap: Record<string, number> = {
+      Ene: 1, Feb: 2, Mar: 3, Abr: 4,
+      May: 5, Jun: 6, Jul: 7, Ago: 8,
+      Sep: 9, Oct: 10, Nov: 11, Dic: 12
+    };
+    const mes = mesesMap[MMM];
+    // Si el movimiento es en diciembre (mes 12) pero la cartola es de enero,
+    // debemos restar un año.
+    const año = (mes > 1) ? añoCartola - 1 : añoCartola;
+    return new Date(año, mes - 1, parseInt(dd, 10));
+  }
+
   private formatearFechaParaDB(fecha: Date): string {
     if (!(fecha instanceof Date) || isNaN(fecha.getTime())) {
       // Si la fecha no es válida, usar la fecha actual
@@ -469,9 +482,34 @@ export class CartolaService {
     try {
       await client.query('BEGIN');
       for (const movimiento of movimientos) {
+        // Solo procesar si hay un abono o un cargo
+        if (movimiento.abonos === null && movimiento.cargos === null) {
+          continue;
+        }
+
         const amount = movimiento.abonos || -movimiento.cargos!;
         const movementType = movimiento.abonos ? 'income' : 'expense';
         const fechaMovimiento = this.formatearFechaParaDB(movimiento.fecha);
+        // Limpiar la descripción de prefijos genéricos
+        const prefijosAIgnorar = [
+          'TEF',
+          'COMPRA WEB',
+          'COMPRA NACIONAL',
+          'TRANSFERENCIA',
+          'PAGO',
+          'FACTU CL',
+          'FACTURACION',
+          'CARGO',
+          'ABONO'
+        ];
+
+        let descripcion = movimiento.descripcion.toUpperCase().trim();
+        for (const prefijo of prefijosAIgnorar) {
+          if (descripcion.startsWith(prefijo)) {
+            descripcion = descripcion.substring(prefijo.length).trim();
+          }
+        }
+
         await client.query(
           `INSERT INTO movements (
             card_id,
@@ -479,23 +517,15 @@ export class CartolaService {
             description,
             movement_type,
             movement_source,
-            transaction_date,
-            category,
-            metadata
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            transaction_date
+          ) VALUES ($1, $2, $3, $4, $5, $6)`,
           [
             cardId,
             amount,
-            movimiento.descripcion,
+            descripcion,
             movementType,
             'cartola',
-            fechaMovimiento,
-            movimiento.categoria,
-            { 
-              numeroOperacion: movimiento.numeroOperacion,
-              saldo: movimiento.saldo,
-              tipo: movimiento.tipo
-            }
+            fechaMovimiento
           ]
         );
       }

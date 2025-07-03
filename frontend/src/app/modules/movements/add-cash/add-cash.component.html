@@ -46,29 +46,73 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Método de Pago</mat-label>
-      <mat-select formControlName="description" required>
+      <mat-select formControlName="paymentMethod" required>
         <mat-option *ngFor="let method of methodOptions" [value]="method">
           {{ method }}
         </mat-option>
       </mat-select>
-      <mat-error *ngIf="cashForm.get('description')?.hasError('required')">
+      <mat-error *ngIf="cashForm.get('paymentMethod')?.hasError('required')">
         El método de pago es requerido
       </mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Descripción</mat-label>
+      <input matInput 
+             formControlName="description" 
+             placeholder="Ej: Almuerzo en restaurante, Compra supermercado, etc."
+             required />
+      <mat-error *ngIf="cashForm.get('description')?.hasError('required')">
+        La descripción es requerida
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Sugerencia de categorización automática -->
+    <div class="categorization-suggestion" *ngIf="showCategorizationSuggestion && categorizationResult">
+      <div class="suggestion-card">
+        <div class="suggestion-header">
+          <mat-icon color="primary">auto_fix_high</mat-icon>
+          <span class="suggestion-title">Categoría sugerida</span>
+          <span class="confidence-badge">{{ getConfidencePercentage() }}% confianza</span>
+        </div>
+        
+        <div class="suggestion-content">
+          <div class="suggested-category">
+            <span class="category-name">{{ categorizationResult.category?.name_category }}</span>
+            <div class="category-color" [style.background-color]="categorizationResult.category?.color"></div>
+          </div>
+          
+          <div class="matched-keywords" *ngIf="categorizationResult.matchedKeywords.length > 0">
+            <small>Palabras clave encontradas: {{ getMatchedKeywordsText() }}</small>
+          </div>
+        </div>
+        
+        <div class="suggestion-actions">
+          <button mat-button color="primary" (click)="applySuggestedCategory()" type="button">
+            <mat-icon>check</mat-icon>
+            Aplicar
+          </button>
+          <button mat-button (click)="dismissSuggestion()" type="button">
+            <mat-icon>close</mat-icon>
+            Descartar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Monto</mat-label>
       <input matInput 
-             type="number" 
+             type="text" 
              placeholder="Ej: 25000" 
              formControlName="amount" 
-             min="1"
+             pattern="[0-9]*"
              required />
       <mat-error *ngIf="cashForm.get('amount')?.hasError('required')">
         El monto es requerido
       </mat-error>
-      <mat-error *ngIf="cashForm.get('amount')?.hasError('min')">
-        El monto debe ser mayor a 0
+      <mat-error *ngIf="cashForm.get('amount')?.hasError('pattern')">
+        El monto debe ser un número entero mayor a 0
       </mat-error>
     </mat-form-field>
 
@@ -77,15 +121,15 @@
       <input matInput 
              type="date" 
              formControlName="transactionDate" 
-             [min]="minDate"
+             min="2000-01-01"
              class="cash-date-input"
              required />
-      <mat-icon matSuffix class="date-icon" (click)="openDatePicker()">calendar_today</mat-icon>
+      <mat-icon matSuffix class="date-icon primary-darkest-icon" (click)="openDatePicker()">calendar_today</mat-icon>
       <mat-error *ngIf="cashForm.get('transactionDate')?.hasError('required')">
         La fecha es requerida
       </mat-error>
       <mat-error *ngIf="cashForm.get('transactionDate')?.hasError('minDate')">
-        La fecha no puede ser anterior a hoy
+        La fecha no puede ser anterior al año 2000
       </mat-error>
     </mat-form-field>
 

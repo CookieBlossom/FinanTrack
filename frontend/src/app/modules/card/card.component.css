@@ -198,6 +198,7 @@
 .empty-state {
   text-align: center;
   padding: 3rem 2rem;
+  margin: auto;
   background: var(--clr-surface-a0);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -223,7 +224,6 @@
 .empty-state p {
   font-size: var(--font-size-sm);
   color: var(--color-text);
-  margin: 0px;
   font-family: var(--font-family-normal);
 }
 

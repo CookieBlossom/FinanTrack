@@ -278,17 +278,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
         // Procesar ingresos vs costos - validar y limpiar datos
         this.ingresosVsCostos = this.validateAndCleanIncomeData(data.ingresos);
         console.log('Datos de ingresos vs costos procesados:', JSON.stringify(this.ingresosVsCostos, null, 2));
-        this.showIngresosVsCostos = this.ingresosVsCostos.length > 0;
+        // Verificar que hay datos válidos en las series
+        this.showIngresosVsCostos = this.ingresosVsCostos.length > 0 && 
+          this.ingresosVsCostos.some(item => item.series && item.series.length > 0 && 
+            item.series.some(seriesItem => seriesItem.value > 0));
         
         // Procesar gastos por categoría - validar y limpiar datos
         this.gastosPorCategoria = this.validateAndCleanCategoryData(data.categorias);
         console.log('Datos de categorías procesados:', this.gastosPorCategoria);
         console.log('Datos que van al gráfico de pastel:', JSON.stringify(this.gastosPorCategoria, null, 2));
-        this.showGastosPorCategoria = this.gastosPorCategoria.length > 0;
+        // Verificar que hay categorías con valores positivos
+        this.showGastosPorCategoria = this.gastosPorCategoria.length > 0 && 
+          this.gastosPorCategoria.some(item => item.value > 0);
         
         // Procesar movimientos proyectados
         this.rowData = data.movimientos.filter((movement: ProjectedMovement) => 
-          movement.status === 'pending'
+          movement.status === 'pending' && movement.amount > 0
         );
         this.showMovimientos = this.rowData.length > 0;
         

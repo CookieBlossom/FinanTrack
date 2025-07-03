@@ -69,6 +69,7 @@
 .chart-header {
   display: flex;
   justify-content: center;
+  background-color: var(--color-primary-darkest);
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid var(--color-border);
@@ -76,16 +77,20 @@
 
 .chart-header h2 {
   margin: 0;
-  color: var(--color-primary-darkest);
-  font-size: 1.2rem;
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-md);
+  text-transform: uppercase;
+  text-align: center;
+  font-family: var(--font-family-bold);
 }
 
 .chart-wrapper h2 {
   margin: 0;
   padding: 10px;
-  color: var(--color-primary-darkest);
+  color: var(--color-text-inverse);
   text-align: center;
-  font-size: 1.2rem;
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-bold);
 }
 
 .chart-container {
@@ -628,9 +633,15 @@
 }
 
 .sub-text {
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-normal);
+  margin-top: 0;
+}
+.sub-title {
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-bold);
 }
 
 .no-limits {

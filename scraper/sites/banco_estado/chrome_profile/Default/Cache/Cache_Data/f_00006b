@@ -1,0 +1,538 @@
+{
+    "holidays": [
+        {
+            "id": 20,
+            "tipo": "5",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "15-05-2025",
+                "fechafin": "31-12-2040"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<b>Porque tu opinión nos importa, la Web tiene un nuevo diseño para que todo te resulte más fácil</b>",
+            "texto": "<p style=\"text-align: center\">Transferencias fáciles y seguras.<br/>Todo lo que usas, ahora más ordenado.<br/>Y desde el móvil, se ve y funciona mucho mejor.</p><b>Todo pensado para hacer tu experiencia</b><br/><b>más cómoda cada día.</b>",
+            "header": {
+                "background": "",
+                "color": "#C5CBE9",
+                "img": "ic_news",
+                "colorClose": "#2C3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Descubre lo nuevo",
+                    "tipoboton": "TIP_LINK_FTU",
+                    "link": "FTU",
+                    "target": "_self",
+                    "class": "primary"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "tipo": "2",
+            "piloto": {
+                "activo": true,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "05-02-2024",
+                "fechafin": "29-02-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<h3>Haz tu aporte para ayudar a las personas afectadas por los incendios del país.</h3>",
+            "texto": "<p>Te invitamos a ser parte de esta causa.</p>",
+            "header": {
+                "background": "",
+                "color": "#D8DCF0",
+                "img": "ic_donating",
+                "colorClose": "#2c3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Haz tu aporte",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/campanas/aportes.html?src=holiday",
+                    "target": "_self",
+                    "class": "primary"
+                }
+            ]
+        },
+        {
+            "id": 9,
+            "tipo": "2",
+            "piloto": {
+                "activo": true,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "09-02-2024",
+                "fechafin": "16-02-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<h3>Haz ahora tu aporte a los afectados por los incendios en Chile.</h3>",
+            "texto": "",
+            "header": {
+                "background": "",
+                "color": "#D8DCF0",
+                "img": "/content/dam/bancoestado/ico-chile-un-solo-corazon.png",
+                "colorClose": "#2c3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Haz tu aporte",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/campanas/aportes.html?src=hrt",
+                    "target": "_self",
+                    "class": "primary"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "tipo": "2",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "01-05-2024",
+                "fechafin": "31-05-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "Realiza el seguimiento de tus reclamos en línea",
+            "texto": "<p style=\"text-align: left\">Ahora puedes consultar el estado de tus reclamos y respuestas en línea desde tu cuenta en el menú <b>Más Opciones</b>.</p>",
+            "header": {
+                "background": "",
+                "color": "#ECEEF8",
+                "img": "/content/dam/bancoestado/ic_idea_help_dialog.png",
+                "colorClose": "#2C3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Ingresa aquí",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/menu-lateral/mas-opciones/seguimiento-reclamos.html?src=holidays",
+                    "target": "_self",
+                    "class": "primary"
+                },
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "tipo": "2",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "14-06-2024",
+                "fechafin": "28-06-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<b>Haz tu aporte para ayudar a las personas afectadas del país.",
+            "texto": "<p style=\"text-align: center\">Te invitamos a ser parte de esta gran causa.</p>",
+            "header": {
+                "background": "",
+                "color": "#C5CBE9",
+                "img": "ic_donating",
+                "colorClose": "#2C3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+            {
+                "idboton": "idBotonIr",
+                "label": "Haz tu aporte",
+                "tipoboton": "TIP_LINK",
+                "link": "/content/bancoestado/cl/es/home/campanas/aportes.html?src=holidays",
+                "target": "_self",
+                "class": "primary"
+            },
+            {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+            }
+            ]
+        },
+        {
+            "id": 12,
+            "tipo": "2",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "19-06-2024",
+                "fechafin": "19-07-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<b>¿Dudas con tu crédito hipotecario?",
+            "texto": "<p style=\"text-align: center\">Te asesoramos en línea y resolvemos tus dudas.</p>",
+            "header": {
+                "background": "",
+                "color": "#C5CBE9",
+                "img": "ic_callcenter",
+                "colorClose": "#2C3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Hablemos ahora",
+                    "tipoboton": "TIP_FUNCTION",
+                    "link": "",
+                    "target": "_self",
+                    "class": "primary"
+                },
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "tipo": "4",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "14-10-2024",
+                "fechafin": "27-10-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "Transfiere a tu cuenta de ahorro y convierte tus sueños en realidad",
+            "texto": "<ul><li>Recuerda que ahorrando es más fácil conseguir tus objetivos.</li><li>Lo importante es ser constante.</li><li>y siempre es un buen momento para comenzar.</li></ul>",
+            "header": {
+                "background": "",
+                "color": "",
+                "img": "",
+                "colorClose": ""
+            },
+            "listaimagenes": [],
+            "listaanimaciones": [
+                {
+                    "descripcion": "ahorro",
+                    "url": "/content/dam/bancoestado/ahorrar-vale-la-pena/banner_ahorro_web.json"
+                }
+            ],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Quiero ahorrar",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/menu-lateral/transferir/entre-mis-cuentas.html?src=holidays",
+                    "target": "_self",
+                    "class": "primary"
+                },
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "tipo": "4",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "6-11-2024",
+                "fechafin": "10-11-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "¡Tu donación transforma vidas!",
+            "texto": "<p style=\"text-align: center\">Únete a esta cruzada solidaria y ayuda a niñas,<br/>niños y jovenes a recibir los tratamientos y <br/>cuidados que cambiarán su futuro.</p>",
+            "header": {
+                "background": "",
+                "color": "#F7D9D9",
+                "img": "/content/dam/bancoestado/ico-teleton.png",
+                "colorClose": "#2C3038"
+            },
+            "listaimagenes": [],
+            "listaanimaciones": [
+                {
+                    "descripcion": "teleton",
+                    "url": "/content/dam/bancoestado/animaciones/teleton_2024_web.json"
+                }
+            ],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Haz tu aporte",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/campanas/aportes.html?src=holidays",
+                    "target": "_self",
+                    "class": "primary"
+                },
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "tipo": "2",
+            "piloto": {
+                "activo": true,
+                "listaclientes": ["14122498-0","18932491-K","13931053-5","14158226-7","15603627-7","1593449-4","25898511-7","17858519-3","26912200-5","18168290-6","26055738-6","12446409-9","12635932-2","14149520-8","14191579-7"]
+            },
+            "vigencia": {
+                "fechainicio": "04-11-2024",
+                "fechafin": "31-12-2024"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<b>Recibe tu sueldo en BancoEstado y <br/>obtén grandes beneficios.</b>",
+            "texto": "<ul class=\"ulbullet\"><li>Bono de bienvenida de $25.000</li><li>Cuenta Corriente sin costo</li><li>Tasas preferentes en Créditos</li><li>Atención preferente de un ejecutivo</li><li align='left'>Tasas preferentes en Crédito Hipotecario</li></ul>",
+            "header": {
+                "background": "",
+                "color": "#C5CBE9",
+                "img": "ic_girl_hold_money_pato",
+                "colorClose": "#2C3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Solicitar",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/menu-lateral/mas-opciones/trae-tu-abono.html?src=holidays",
+                    "target": "_self",
+                    "class": "primary"
+                },
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 16,
+            "tipo": "2",
+            "piloto": {
+                "activo": true,
+                "listaclientes": ["10006620-3","17306232-K","12000000-4","10006620-3","17084669-9","14122498-0","13279536-3","13954373-4","13565180-k","15792969-0","15774538-7","13973333-9","13911635-6","14561826-6","13015141-8","20468781-1","14158226-7","10354910-8","16002241-8","13724977-4","15644025-6","14625767-4","16479164-5","17408658-3","16739406-K","20335464-9","17306232-K","13671432-5","13488040-6","9578905-6","19355012-6","17513595-2","14191579-7", "15370539-9"]
+            },
+            "vigencia": {
+                "fechainicio": "13-02-2025",
+                "fechafin": "28-02-2025"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+           "titulo": "<b>Antes de de continuar,<br/>actualiza tus datos personales para<br/>recibir nuevas y mejores ofertas.</b>",
+           "texto": "<p style=\"text-align: center\">Con esta información podremos conocerte mejor<br/>y ofrecerte productos que se ajusten mejor a tus<br/>necesidades.</p>",
+           "header": {
+                "background": "",
+                "color": "#C5CBE9",
+                "img": "sync",
+                "colorClose": "#2C3038"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Revisar ahora",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/mis-datos-personales.html?src=holidays",
+                    "target": "_self",
+                    "class": "primary"
+                },
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 17,
+            "tipo": "3",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "05-05-2025",
+                "fechafin": "11-05-2025"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<b>Tu apoyo es parte de nuestra historia</b>",
+            "texto": "Hoy seguimos contando contigo.",
+            "header": {
+                "background": "",
+                "color": "#FBECEC",
+                "img": "/content/dam/bancoestado/holiday-header-cruzroja.png",
+                "colorClose": "#D8DCF0"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonIr",
+                    "label": "Haz tu aporte",
+                    "tipoboton": "TIP_LINK",
+                    "link": "/content/bancoestado/cl/es/home/campanas/aportes.html?src=holidays",
+                    "target": "_self",
+                    "class": "primary"
+                },
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 18,
+            "tipo": "2",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "08-05-2025",
+                "fechafin": "14-05-2025"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "<b>${name}, pronto descubrirás lo <br/>nuevo de tu Banca en Línea</b>",
+            "texto": "Próximamente conocerás las mejoras que hemos diseñado para que realices tus transacciones y encuentres lo que buscas en tu Banca en Línea de forma rápida y simple.",
+            "header": {
+                "background": "",
+                "color": "#C5CBE9",
+                "img": "news",
+                "colorClose": "#D8DCF0"
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        },
+        {
+            "id": 19,
+            "tipo": "3",
+            "piloto": {
+                "activo": false,
+                "listaclientes": []
+            },
+            "vigencia": {
+                "fechainicio": "10-05-2025",
+                "fechafin": "11-05-2025"
+            },
+            "urlsalcance": [
+                {
+                    "url": "/content/bancoestado/cl/es/home.html"
+                }
+            ],
+            "titulo": "A todas las madres de Chile, gracias.",
+            "texto": "<p style=\"text-align: center\">Porque con su cariño, compromiso y esfuerzo diario, construyen el futuro de nuestro país.</p><p style=\"text-align: center\"><b>¡Feliz día de la Madre!</b></p>",
+            "header": {
+                "background": "",
+                "color": "",
+                "img": "/content/dam/bancoestado/dia-madre-2025.png",
+                "colorClose": ""
+            },
+            "listaimagenes": [],
+            "listabotones": [
+                {
+                    "idboton": "idBotonCerrar",
+                    "label": "Cerrar",
+                    "tipoboton": "TIP_CIERRE",
+                    "link": "",
+                    "target": ""
+                }
+            ]
+        }
+    ]
+}

@@ -3,6 +3,7 @@ import { DatabaseError } from '../utils/errors';
 import { CardService } from './card.service';
 import { IMovement, IMovementCreate, IMovementFilters, IMovementUpdate } from '../interfaces/IMovement';
 import { CartolaService } from './cartola.service';
+import { CompanyService } from './company.service';
 import dotenv from 'dotenv';
 import { pool } from '../config/database/connection';
 import { PlanService } from './plan.service';
@@ -13,12 +14,14 @@ export class MovementService {
   private cardService: CardService;
   private cartolaService: CartolaService;
   private planService: PlanService;
+  private companyService: CompanyService;
 
   constructor() {
     this.pool = pool;
     this.cardService = new CardService();
     this.cartolaService = new CartolaService();
     this.planService = new PlanService();
+    this.companyService = new CompanyService();
   }
 
   private buildWhereClause(filters: IMovementFilters): { conditions: string[]; values: any[]; paramCount: number } {
@@ -311,6 +314,9 @@ export class MovementService {
 
   async createMovement(movementData: IMovementCreate, userId: number, planId: number): Promise<IMovement> {
     try {
+      console.log(`[MovementService] Creando movimiento con datos:`, movementData);
+      console.log(`[MovementService] Monto recibido: ${movementData.amount} (tipo: ${typeof movementData.amount})`);
+      
       const card = await this.cardService.getCardById(movementData.cardId, userId);
       if (!card) {
         throw new DatabaseError('Tarjeta no encontrada o no pertenece al usuario.');
@@ -368,7 +374,20 @@ export class MovementService {
       }
   
       const amountForBalance = movementData.movementType === 'income' ? movementData.amount : -movementData.amount;
+      console.log(`[MovementService] Calculando balance:`);
+      console.log(`  - Tipo de movimiento: ${movementData.movementType}`);
+      console.log(`  - Monto original: ${movementData.amount} (tipo: ${typeof movementData.amount})`);
+      console.log(`  - Monto para balance: ${amountForBalance} (tipo: ${typeof amountForBalance})`);
+      
       await this.cardService.updateBalance(movementData.cardId, userId, amountForBalance);
+
+      // Si no se proporcionó una categoría, intentar categorizarla automáticamente
+      if (!movementData.categoryId && movementData.description) {
+        const categoryId = await this.companyService.findCategoryForDescription(movementData.description);
+        if (categoryId) {
+          movementData.categoryId = parseInt(categoryId);
+        }
+      }
 
       const query = `
         INSERT INTO movements (
@@ -502,26 +521,69 @@ export class MovementService {
 
   async deleteMovement(movementId: number, userId: number): Promise<void> {
     try {
+      console.log(`[MovementService] Iniciando eliminación de movimiento ${movementId} para usuario ${userId}`);
+      
       const movement = await this.getMovementById(movementId);
       if (!movement) {
+        console.log(`[MovementService] Movimiento ${movementId} no encontrado`);
         throw new DatabaseError('Movimiento no encontrado.');
       }
+      console.log(`[MovementService] Movimiento encontrado:`, movement);
+      
       const card = await this.cardService.getCardById(movement.cardId, userId);
       if (!card) {
+        console.log(`[MovementService] Tarjeta ${movement.cardId} no encontrada para usuario ${userId}`);
         throw new DatabaseError('El movimiento no pertenece a una tarjeta válida del usuario.');
       }
+      console.log(`[MovementService] Tarjeta encontrada:`, card);
+      
+      if (movement.movementSource === 'manual') {
+        const userQuery = 'SELECT plan_id FROM "user" WHERE id = $1';
+        const userResult = await this.pool.query(userQuery, [userId]);
+        const planId = userResult.rows[0]?.plan_id;
+        
+        if (planId) {
+          const limits = await this.planService.getLimitsForPlan(planId);
+          if (limits.manual_movements !== -1) {
+            const currentCount = await this.countMonthlyManualMoves(userId);
+            // Al eliminar un movimiento manual, se reduce el conteo, no se verifica límite
+            console.log(`[MovementService] Eliminando movimiento manual. Conteo actual: ${currentCount}`);
+          }
+        }
+      }
 
-      const amountToRevert = movement.movementType === 'income' ? -movement.amount : movement.amount;
-      await this.cardService.updateBalance(movement.cardId, userId, amountToRevert);
-
+      const amountToRevert = movement.movementType === 'income' ? -Number(movement.amount) : Number(movement.amount);
+      console.log(`[MovementService] Calculando reversión de saldo:`);
+      console.log(`  - Tipo de movimiento: ${movement.movementType}`);
+      console.log(`  - Monto original: ${movement.amount} (tipo: ${typeof movement.amount})`);
+      console.log(`  - Monto a revertir: ${amountToRevert} (tipo: ${typeof amountToRevert})`);
+      console.log(`  - Tarjeta ID: ${movement.cardId}`);
+      console.log(`  - Usuario ID: ${userId}`);
+      
+      try {
+        await this.cardService.updateBalance(movement.cardId, userId, amountToRevert);
+        console.log(`[MovementService] Saldo revertido exitosamente`);
+      } catch (balanceError) {
+        console.error(`[MovementService] Error específico al revertir saldo:`, balanceError);
+        throw balanceError;
+      }
+      console.log(`[MovementService] Eliminando movimiento de la base de datos`);
       const query = 'DELETE FROM movements WHERE id = $1';
       const result = await this.pool.query(query, [movementId]);
 
       if (result.rowCount === 0) {
+        console.log(`[MovementService] No se pudo eliminar el movimiento ${movementId}`);
         throw new DatabaseError('Error al eliminar el movimiento, no se encontró después de la verificación.');
       }
+      
+      console.log(`[MovementService] Movimiento ${movementId} eliminado exitosamente`);
     } catch (error) {
       console.error('[MovementService] Error al eliminar movimiento:', error);
+      console.error('[MovementService] Error message:', (error as Error).message);
+      console.error('[MovementService] Error stack:', (error as Error).stack);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
       throw new DatabaseError('Error al eliminar el movimiento');
     }
   }
@@ -529,6 +591,17 @@ export class MovementService {
   async processCartolaMovements(buffer: Buffer, userId: number, planId: number): Promise<void> {
     try {
       const cartola = await this.cartolaService.procesarCartolaPDF(buffer);
+      
+      // Verificar límites del plan
+      const limits = await this.planService.getLimitsForPlan(planId);
+      if (limits.cartola_movements !== -1) {
+        const currentCount = await this.countMonthlyCartolaMoves(userId);
+        if (currentCount + cartola.movimientos.length > limits.cartola_movements) {
+          throw new DatabaseError(
+            `La cartola excede el límite de ${limits.cartola_movements} movimientos por mes de tu plan`
+          );
+        }
+      }
 
       // Obtener los tipos de tarjeta disponibles
       const cardTypesQuery = 'SELECT id, name FROM card_types';
@@ -560,10 +633,31 @@ export class MovementService {
         1
       );
 
-      await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos, userId, planId);
+      // Procesar cada movimiento
+      for (const movement of cartola.movimientos) {
+        let categoryId: number | undefined;
+        
+        // Intentar categorizar el movimiento
+        if (movement.descripcion) {
+          const categoryIdStr = await this.companyService.findCategoryForDescription(movement.descripcion);
+          if (categoryIdStr) {
+            categoryId = parseInt(categoryIdStr);
+          }
+        }
+        
+        await this.createMovement({
+          cardId,
+          categoryId,
+          amount: Math.abs(movement.abonos || movement.cargos || 0),
+          description: movement.descripcion,
+          movementType: (movement.tipo?.includes('RECIBIDA') || movement.abonos) ? 'income' : 'expense',
+          movementSource: 'cartola',
+          transactionDate: movement.fecha
+        }, userId, planId);
+      }
     } catch (error) {
-      console.error('[MovementService] Error al procesar movimientos de cartola:', error);
-      throw new DatabaseError('Error al procesar los movimientos de la cartola');
+      console.error('[MovementService] Error al procesar cartola:', error);
+      throw new DatabaseError('Error al procesar la cartola');
     }
   }
 

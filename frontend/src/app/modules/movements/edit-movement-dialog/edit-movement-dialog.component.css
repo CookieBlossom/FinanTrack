@@ -1,0 +1,315 @@
+/* Contenedor del diálogo */
+.dialog-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--clr-surface-a0);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  color: var(--color-text);
+  width: 100%;
+  position: relative;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+:host {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Sección del formulario */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  background: var(--clr-surface-a0);
+  overflow-y: auto;
+  flex: 1;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Header del formulario */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px 20px;
+  background: linear-gradient(135deg, var(--color-primary-darkest) 0%, var(--color-primary-darker) 100%);
+  color: var(--color-text-inverse);
+  position: relative;
+}
+
+.form-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-highlight) 0%, var(--color-accent) 100%);
+}
+
+.form-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Cuerpo del formulario */
+.form-body {
+  padding: 32px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.dialog-content {
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+}
+
+/* Formulario */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* Acciones del diálogo */
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px 32px;
+  border-top: 1px solid var(--clr-surface-a20);
+  background: var(--clr-surface-a0);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.dialog-actions button {
+  min-width: 100px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+/* Estilos para los form fields */
+::ng-deep .mat-mdc-form-field {
+  --mdc-filled-text-field-container-color: var(--clr-surface-a10);
+  --mdc-outlined-text-field-outline-color: var(--clr-surface-a20);
+  --mdc-outlined-text-field-hover-outline-color: var(--color-accent);
+  --mdc-outlined-text-field-focus-outline-color: var(--color-accent);
+  --mdc-outlined-text-field-label-text-color: var(--color-text);
+  --mdc-outlined-text-field-input-text-color: var(--color-text);
+  --mdc-outlined-text-field-outline-width: 2px;
+  --mdc-outlined-text-field-hover-outline-width: 2px;
+  --mdc-outlined-text-field-focus-outline-width: 2px;
+  width: 100%;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-notched-outline {
+  border-radius: 12px;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-notched-outline .mat-mdc-notched-outline__leading,
+::ng-deep .mat-mdc-form-field .mat-mdc-notched-outline .mat-mdc-notched-outline__trailing {
+  border-radius: 12px;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-floating-label {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-input-element {
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-form-field-infix {
+  padding: 16px;
+  min-height: auto;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-form-field-subscript-wrapper {
+  padding: 0 16px;
+}
+
+/* Eliminamos cualquier borde adicional que pueda causar conflictos */
+::ng-deep .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  border: none !important;
+  background: transparent !important;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-form-field-flex {
+  border: none !important;
+  background: transparent !important;
+}
+
+::ng-deep .mat-mdc-form-field-error {
+  color: var(--color-error);
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+/* Estilos para los botones */
+::ng-deep .mat-mdc-raised-button {
+  --mdc-protected-button-container-color: var(--color-accent);
+  --mdc-protected-button-label-text-color: var(--color-text-inverse);
+  box-shadow: 0 4px 12px rgba(var(--color-accent-rgb), 0.3);
+}
+
+::ng-deep .mat-mdc-raised-button:hover {
+  box-shadow: 0 6px 16px rgba(var(--color-accent-rgb), 0.4);
+  transform: translateY(-2px);
+}
+
+::ng-deep .mat-mdc-button {
+  --mdc-text-button-label-text-color: var(--color-text);
+  border: 2px solid var(--clr-surface-a20);
+  border-radius: 8px;
+}
+
+::ng-deep .mat-mdc-button:hover {
+  background: var(--clr-surface-a10);
+  border-color: var(--color-accent);
+}
+
+/* Estilos para select */
+::ng-deep .mat-mdc-select-value {
+  color: var(--color-text);
+}
+
+::ng-deep .mat-mdc-select-arrow {
+  color: var(--color-text);
+}
+
+/* Estilos específicos para el input de fecha HTML */
+.edit-date-input {
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.date-icon {
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--color-primary-darkest);
+}
+
+/* Estilos específicos para el campo de fecha */
+::ng-deep .mat-mdc-form-field.date-field .mat-mdc-input-element {
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+::ng-deep .mat-mdc-form-field.date-field .mat-mdc-floating-label {
+  font-weight: 500;
+}
+
+::ng-deep .mat-mdc-form-field.date-field .mat-mdc-form-field-infix {
+  padding: 16px;
+  min-height: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dialog-container {
+    height: 100vh;
+    width: 100vw;
+    max-width: none;
+    max-height: none;
+  }
+  
+  .form-header {
+    padding: 16px 20px;
+  }
+  
+  .form-body {
+    padding: 20px;
+  }
+  
+  .dialog-actions {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .dialog-actions button {
+    width: 100%;
+  }
+  
+  .edit-form {
+    gap: 20px;
+  }
+}
+
+/* Configuración del diálogo */
+:host::ng-deep .mat-mdc-dialog-container {
+  --mdc-dialog-container-color: var(--clr-surface-a0);
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  max-height: 90vh;
+  max-width: 600px;
+  width: 90vw;
+}
+
+:host::ng-deep .mat-mdc-dialog-surface {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+:host::ng-deep .mat-mdc-dialog-container .mat-mdc-dialog-content {
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+}
+
+:host::ng-deep .mat-mdc-dialog-container .mat-mdc-dialog-title {
+  padding: 0;
+  margin: 0;
+}
+
+:host::ng-deep .mat-mdc-dialog-container .mat-mdc-dialog-actions {
+  padding: 0;
+  margin: 0;
+  min-height: auto;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dialog-container {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Icono con color primary-darkest */
+::ng-deep .primary-darkest-icon {
+  color: var(--color-primary-darkest) !important;
+} 

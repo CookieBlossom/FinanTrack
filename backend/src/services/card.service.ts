@@ -64,6 +64,11 @@ export class CardService {
 
   async updateBalance(cardId: number, userId: number, amount: number): Promise<void> {
     try {
+      console.log(`[CardService] Actualizando balance:`);
+      console.log(`  - Card ID: ${cardId} (tipo: ${typeof cardId})`);
+      console.log(`  - User ID: ${userId} (tipo: ${typeof userId})`);
+      console.log(`  - Amount: ${amount} (tipo: ${typeof amount})`);
+      
       const query = `
         UPDATE cards
         SET 
@@ -73,12 +78,28 @@ export class CardService {
         RETURNING *
       `;
 
+      console.log(`[CardService] Ejecutando query con parámetros: [${amount}, ${cardId}, ${userId}]`);
       const result = await this.pool.query(query, [amount, cardId, userId]);
+      
+      console.log(`[CardService] Resultado de la query:`, {
+        rowCount: result.rowCount,
+        rows: result.rows
+      });
+      
       if (result.rowCount === 0) {
+        console.log(`[CardService] No se encontró tarjeta con ID ${cardId} para usuario ${userId}`);
         throw new DatabaseError('Tarjeta no encontrada');
       }
+      
+      console.log(`[CardService] Balance actualizado exitosamente`);
     } catch (error) {
-      console.error('Error al actualizar saldo:', error);
+      console.error('[CardService] Error al actualizar saldo:', error);
+      console.error('[CardService] Error message:', (error as Error).message);
+      console.error('[CardService] Error stack:', (error as Error).stack);
+      console.error('[CardService] Error name:', (error as Error).name);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
       throw new DatabaseError('Error al actualizar el saldo de la tarjeta');
     }
   }

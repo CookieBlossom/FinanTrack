@@ -1,24 +1,42 @@
-<h2 mat-dialog-title>Cargar Cartola PDF</h2>
-<form [formGroup]="form">
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Banco</mat-label>
-    <input matInput formControlName="bank" placeholder="Ej: Banco Estado">
-  </mat-form-field>
-
-  <div class="file-upload">
-    <button mat-stroked-button type="button" (click)="fileInput.click()">
-      <mat-icon>upload</mat-icon> Seleccionar Cartola
-    </button>
-    <input #fileInput type="file" accept=".pdf" (change)="onFileSelected($event)" hidden>
-    <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>Cargar Cartola BancoEstado</h2>
   </div>
 
-  <div *ngIf="uploadError" class="error">{{ uploadError }}</div>
-</form>
+  <div class="dialog-content">
+    <div class="bank-info">
+      <mat-icon class="bank-icon">account_balance</mat-icon>
+      <p class="bank-text">Solo se aceptan cartolas de BancoEstado en formato PDF</p>
+    </div>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()">Cancelar</button>
-  <button mat-raised-button color="primary" (click)="upload()" [disabled]="isUploading">
-    Cargar
-  </button>
-</mat-dialog-actions>
+    <div class="file-upload-container">
+      <div class="file-upload" [class.has-file]="selectedFile">
+        <button mat-stroked-button type="button" (click)="fileInput.click()" class="upload-button">
+          <mat-icon>upload_file</mat-icon>
+          <span>{{ selectedFile ? 'Cambiar archivo' : 'Seleccionar cartola' }}</span>
+        </button>
+        <input #fileInput type="file" accept=".pdf" (change)="onFileSelected($event)" hidden>
+      </div>
+
+      <div *ngIf="selectedFile" class="file-info">
+        <mat-icon class="file-icon">description</mat-icon>
+        <span class="file-name">{{ selectedFile.name }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="uploadError" class="error-message">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ uploadError }}</span>
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <button mat-button (click)="cancel()" [disabled]="isUploading">
+      Cancelar
+    </button>
+    <button mat-raised-button color="primary" (click)="upload()" [disabled]="!selectedFile || isUploading">
+      <span *ngIf="!isUploading">Cargar cartola</span>
+      <mat-spinner *ngIf="isUploading" diameter="20"></mat-spinner>
+    </button>
+  </div>
+</div>

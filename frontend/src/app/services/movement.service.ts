@@ -35,7 +35,7 @@ export class MovementService {
     return this.http.get<Movement[]>(`${this.apiUrl}/cash`);
   }
   updateMovement(id: number, movement: Partial<Movement>): Observable<Movement> {
-    return this.http.patch<Movement>(`${this.apiUrl}/${id}`, movement);
+    return this.http.put<Movement>(`${this.apiUrl}/${id}`, movement);
   }
 
   deleteMovement(id: number): Observable<void> {

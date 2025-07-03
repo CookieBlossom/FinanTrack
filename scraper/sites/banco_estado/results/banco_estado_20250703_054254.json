@@ -1,0 +1,186 @@
+{
+  "success": true,
+  "fecha_extraccion": "2025-07-03 05:42:54",
+  "cuentas": [
+    {
+      "numero": "00021737273",
+      "tipo": "CuentaRUT",
+      "saldo": 126522.0,
+      "moneda": "CLP",
+      "titular": "",
+      "estado": "activa",
+      "movimientos": [
+        {
+          "fecha": "01/07/2025",
+          "descripcion": "TEF A NICOLAS ALTABAN ARAMIZ CARRAS",
+          "monto": -45000.0
+        },
+        {
+          "fecha": "30/06/2025",
+          "descripcion": "COMPRA WEB GOOGLE PLAY YOUTUB CL",
+          "monto": -5500.0
+        },
+        {
+          "fecha": "30/06/2025",
+          "descripcion": "AHORRO MENSUAL AUTOMATICO CUENTA AH",
+          "monto": -1000.0
+        },
+        {
+          "fecha": "29/06/2025",
+          "descripcion": "COMISION TRANSACCION INTERNACIONAL",
+          "monto": -476.0
+        },
+        {
+          "fecha": "29/06/2025",
+          "descripcion": "COMPRA WEB INTERN. CURSOR, AI POWER",
+          "monto": -19326.0
+        },
+        {
+          "fecha": "27/06/2025",
+          "descripcion": "COMPRA NACIONAL PARADISO CAF CL",
+          "monto": -2190.0
+        },
+        {
+          "fecha": "26/06/2025",
+          "descripcion": "COMPRA WEB PEDIDOSYA CL FACTU CL",
+          "monto": -6200.0
+        },
+        {
+          "fecha": "24/06/2025",
+          "descripcion": "COMPRA WEB GOOGLE PLAY YOUTUB CL",
+          "monto": -3900.0
+        },
+        {
+          "fecha": "20/06/2025",
+          "descripcion": "COMPRA WEB PEDIDOSYA CL FACTU CL",
+          "monto": -4796.0
+        },
+        {
+          "fecha": "19/06/2025",
+          "descripcion": "COMPRA WEB GOOGLE PLAY YOUTUB CL",
+          "monto": -10000.0
+        }
+      ]
+    },
+    {
+      "numero": "36461363274",
+      "tipo": "AHORRO PREMIUM",
+      "saldo": 248.0,
+      "moneda": "CLP",
+      "titular": "",
+      "estado": "activa",
+      "movimientos": [
+        {
+          "fecha": "30/05/2025",
+          "descripcion": "INTERESES",
+          "monto": 248.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -20000.0
+        },
+        {
+          "fecha": "24/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -30000.0
+        },
+        {
+          "fecha": "23/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "19/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -40000.0
+        },
+        {
+          "fecha": "14/03/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 100000.0
+        },
+        {
+          "fecha": "28/02/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -30109.0
+        },
+        {
+          "fecha": "26/02/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "20/01/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        },
+        {
+          "fecha": "18/01/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -10000.0
+        }
+      ]
+    },
+    {
+      "numero": "36461436620",
+      "tipo": "Plazo Vivienda Giro Diferido",
+      "saldo": 94082.0,
+      "moneda": "CLP",
+      "titular": "",
+      "estado": "activa",
+      "movimientos": [
+        {
+          "fecha": "30/06/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "30/05/2025",
+          "descripcion": "INTERESES",
+          "monto": 774.0
+        },
+        {
+          "fecha": "30/05/2025",
+          "descripcion": "ABONO",
+          "monto": 1308.0
+        },
+        {
+          "fecha": "30/05/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "10/05/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -11000.0
+        },
+        {
+          "fecha": "30/04/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "23/04/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -7030.0
+        },
+        {
+          "fecha": "30/03/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 1000.0
+        },
+        {
+          "fecha": "14/03/2025",
+          "descripcion": "DEP POR TRANSFERENCIA",
+          "monto": 100000.0
+        },
+        {
+          "fecha": "02/03/2025",
+          "descripcion": "GIRO POR TRANSFERENCIA",
+          "monto": -40970.0
+        }
+      ]
+    }
+  ]
+}

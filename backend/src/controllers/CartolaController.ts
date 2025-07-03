@@ -30,13 +30,33 @@ export class CartolaController {
     try {
       await client.query('BEGIN');
 
-      const nombreCuenta = tituloCartola
-        .replace(/^CARTOLA\s+/i, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+      let nombreCuenta = tituloCartola;
+      let cardTypeName = 'OTRO';
+
+      if (tituloCartola.toUpperCase().includes('CUENTARUT')) {
+        nombreCuenta = 'CuentaRUT';
+        cardTypeName = 'CUENTA RUT';
+      } else if (tituloCartola.toUpperCase().includes('CUENTA VISTA')) {
+        nombreCuenta = 'Cuenta Vista';
+        cardTypeName = 'CUENTA VISTA';
+      } else if (tituloCartola.toUpperCase().includes('CREDITO')) {
+        nombreCuenta = 'Tarjeta de Crédito';
+        cardTypeName = 'TARJETA DE CREDITO';
+      } else if (tituloCartola.toUpperCase().includes('AHORRO')) {
+        nombreCuenta = 'Cuenta de Ahorro';
+        cardTypeName = 'CUENTA DE AHORRO';
+      }
+
+      const numeroMatch = tituloCartola.match(/N°\s*(\d+)/i);
+      if (numeroMatch) {
+        nombreCuenta = `${nombreCuenta} - ${numeroMatch[1]}`;
+      }
+
+      const aliasAccount = `${nombreCuenta} - ${fechaConsulta.toLocaleDateString('es-CL')}`;
 
       console.log('Nombre de cuenta procesado:', nombreCuenta);
-      const aliasAccount = `${clienteNombre} - ${fechaConsulta.toISOString().split('T')[0]}`;
+      console.log('Alias de cuenta:', aliasAccount);
+
       const findCardQuery = `
         SELECT id 
         FROM cards 
@@ -53,17 +73,6 @@ export class CartolaController {
         );
         await client.query('COMMIT');
         return existingCard.rows[0].id;
-      }
-
-      let cardTypeName = 'OTRO';
-      if (nombreCuenta.includes('CUENTARUT')) {
-        cardTypeName = 'CUENTA RUT';
-      } else if (nombreCuenta.includes('CREDITO')) {
-        cardTypeName = 'TARJETA DE CREDITO';
-      } else if (nombreCuenta.includes('DEBITO')) {
-        cardTypeName = 'TARJETA DE DEBITO';
-      } else if (nombreCuenta.includes('AHORRO')) {
-        cardTypeName = 'CUENTA DE AHORRO';
       }
 
       const findTypeQuery = `
@@ -93,8 +102,9 @@ export class CartolaController {
           card_type_id, 
           balance, 
           currency, 
-          status_account
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7) 
+          status_account,
+          source
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
         RETURNING id`,
         [
           userId,
@@ -103,7 +113,8 @@ export class CartolaController {
           cardTypeId,
           saldoAnterior,
           'CLP',
-          'active'
+          'active',
+          'cartola'
         ]
       );
 

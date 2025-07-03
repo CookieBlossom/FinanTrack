@@ -12,7 +12,7 @@
 /* Formulario de login */
 .form-login {
   height: 95dvh;
-  width: 40dvw;
+  width: 50dvw;
   background-color: var(--clr-surface-a10);
   border-radius: 10px 0 0 10px;
   box-shadow: 0 0 10px 0 var(--clr-surface-a30);
@@ -122,7 +122,6 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: var(--font-size-md);
   padding: 4px;
   border-radius: 4px;
   width: var(--font-size-lg);
@@ -231,7 +230,7 @@
 /* Sección de branding */
 .branding-section {
   height: 95dvh;
-  width: 30dvw;
+  width: 40dvw;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   border-radius: 0 10px 10px 0;
   display: flex;

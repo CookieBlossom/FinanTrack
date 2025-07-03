@@ -30,7 +30,7 @@
         <!-- Estado sin datos -->
         <div *ngIf="!isLoading && !error && !hasData" class="no-data-state">
           <i class="fas fa-chart-line"></i>
-          <p>No hay datos disponibles para mostrar</p>
+          <p class="sub-title">No hay datos disponibles para mostrar</p>
           <p class="sub-text">Los datos aparecerán cuando registres movimientos o configures suscripciones</p>
         </div>
 
@@ -43,6 +43,7 @@
           [xAxis]="true"
           [yAxis]="true"
           [legend]="true"
+          [legendTitle]="'tipos de movimientos'"
           [showXAxisLabel]="true"
           [showYAxisLabel]="true"
           [xAxisLabel]="'Mes'"
@@ -124,7 +125,7 @@
         <ng-template #noSummaryData>
           <div class="no-data-state">
             <i class="fas fa-chart-pie"></i>
-            <p>No hay datos de resumen para este período.</p>
+            <p class="sub-title" >No hay datos de resumen para este período.</p>
             <p class="sub-text">Cuando registres movimientos, aquí verás un resumen mensual de tus gastos e ingresos.</p>
           </div>
         </ng-template>
