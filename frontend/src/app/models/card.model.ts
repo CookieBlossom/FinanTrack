@@ -4,12 +4,14 @@ export interface Card {
   id: number;
   userId: number;
   nameAccount: string;
-  aliasAccount?: string;
+  accountHolder?: string;
   cardTypeId: number;
   balance: number;
-  currency: string;
+  balanceSource: 'manual' | 'cartola';
+  lastBalanceUpdate?: Date;
   statusAccount: 'active' | 'inactive';
   source: 'manual' | 'scraper' | 'imported' | 'api';
+  bankId?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,11 +31,12 @@ export interface Bank {
 
 export interface CardCreate {
   nameAccount: string;
+  accountHolder?: string;
   cardTypeId: number;
   balance: number;
-  aliasAccount?: string;
-  currency?: string;
-  source?: 'manual' | 'scraper' | 'imported' | 'api'; 
+  balanceSource?: 'manual' | 'cartola';
+  source?: 'manual' | 'scraper' | 'imported' | 'api';
+  bankId?: number;
 }
 
 export interface CardUpdate extends Partial<CardCreate> {

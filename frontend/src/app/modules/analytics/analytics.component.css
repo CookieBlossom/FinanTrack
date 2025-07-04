@@ -133,15 +133,32 @@
   margin: 0;
 }
 
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-primary);
+  padding: 0.5rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
 .summary-title {
   text-align: center;
   font-size: var(--font-size-lg);
   font-family: var(--font-family-bold);
   margin: 0;
-  padding: 0.5rem;
-  background: var(--color-primary);
   color: white;
-  border-radius: 0.5rem 0.5rem 0 0;
+  flex: 1;
+}
+
+.reset-button {
+  margin-left: 1rem;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.reset-button mat-icon {
+  margin-right: 0.5rem;
 }
 
 .summary-content {
@@ -370,17 +387,26 @@
   cursor: pointer;
   border-radius: 4px;
   user-select: none;
+  transition: all 0.2s ease;
 }
 
 :host::ng-deep g.x.axis g.tick text:hover {
   fill: var(--color-accent);
   font-weight: 700;
   text-decoration: underline;
+  transform: translateY(-2px);
 }
 
 :host::ng-deep g.x.axis g.tick text.selected {
-  fill: var(--color-text-inverse);
+  fill: var(--color-accent);
   font-weight: 700;
+  text-decoration: underline;
+  font-size: 0.85rem;
+}
+
+/* Indicador visual mejorado para el mes seleccionado */
+.summary-header.month-selected {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
 }
 
 ::ng-deep .chart-legend {
@@ -487,7 +513,7 @@
     height: 100%;
   }
   .summary-block {
-    font-size: 0.7rem;
+    font-size: var(--font-size-xs);
   }
   .summary-label {
     text-align: center;

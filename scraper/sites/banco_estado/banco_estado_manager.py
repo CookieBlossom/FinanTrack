@@ -19,6 +19,9 @@ from scraper.models.scraper_models import ScraperTask, ScraperResult
 from scraper.utils.data_processor import DataProcessor
 from scraper.utils.redis_client import update_task_status, store_result
 
+# Importar directamente el módulo para evitar conflictos de nombres
+import scraper.sites.banco_estado.banco_estado_local_v2 as banco_estado_local_v2
+
 # Configurar logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -70,22 +73,17 @@ class BancoEstadoScraperManager:
                 raise ValueError("Credenciales incompletas")
 
             update_task_status(self.redis_client, task.id, 'processing', 'Iniciando proceso de scraping', 0)
-
-            # Importar el scraper original
-            from scraper.sites.banco_estado import banco_estado
             
-            # Crear instancia del scraper
-            config = banco_estado.ScraperConfig()
-            config.task_id = task.id
-            config.redis_host = os.getenv('REDIS_HOST', 'localhost')
-            config.redis_port = int(os.getenv('REDIS_PORT', 6379))
-
-            scraper = banco_estado.BancoEstadoScraper(config)
+            # Crear configuración del scraper
+            config = banco_estado_local_v2.ScraperConfig(
+                redis_host=os.getenv('REDIS_HOST', 'localhost'),
+                redis_port=int(os.getenv('REDIS_PORT', 6379)),
+                debug_mode=True
+            )
             
-            # Ejecutar el scraper
+            logger.info(f"Configuración del scraper creada exitosamente")
+            scraper = banco_estado_local_v2.BancoEstadoScraper(config)
             result = await scraper.run(task.id, task_dict)
-            
-            # Procesar el resultado
             if result:
                 # El resultado ya viene como diccionario desde el scraper
                 store_result(self.redis_client, task.id, result)

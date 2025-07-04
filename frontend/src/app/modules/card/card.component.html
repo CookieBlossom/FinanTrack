@@ -20,7 +20,13 @@
           matTooltip="Recargar datos">
           <mat-icon>{{ loading ? 'hourglass_empty' : 'refresh' }}</mat-icon>
         </button>
-        <button mat-raised-button color="primary" (click)="openAddCardDialog()">
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="openAddCardDialog()"
+          class="add-card-btn"
+          matTooltip="Agregar nueva tarjeta"
+          [disabled]="loading$ | async">
           <mat-icon>add</mat-icon>
           Agregar Tarjeta
         </button>
@@ -38,13 +44,13 @@
   </div>
 
   <!-- Loading spinner -->
-  <div class="loading-container" *ngIf="loading">
-    <mat-spinner diameter="50"></mat-spinner>
+  <div class="loading-container" *ngIf="loading$ | async">
+    <mat-spinner diameter="40"></mat-spinner>
     <p>Cargando tarjetas...</p>
   </div>
 
   <!-- Error message -->
-  <div class="error-container" *ngIf="error && !loading">
+  <div class="error-container" *ngIf="error && !(loading$ | async)">
     <mat-icon color="warn">error</mat-icon>
     <p>{{ error }}</p>
     <button mat-button color="primary" (click)="retryLoad()">
@@ -54,32 +60,38 @@
   </div>
 
   <!-- Main content -->
-  <div class="card-dashboard-content" *ngIf="!loading">
+  <div class="card-dashboard-content" *ngIf="!(loading$ | async)">
     <!-- Estado vacío -->
-    <div class="empty-state" *ngIf="!error && !hasCards()">
+    <div class="empty-state" *ngIf="(cards$ | async)?.length === 0">
       <mat-icon>credit_card_off</mat-icon>
       <h3>No tienes tarjetas registradas</h3>
       <p>Agrega tu primera tarjeta para comenzar a gestionar tus finanzas</p>
-      <button mat-raised-button color="primary" (click)="openAddCardDialog()">
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="openAddCardDialog()"
+        class="add-first-card-btn">
         <mat-icon>add</mat-icon>
-        Agregar Primera Tarjeta
+        Agregar primera tarjeta
       </button>
     </div>
 
     <!-- Contenido con tarjetas -->
-    <div class="cards-content" *ngIf="!error && hasCards()">
+    <div class="cards-content" *ngIf="(cards$ | async)?.length! > 0">
       <!-- Carrusel de tarjetas -->
       <div class="carousel-section">
         <h3 class="section-title">Tus Tarjetas</h3>
         <div class="card-carousel">
-          <mat-card *ngFor="let card of visibleCards" class="carousel-card">
+          <mat-card *ngFor="let card of cards$ | async" class="carousel-card">
             <mat-card-header>
               <mat-card-title>{{ card.nameAccount }}</mat-card-title>
-              <mat-card-subtitle *ngIf="card.aliasAccount">{{ card.aliasAccount }}</mat-card-subtitle>
+              <mat-card-subtitle *ngIf="card.accountHolder">
+                {{ card.accountHolder }}
+              </mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-              <div class="balance" [class.negative]="getCardBalance(card) < 0">
-                {{ getCardBalance(card) | currency:'CLP' }}
+              <div class="balance" [class.negative]="card.balance < 0">
+                {{ formatCurrency(card.balance) }}
               </div>
               <div class="card-status" [class.active]="card.statusAccount === 'active'">
                 {{ card.statusAccount === 'active' ? 'Activa' : 'Inactiva' }}
@@ -102,7 +114,7 @@
         <div class="total-balance">
           <h3>Total en tarjetas activas</h3>
           <div class="amount" [class.negative]="getTotalBalance() < 0">
-            {{ getTotalBalance() | currency:'CLP':'symbol':'1.0-0' }}
+            {{ formatCurrency(getTotalBalance()) }}
           </div>
         </div>
         
@@ -137,3 +149,8 @@
     </div>
   </div>
 </div>
+
+<!-- Template para el tooltip del gráfico -->
+<ng-template #tooltipTemplate let-model="model">
+  <div [innerHTML]="formatTooltip(model)"></div>
+</ng-template>

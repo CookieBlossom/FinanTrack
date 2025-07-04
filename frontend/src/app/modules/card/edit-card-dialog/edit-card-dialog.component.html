@@ -2,8 +2,8 @@
   <h2 mat-dialog-title>Editar Tarjeta</h2>
   <form [formGroup]="editCardForm" (ngSubmit)="onSubmit()">
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Alias</mat-label>
-      <input matInput formControlName="aliasAccount" maxlength="100">
+      <mat-label>Titular</mat-label>
+      <input matInput formControlName="accountHolder" maxlength="255">
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">

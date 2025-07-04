@@ -169,11 +169,34 @@ let BancoEstadoService = (() => {
             }
         }
         async runScraper(config = {}) {
-            // Encontrar la raíz del proyecto
-            const projectRoot = process.cwd();
-            const pythonPath = 'python';
+            // Encontrar la raíz del proyecto - solución robusta
+            const currentDir = process.cwd(); // C:\Proyectos\FinanTrack\backend
+            const projectRoot = (0, path_1.join)(currentDir, '..'); // C:\Proyectos\FinanTrack
+            console.log('projectRoot:', projectRoot);
             const scriptPath = (0, path_1.join)(projectRoot, 'scraper', 'sites', 'banco_estado', 'banco_estado_manager.py');
-            console.log(`[BancoEstado Scraper] Iniciando scraper desde: ${scriptPath}`);
+            const fs = require('fs');
+            if (!fs.existsSync(scriptPath)) {
+                console.error(`[BancoEstadoService] ERROR: El script no existe en: ${scriptPath}`);
+                return;
+            }
+            const pythonCommands = ['py', 'python', 'python3'];
+            let pythonPath = null;
+            
+            for (const cmd of pythonCommands) {
+                try {
+                    const { execSync } = require('child_process');
+                    execSync(`${cmd} --version`, { stdio: 'pipe' });
+                    pythonPath = cmd;
+                    break;
+                } catch (error) {
+                    // Continuar con el siguiente comando
+                }
+            }
+            
+            if (!pythonPath) {
+                console.error(`[BancoEstadoService] ERROR: No se encontró Python instalado. Instala Python o verifica el PATH.`);
+                return;
+            }
             const scraperProcess = (0, child_process_1.spawn)(pythonPath, [scriptPath], {
                 env: {
                     ...process.env,

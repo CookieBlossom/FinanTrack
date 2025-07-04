@@ -4,6 +4,8 @@ import { validateRut } from '../utils/validators';
 import { BancoEstadoService } from '../services/scrapers/banco-estado/banco-estado.service';
 import { RedisService } from '../services/redis.service';
 import { ScraperService } from '../services/scrapers/scraper.service';
+import { PlanService } from '../services/plan.service';
+import { DatabaseError } from '../utils/errors';
 
 // Cargar dotenv para asegurar que process.env esté poblado
 import dotenv from 'dotenv';
@@ -11,11 +13,13 @@ dotenv.config();
 
 export class ScraperController {
   private bancoEstadoService: BancoEstadoService;
+  private planService: PlanService;
 
   constructor() {
     const redisService = new RedisService();
     const scraperService = new ScraperService(redisService);
     this.bancoEstadoService = new BancoEstadoService(redisService, scraperService);
+    this.planService = new PlanService();
   }
 
   /**
@@ -101,8 +105,12 @@ export class ScraperController {
         return res.status(400).json({ success: false, message: 'El taskId es requerido en los parámetros de la URL.' });
       }
 
+      console.log('🔍 BACKEND - Consultando estado de tarea:', taskId);
       const task = await this.bancoEstadoService.getTaskStatus(taskId);
+      console.log('🔍 BACKEND - Tarea obtenida:', task);
+      
       if (!task) {
+        console.log('🔍 BACKEND - Tarea no encontrada:', taskId);
         return res.status(404).json({ success: false, message: 'Tarea no encontrada.' });
       }
 
@@ -148,6 +156,32 @@ export class ScraperController {
       const message = error instanceof Error ? error.message : 'Error interno del servidor al cancelar la tarea.';
       const statusCode = error instanceof Error && 'status' in error ? (error as any).status : 500;
       return res.status(statusCode).json({ success: false, message });
+    }
+  };
+
+  /**
+   * Obtiene el historial de tareas del usuario
+   */
+  public getUserTasks = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+    try {
+      const userId = (req as AuthRequest).user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Usuario no autorizado' });
+      }
+
+      // Esto requiere implementar el método en el servicio
+      // const tasks = await this.bancoEstadoService.getUserTasks(userId);
+      
+      return res.json({
+        success: true,
+        data: [], // Temporal hasta implementar
+        message: 'Funcionalidad en desarrollo'
+      });
+
+    } catch (error) {
+      console.error('[ScraperController] Error al obtener tareas:', error);
+      const message = error instanceof Error ? error.message : 'Error interno del servidor al obtener las tareas.';
+      return res.status(500).json({ success: false, message });
     }
   };
 } 

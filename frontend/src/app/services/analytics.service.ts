@@ -78,4 +78,8 @@ export class AnalyticsService {
     getAnalyticsData(): Observable<AnalyticsData> {
         return this.http.get<AnalyticsData>(this.apiUrl);
     }
+
+    getAnalyticsDataByMonth(year: number, month: number): Observable<AnalyticsData> {
+        return this.http.get<AnalyticsData>(`${this.apiUrl}/month/${year}/${month}`);
+    }
 } 

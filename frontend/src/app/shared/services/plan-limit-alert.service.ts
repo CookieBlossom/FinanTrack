@@ -46,6 +46,15 @@ export class PlanLimitAlertService {
    * Muestra una alerta específica para límite de tarjetas
    */
   showCardLimitAlert(currentUsage: number, limit: number): Observable<PlanLimitAlertResult> {
+    // Si el límite es -1, significa que es ilimitado y no deberíamos mostrar una alerta de límite
+    if (limit === -1) {
+      // En lugar de mostrar una alerta, simplemente retornamos un resultado de "dismiss"
+      return new Observable(subscriber => {
+        subscriber.next({ action: 'dismiss' });
+        subscriber.complete();
+      });
+    }
+    
     return this.showLimitAlert({
       title: 'Límite de Tarjetas Alcanzado',
       message: `No puedes agregar más tarjetas. Has alcanzado el límite de ${limit} tarjetas de tu plan actual.`,

@@ -247,7 +247,7 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
       },
       error: (error) => {
         console.error('Error al cargar límite de keywords:', error);
-        this.maxKeywords = 5; // Límite por defecto
+        this.maxKeywords = 5; // Límite por defecto (plan básico)
       }
     });
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
@@ -14,6 +14,8 @@ import { PLAN_LIMITS } from '../../models/plan.model';
 import { LimitNotificationComponent, LimitNotificationData } from '../../shared/components/limit-notification/limit-notification.component';
 import { PlanLimitAlertService } from '../../shared/services/plan-limit-alert.service';
 import { Router } from '@angular/router';
+import { Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import {
   ColDef,
   GridReadyEvent,
@@ -76,13 +78,21 @@ ModuleRegistry.registerModules([
     LimitNotificationComponent
   ],
 })
-export class CategoriesComponent implements OnInit {
+export class CategoriesComponent implements OnInit, OnDestroy {
   chartView: [number, number] = [window.innerWidth * 0.35, window.innerHeight * 0.4];
+  
+  // 🔄 Observables reactivos
+  categories$: Observable<Category[]>;
+  categoriesLoading$: Observable<boolean>;
   categories: Category[] = [];
+  
   gridContext = { componentParent: this };
   gridApi: any = null;
   gastoTarjeta: any[] = [];
   gastoEfectivo: any[] = [];
+  
+  // Subscription management
+  private destroy$ = new Subject<void>();
 
   // Variables para límites del plan
   keywordsLimit: number = 5;
@@ -123,8 +133,8 @@ export class CategoriesComponent implements OnInit {
     headerColumnResizeHandleColor: 'var(--color-highlight)',
     fontSize: 'var(--font-size-sm)',
     fontFamily: 'var(--font-family-normal)',
-    rowHeight: 50,
-    headerHeight: 50,
+    rowHeight: 40,
+    headerHeight: 40,
     rowHoverColor: 'var(--clr-surface-a20)',
     selectedRowBackgroundColor: 'var(--clr-primary-50)',
   });
@@ -139,6 +149,9 @@ export class CategoriesComponent implements OnInit {
         fontSize: 'var(--font-size-sm)',
         fontFamily: 'var(--font-family-normal)',
         fontWeight: '500',
+        textAlign: 'center',
+        alignItems: 'center',
+        justifyContent: 'center',
         color: 'var(--color-text)'
       }
     },
@@ -215,7 +228,7 @@ export class CategoriesComponent implements OnInit {
       cellStyle: {
         fontSize: 'var(--font-size-sm)',
         fontFamily: 'var(--font-family-normal)',
-        padding: '8px 12px'
+        padding: '8px 8px'
       },
       valueParser: params => {
         if (Array.isArray(params.newValue)) {
@@ -254,18 +267,67 @@ export class CategoriesComponent implements OnInit {
     private featureControlService: FeatureControlService,
     private planLimitAlertService: PlanLimitAlertService,
     private router: Router
-  ) {}
+  ) {
+    // 🔄 Inicializar observables reactivos
+    this.categories$ = this.categoryService.categories$;
+    this.categoriesLoading$ = this.categoryService.loading$;
+  }
 
   ngOnInit() {
-    console.log('Componente inicializado');
-    this.onResize();
-    
-    // Cargar datos con un pequeño delay para asegurar que AG Grid esté listo
-    setTimeout(() => {
-      this.loadCategories();
-    }, 100);
-    
+    // 🔄 Cargar datos usando el sistema reactivo
+    this.loadReactiveData();
     this.loadPlanInfo();
+    this.onResize();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private loadReactiveData(): void {
+    // 🔄 Cargar categorías usando el sistema reactivo
+    this.categoryService.getUserCategories().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (categories) => {
+        console.log('✅ [CategoriesComponent] Categorías cargadas:', categories.length);
+        
+        // 📊 Actualizar array para templates y grid
+        this.categories = categories.map(item => {
+          const processedItem = {
+            ...item,
+            keywords: Array.isArray(item.keywords)
+              ? item.keywords.map((k: any) => {
+                  if (typeof k === 'string') {
+                    return k.trim();
+                  } else if (k && typeof k === 'object') {
+                    return (k.display || k.value || '').trim();
+                  }
+                  return String(k).trim();
+                }).filter(k => k.length > 0)
+              : []
+          };
+          return processedItem;
+        });
+        
+        this.updateGridData(this.categories);
+        this.calculateStats();
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar categorías:', error);
+      }
+    });
+  }
+
+  private updateGridData(categories: Category[]): void {
+    if (this.gridApi) {
+      this.gridApi.setGridOption('rowData', categories);
+      // Forzar redibujado después de un breve delay
+      setTimeout(() => {
+        this.gridApi.sizeColumnsToFit();
+      }, 100);
+    }
   }
 
   loadPlanInfo(): void {
@@ -301,51 +363,21 @@ export class CategoriesComponent implements OnInit {
     this.showLimitNotification = false;
   }
 
-  loadCategories(): void {
-    console.log('Cargando categorías...');
-    this.categoryService.getUserCategories().subscribe({
-      next: (data: Category[]) => {
-        console.log('Datos recibidos del backend:', data);
-        this.categories = data.map(item => {
-          const processedItem = {
-            ...item,
-            keywords: Array.isArray(item.keywords)
-              ? item.keywords.map((k: any) => {
-                  if (typeof k === 'string') {
-                    return k.trim();
-                  } else if (k && typeof k === 'object') {
-                    return (k.display || k.value || '').trim();
-                  }
-                  return String(k).trim();
-                }).filter(k => k.length > 0)
-              : []
-          };
-          console.log(`Categoría ${processedItem.name_category}:`, processedItem.keywords);
-          return processedItem;
-        });
-        
-        console.log('Categorías procesadas:', this.categories);
-        
-        // Calcular estadísticas después de cargar las categorías
-        this.calculateStats();
-        
-        // Forzar actualización de AG Grid si está disponible
-        setTimeout(() => {
-          this.refreshTable();
-        }, 200);
+  onColorChanged(categoryId: number, newColor: string) {
+    // 🔄 El servicio actualiza automáticamente el cache
+    this.categoryService.updateCategoryColor(categoryId, newColor).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => {
+        console.log('✅ Color actualizado para categoría:', categoryId);
+        // No necesitamos refrescar manualmente, el sistema reactivo lo hace automáticamente
       },
-      error: (err) => {
-        console.error('Error al cargar categorías:', err);
-        alert('Error al cargar categorías: ' + (err?.message || err));
+      error: (error) => {
+        console.error('❌ Error al actualizar color:', error);
       }
     });
   }
-  onColorChanged(categoryId: number, newColor: string) {
-    this.categoryService.updateCategoryColor(categoryId, newColor).subscribe({
-      next: () => console.log('Color actualizado'),
-      error: () => console.log('Error al actualizar color')
-    });
-  }
+
   onCellClicked(event: any) {
     // Solo si la celda es 'keywords'
     if (event.colDef.field === 'keywords') {
@@ -360,27 +392,6 @@ export class CategoriesComponent implements OnInit {
       }
     }
   }
-
-  // loadExpenses(): void {
-  //   this.categoryService.getCategoryExpenses().subscribe({
-  //     next: (data: CategoryExpense[]) => {
-  //       // Actualizar datos de los gráficos
-  //       this.gastoTarjeta = data
-  //         .filter(expense => expense.payment_type === 'card')
-  //         .map(expense => ({
-  //           name: expense.name_category,
-  //           value: expense.total_amount
-  //         }));
-
-  //       this.gastoEfectivo = data
-  //         .filter(expense => expense.payment_type === 'cash')
-  //         .map(expense => ({
-  //           name: expense.name_category,
-  //           value: expense.total_amount
-  //         }));
-  //     }
-  //   });
-  // }
 
   onGridReady(params: GridReadyEvent) {
     console.log('AG Grid listo');
@@ -408,63 +419,47 @@ export class CategoriesComponent implements OnInit {
   }
 
   onCellValueChanged(event: any) {
-    const categoryId = event.data.id;
     if (event.colDef.field === 'keywords') {
-      const newKeywords = event.data.keywords;
-      console.log('Keywords cambiadas:', { categoryId, newKeywords });
+      const categoryId = event.data.id;
+      const newKeywords = event.newValue || [];
       
-      // Verificar límite antes de guardar
+      // Verificar límites antes de actualizar
       if (Array.isArray(newKeywords) && newKeywords.length > this.keywordsLimit) {
-        // Mostrar alerta modal en lugar de notificación
-        this.planLimitAlertService.showKeywordLimitAlert(newKeywords.length, this.keywordsLimit).subscribe({
+        this.planLimitAlertService.showKeywordLimitAlert(
+          newKeywords.length,
+          this.keywordsLimit
+        ).subscribe({
           next: (result) => {
             if (result.action === 'upgrade') {
               this.router.navigate(['/plans']);
+            } else if (result.action === 'dismiss') {
+              // Revertir cambios
+              event.data.keywords = event.oldValue;
+              this.gridApi.redrawRows({ rowNodes: [event.node] });
             }
-            // Si es dismiss, revertir el cambio en la UI
-            event.api.undoCellEditing();
           }
         });
         return;
       }
-      
-      this.categoryService.updateUserCategoryKeywords(categoryId, newKeywords).subscribe({
-        next: (response) => {
-          console.log('Respuesta del backend:', response);
-          console.log('Palabras clave actualizadas correctamente');
+
+      // 🔄 El servicio actualiza automáticamente el cache
+      this.categoryService.updateUserCategoryKeywords(categoryId, newKeywords).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          console.log('✅ Palabras clave actualizadas para categoría:', categoryId);
           this.calculateStats();
-          setTimeout(() => {
-            this.loadCategories();
-          }, 500); // Pequeño delay para asegurar que el backend procese
         },
         error: (error) => {
-          console.error('Error al actualizar palabras clave:', error);
-          
-          // Mostrar más detalles del error
-          let errorMessage = 'Error al actualizar palabras clave.';
-          if (error.status === 500) {
-            errorMessage = 'Error interno del servidor. Revisa la consola del backend para más detalles.';
-          } else if (error.error && error.error.error) {
-            errorMessage = error.error.error;
-          }
-          
-          this.displayLimitNotification({
-            type: 'error',
-            title: 'Error al Actualizar',
-            message: errorMessage,
-            limit: this.keywordsLimit,
-            current: newKeywords.length,
-            showUpgradeButton: false
-          });
-          
-          // Revertir el cambio en la UI en caso de error
-          if (event.api && typeof event.api.undoCellEditing === 'function') {
-            event.api.undoCellEditing();
-          }
+          console.error('❌ Error al actualizar palabras clave:', error);
+          // Revertir cambios en caso de error
+          event.data.keywords = event.oldValue;
+          this.gridApi.redrawRows({ rowNodes: [event.node] });
         }
       });
     }
     if (event.colDef.field === 'color') {
+      const categoryId = event.data.id;
       const newColor = event.data.color;
       this.categoryService.updateCategoryColor(categoryId, newColor).subscribe({
         next: () => console.log('Color actualizado'),
@@ -554,16 +549,5 @@ export class CategoriesComponent implements OnInit {
 
   toggleCharts(): void {
     this.showCharts = !this.showCharts;
-  }
-
-  // Método para forzar actualización de la tabla
-  private refreshTable(): void {
-    if (this.gridApi) {
-      console.log('Forzando actualización de la tabla');
-      this.gridApi.sizeColumnsToFit();
-      
-      // Forzar detección de cambios
-      this.categories = [...this.categories];
-    }
   }
 }

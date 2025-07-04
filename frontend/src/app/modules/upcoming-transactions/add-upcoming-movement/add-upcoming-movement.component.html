@@ -100,7 +100,7 @@
             class="form-select"
             formControlName="categoryId">
             <option value="">Seleccionar categoría</option>
-            <option *ngFor="let category of categories" [value]="category.id">
+            <option *ngFor="let category of categories$ | async" [value]="category.id">
               {{ category.name_category }}
             </option>
           </select>
@@ -113,8 +113,8 @@
             class="form-select"
             formControlName="cardId">
             <option value="">Seleccionar tarjeta</option>
-            <option *ngFor="let card of cards" [value]="card.id">
-              {{ card.nameAccount }} {{ card.aliasAccount ? '(' + card.aliasAccount + ')' : '' }}
+            <option *ngFor="let card of cards$ | async" [value]="card.id">
+              {{ card.nameAccount }} {{ card.accountHolder ? '(' + card.accountHolder + ')' : '' }}
             </option>
           </select>
         </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,13 +10,25 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Card } from '../../models/card.model';
 import { CardService } from '../../services/card.service';
 import { AddCardDialogComponent } from './add-card-dialog/add-card-dialog.component';
-import { firstValueFrom, Subject } from 'rxjs';
+import { firstValueFrom, Subject, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { DeleteCardDialogComponent } from './delete-card-dialog/delete-card-dialog.component';
 import { FeatureControlDirective } from '../../shared/directives/feature-control.directive';
 import { PlanLimitsService } from '../../services/plan-limits.service';
+import { Router } from '@angular/router';
+
+import { FeatureControlService } from '../../services/feature-control.service';
+
+interface ChartDataItem {
+  name: string;
+  value: number;
+  originalValue: number;
+  cardName: string;
+  fullName: string;
+  formattedBalance: string;
+}
 
 @Component({
   selector: 'app-card',
@@ -34,9 +46,11 @@ import { PlanLimitsService } from '../../services/plan-limits.service';
     MatTooltipModule,
     NgxChartsModule,
     FeatureControlDirective
-  ]
+  ],
+  providers: [FeatureControlService]
 })
-export class CardComponent implements OnInit, OnDestroy {
+export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('chartContainer') chartContainer!: ElementRef;
   cards: Card[] = [];
   error: string | null = null;
   totalBalance: number = 0;
@@ -62,18 +76,38 @@ export class CardComponent implements OnInit, OnDestroy {
   // Tamaño responsive del gráfico
   chartView: [number, number] = [0, 0]; // Se calculará dinámicamente
 
+  chartData: ChartDataItem[] = [];
+  view: [number, number] = [700, 400];
+
+  // 🔄 Datos reactivos - se inicializan en el constructor
+  cards$!: Observable<Card[]>;
+  loading$!: Observable<boolean>;
+  
+  // Estados de carga
+  isDeleting = false;
+  isSyncingAll = false;
+
   constructor(
     private cardService: CardService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
     private planLimitsService: PlanLimitsService,
-    private changeDetectorRef: ChangeDetectorRef
-  ) {}
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog,
+    private hostRef: ElementRef,
+    private router: Router,
+    private changeDetectorRef: ChangeDetectorRef,
+    private featureControlService: FeatureControlService
+  ) {
+    // 🔄 Inicializar observables reactivos
+    this.cards$ = this.cardService.cards$;
+    this.loading$ = this.cardService.loading$;
+  }
   
   chartLabels: string[] = [];
-  chartData: number[] = [];
   
   async ngOnInit(): Promise<void> {
+    // 🔄 Cargar tarjetas usando el sistema reactivo
+    this.cardService.getCards().subscribe();
+    
     await this.loadInitialData();
     this.calculateChartSize();
     
@@ -155,6 +189,7 @@ export class CardComponent implements OnInit, OnDestroy {
       console.log('📞 Llamando al servicio de tarjetas...');
       this.cards = await firstValueFrom(this.cardService.getCards());
       console.log('📋 Tarjetas cargadas:', this.cards.length);
+      this.updateChartData();
     } catch (error) {
       console.error('❌ Error al cargar tarjetas:', error);
       this.cards = [];
@@ -237,7 +272,7 @@ export class CardComponent implements OnInit, OnDestroy {
         balance = 0;
       }
       
-      const displayName = card.aliasAccount || card.nameAccount;
+      const displayName = card.nameAccount;
       
       console.log(`📊 Tarjeta: ${displayName}, Balance final: ${balance}, Tipo: ${typeof balance}`);
       
@@ -348,19 +383,7 @@ export class CardComponent implements OnInit, OnDestroy {
     try {
       console.log('🗑️ Eliminando tarjeta:', cardId, cardName);
       this.snackBar.open('Eliminando tarjeta...', 'Cerrar', { duration: 2000 });
-      await firstValueFrom(this.cardService.deleteCard(cardId));
-      
-      console.log('✅ Tarjeta eliminada del backend, actualizando datos...');
-      // Actualizar datos
-      await this.updateData();
-      
-      // Esperar un poco para que el backend procese la eliminación
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Forzar actualización de límites específicamente para tarjetas
-      this.planLimitsService.refreshUsage();
-      
-      this.snackBar.open('Tarjeta eliminada exitosamente', 'Cerrar', { duration: 3000 });
+      await this.onCardDeleted(cardId);
     } catch (error) {
       console.error('Error al eliminar tarjeta:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al eliminar la tarjeta';
@@ -394,8 +417,7 @@ export class CardComponent implements OnInit, OnDestroy {
     this.syncing = true;
     try {
       this.snackBar.open('Sincronizando tarjetas...', 'Cerrar', { duration: 2000 });
-      await firstValueFrom(this.cardService.syncAllCards());
-      await this.updateData();
+      await this.syncAllCards();
       this.snackBar.open('Tarjetas sincronizadas exitosamente', 'Cerrar', { duration: 3000 });
     } catch (error) {
       console.error('Error al sincronizar tarjetas:', error);
@@ -452,5 +474,118 @@ export class CardComponent implements OnInit, OnDestroy {
         this.changeDetectorRef.detectChanges();
       }
     }, 300); // Aumentar el timeout para asegurar que los elementos estén completamente renderizados
+  }
+
+  updateChartData() {
+    if (!this.cards || this.cards.length === 0) {
+      this.chartData = [];
+      return;
+    }
+
+    this.chartData = this.cards
+      .filter(card => card.statusAccount === 'active')
+      .map(card => {
+        const balance = card.balance;
+        if (typeof balance !== 'number') {
+          console.error(`Balance inválido para tarjeta ${card.nameAccount}:`, balance);
+          return null;
+        }
+
+        const formattedBalance = this.formatCurrency(Math.abs(balance));
+        const name = this.truncateText(card.nameAccount || '', 15);
+        const fullName = `${card.nameAccount} (${formattedBalance})`;
+
+        return {
+          name,
+          value: Math.abs(balance),
+          originalValue: balance,
+          cardName: card.nameAccount,
+          fullName,
+          formattedBalance
+        };
+      })
+      .filter((item): item is ChartDataItem => item !== null);
+
+    console.log('📊 Datos del gráfico:', this.chartData);
+  }
+
+  onResize() {
+    const container = this.chartContainer?.nativeElement;
+    if (!container) return;
+
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+    const width = Math.min(containerWidth, 800);
+    const height = Math.min(containerHeight, 400);
+
+    this.view = [width, height];
+  }
+
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0
+    }).format(value);
+  }
+
+  truncateText(text: string | number, maxLength: number): string {
+    const textStr = text.toString();
+    return textStr.length > maxLength ? textStr.slice(0, maxLength) + '...' : textStr;
+  }
+
+  ngAfterViewInit() {
+    this.onResize();
+  }
+
+  async onCardDeleted(cardId: number): Promise<void> {
+    try {
+      this.isDeleting = true;
+      // 🔄 El servicio actualiza automáticamente el cache
+      await firstValueFrom(this.cardService.deleteCard(cardId));
+      
+      this.snackBar.open('Tarjeta eliminada exitosamente', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['snack-success']
+      });
+      
+      // ❌ Ya no necesitamos llamar loadCards() manualmente
+      // this.cards = await firstValueFrom(this.cardService.getCards());
+      
+    } catch (error) {
+      console.error('Error al eliminar tarjeta:', error);
+      this.snackBar.open('Error al eliminar la tarjeta', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['snack-error']
+      });
+    } finally {
+      this.isDeleting = false;
+    }
+  }
+
+  async syncAllCards(): Promise<void> {
+    try {
+      this.isSyncingAll = true;
+      
+      // 🔄 El servicio actualiza automáticamente el cache
+      await firstValueFrom(this.cardService.syncAllCards());
+      
+      this.snackBar.open('Todas las tarjetas sincronizadas', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['snack-success']
+      });
+      
+      // ❌ Ya no necesitamos llamar loadCards() manualmente
+      // this.cards = await firstValueFrom(this.cardService.getCards());
+      
+    } catch (error) {
+      console.error('Error al sincronizar tarjetas:', error);
+      this.snackBar.open('Error al sincronizar las tarjetas', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['snack-error']
+      });
+    } finally {
+      this.isSyncingAll = false;
+    }
   }
 }

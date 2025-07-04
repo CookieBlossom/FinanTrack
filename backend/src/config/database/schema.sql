@@ -123,16 +123,19 @@ CREATE TABLE cards (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
     name_account VARCHAR(100) NOT NULL,
+    account_holder VARCHAR(100),
+    balance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    balance_source VARCHAR(20) NOT NULL DEFAULT 'manual',
+    last_balance_update TIMESTAMP,
+    status_account VARCHAR(20) NOT NULL DEFAULT 'active',
+    source VARCHAR(20) NOT NULL DEFAULT 'manual',
     card_type_id INTEGER REFERENCES card_types(id),
     bank_id INTEGER REFERENCES banks(id),
-    balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-    alias_account VARCHAR(100),
-    currency VARCHAR(3) NOT NULL DEFAULT 'CLP',
-    status_account VARCHAR(50) NOT NULL DEFAULT 'active',
-    source VARCHAR(20) NOT NULL DEFAULT 'manual',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP,
-    CONSTRAINT cards_source_check CHECK (source IN ('manual', 'scraper', 'imported', 'api'))
+    CONSTRAINT cards_source_check CHECK (source IN ('manual', 'scraper', 'imported', 'api')),
+    CONSTRAINT cards_balance_source_check CHECK (balance_source IN ('manual', 'cartola')),
+    CONSTRAINT cards_status_check CHECK (status_account IN ('active', 'inactive'))
 );
 
 -- Movimientos (incluye ingresos, egresos, cartolas, etc.)
@@ -231,7 +234,8 @@ INSERT INTO plan_limits (plan_id, limit_key, limit_val) VALUES
   ((SELECT id FROM plans WHERE name='basic'), 'max_cards', 2),
   ((SELECT id FROM plans WHERE name='basic'), 'keywords_per_category', 5),
   ((SELECT id FROM plans WHERE name='basic'), 'monthly_cartolas', 0),
-  ((SELECT id FROM plans WHERE name='basic'), 'monthly_scrapes', 0);
+  ((SELECT id FROM plans WHERE name='basic'), 'monthly_scrapes', 0),
+  ((SELECT id FROM plans WHERE name='basic'), 'projected_movements', 5);
 
 -- Plan Premium
 INSERT INTO plan_limits (plan_id, limit_key, limit_val) VALUES
@@ -241,7 +245,8 @@ INSERT INTO plan_limits (plan_id, limit_key, limit_val) VALUES
   ((SELECT id FROM plans WHERE name='premium'), 'max_cards', 10),
   ((SELECT id FROM plans WHERE name='premium'), 'keywords_per_category', 10),
   ((SELECT id FROM plans WHERE name='premium'), 'monthly_cartolas', -1), -- Ilimitado
-  ((SELECT id FROM plans WHERE name='premium'), 'monthly_scrapes', 0);
+  ((SELECT id FROM plans WHERE name='premium'), 'monthly_scrapes', 0),
+  ((SELECT id FROM plans WHERE name='premium'), 'projected_movements', 20);
 
 -- Plan Pro (Ilimitado = -1)
 INSERT INTO plan_limits (plan_id, limit_key, limit_val) VALUES
@@ -251,7 +256,8 @@ INSERT INTO plan_limits (plan_id, limit_key, limit_val) VALUES
   ((SELECT id FROM plans WHERE name='pro'), 'max_cards', -1),
   ((SELECT id FROM plans WHERE name='pro'), 'keywords_per_category', -1),
   ((SELECT id FROM plans WHERE name='pro'), 'monthly_cartolas', -1),
-  ((SELECT id FROM plans WHERE name='pro'), 'monthly_scrapes', -1);
+  ((SELECT id FROM plans WHERE name='pro'), 'monthly_scrapes', -1),
+  ((SELECT id FROM plans WHERE name='pro'), 'projected_movements', -1);
 
 -- 6. Rellenar permisos para cada plan
 -- Plan Básico
@@ -304,6 +310,6 @@ CREATE INDEX idx_user_category_keywords_category ON user_category_keywords(categ
 CREATE INDEX idx_movements_description_gin ON movements USING gin(to_tsvector('spanish', description));
 CREATE INDEX idx_patterns_text_gin ON movement_patterns USING gin(to_tsvector('spanish', pattern_text));
 CREATE INDEX idx_movements_metadata ON movements USING gin(metadata);
-CREATE UNIQUE INDEX unique_card_per_user ON cards(user_id, name_account, card_type_id, bank_id);
+CREATE UNIQUE INDEX unique_card_per_user ON cards(user_id, name_account, card_type_id, bank_id) WHERE status_account = 'active';
 CREATE INDEX idx_plan_limits_plan_key ON plan_limits(plan_id, limit_key);
 CREATE INDEX idx_plan_permissions_plan_key ON plan_permissions(plan_id, permission_key);

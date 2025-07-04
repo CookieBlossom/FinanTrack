@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
@@ -31,7 +31,8 @@ import {
   TooltipModule,
   RowAutoHeightModule,
   ICellRendererParams,
-  PaginationNumberFormatterParams
+  PaginationNumberFormatterParams,
+  RowApiModule
 } from 'ag-grid-community';
 import { AddCashComponent } from './add-cash/add-cash.component';
 import { UploadStatementComponent } from './upload-statement/upload-statement.component';
@@ -42,8 +43,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FeatureControlDirective } from '../../shared/directives/feature-control.directive';
 import { CardService } from '../../services/card.service';
 import { Card } from '../../models/card.model';
-import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
-import { map, switchMap, tap, catchError, take } from 'rxjs/operators';
+import { BehaviorSubject, Observable, combineLatest, of, Subject } from 'rxjs';
+import { map, switchMap, tap, catchError, take, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { PlanLimitsService } from '../../services/plan-limits.service';
 
 ModuleRegistry.registerModules([
@@ -60,6 +61,7 @@ ModuleRegistry.registerModules([
   DateFilterModule,
   TooltipModule,
   RowAutoHeightModule,
+  RowApiModule,
   CustomFilterModule,
   PaginationModule,
 ]);
@@ -83,9 +85,14 @@ ModuleRegistry.registerModules([
     FeatureControlDirective
   ]
 })
-export class MovementsComponent implements OnInit {
-  // Observables reactivos para los datos
+export class MovementsComponent implements OnInit, OnDestroy {
+  // 🔒 Subject para manejar suscripciones
+  private destroy$ = new Subject<void>();
+  
+  // 🔄 Triggers optimizados con debounce
   private refreshTrigger$ = new BehaviorSubject<void>(undefined);
+  private lastRefreshTime = 0;
+  private readonly REFRESH_DEBOUNCE_TIME = 500; // ms
   
   historyCard$: Observable<Movement[]>;
   historyCash$: Observable<Movement[]>;
@@ -115,6 +122,8 @@ export class MovementsComponent implements OnInit {
   private resizeTimeout: any;
   private gridApiCard: GridApi | null = null;
   private gridApiCash: GridApi | null = null;
+  private cardGridInitialized = false;
+  private cashGridInitialized = false;
 
   constructor(
     private movementService: MovementService,
@@ -124,40 +133,50 @@ export class MovementsComponent implements OnInit {
     private snackBar: MatSnackBar,
     private planLimitsService: PlanLimitsService
   ) {
-    // Configurar observables reactivos con manejo de errores y logging
-    this.historyCard$ = this.refreshTrigger$.pipe(
-      switchMap(() => this.movementService.getCardMovements().pipe(
-        tap(movements => {
-          console.log('Movimientos de tarjeta cargados:', movements);
-          console.log('Categorías en movimientos:', movements.map(m => m.category));
-        }),
-        catchError(error => {
-          console.error('Error al cargar movimientos de tarjetas:', error);
-          return of([]);
-        })
-      ))
+    // 🔄 Configurar observables reactivos OPTIMIZADOS con debounce y takeUntil
+    const debouncedRefresh$ = this.refreshTrigger$.pipe(
+      debounceTime(100), // Evitar múltiples llamadas seguidas
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
     );
 
-    this.historyCash$ = this.refreshTrigger$.pipe(
-      switchMap(() => this.movementService.getCashMovements().pipe(
-        tap(movements => {
-          console.log('Movimientos en efectivo cargados:', movements);
-          console.log('Categorías en movimientos efectivo:', movements.map(m => m.category));
-        }),
-        catchError(error => {
-          console.error('Error al cargar movimientos en efectivo:', error);
-          return of([]);
-        })
-      ))
+    this.historyCard$ = debouncedRefresh$.pipe(
+      switchMap(() => {
+        console.log('🔄 [Movements] Cargando movimientos de tarjetas...');
+        return this.movementService.getCardMovements().pipe(
+          catchError(error => {
+            console.error('❌ [Movements] Error al cargar movimientos de tarjetas:', error);
+            return of([]);
+          })
+        );
+      }),
+      takeUntil(this.destroy$)
     );
 
-    this.cards$ = this.refreshTrigger$.pipe(
-      switchMap(() => this.cardService.getCards().pipe(
-        catchError(error => {
-          console.error('Error al cargar tarjetas:', error);
-          return of([]);
-        })
-      ))
+    this.historyCash$ = debouncedRefresh$.pipe(
+      switchMap(() => {
+        console.log('🔄 [Movements] Cargando movimientos en efectivo...');
+        return this.movementService.getCashMovements().pipe(
+          catchError(error => {
+            console.error('❌ [Movements] Error al cargar movimientos en efectivo:', error);
+            return of([]);
+          })
+        );
+      }),
+      takeUntil(this.destroy$)
+    );
+
+    this.cards$ = debouncedRefresh$.pipe(
+      switchMap(() => {
+        console.log('🔄 [Movements] Cargando tarjetas...');
+        return this.cardService.getCards().pipe(
+          catchError(error => {
+            console.error('❌ [Movements] Error al cargar tarjetas:', error);
+            return of([]);
+          })
+        );
+      }),
+      takeUntil(this.destroy$)
     );
 
     // Computar propiedades reactivas
@@ -193,6 +212,11 @@ export class MovementsComponent implements OnInit {
   }
 
   ngOnDestroy() {
+    console.log('🔄 [Movements] Destruyendo componente');
+    // 🔒 Limpiar suscripciones
+    this.destroy$.next();
+    this.destroy$.complete();
+    
     // Remover listener al destruir el componente
     window.removeEventListener('resize', this.onWindowResize.bind(this));
   }
@@ -215,28 +239,24 @@ export class MovementsComponent implements OnInit {
   onPrevPageCard() {
     if (this.gridApiCard) {
       this.gridApiCard.paginationGoToPreviousPage();
-      this.updatePaginationStateCard();
     }
   }
 
   onNextPageCard() {
     if (this.gridApiCard) {
       this.gridApiCard.paginationGoToNextPage();
-      this.updatePaginationStateCard();
     }
   }
 
   onPrevPageCash() {
     if (this.gridApiCash) {
       this.gridApiCash.paginationGoToPreviousPage();
-      this.updatePaginationStateCash();
     }
   }
 
   onNextPageCash() {
     if (this.gridApiCash) {
       this.gridApiCash.paginationGoToNextPage();
-      this.updatePaginationStateCash();
     }
   }
 
@@ -244,11 +264,9 @@ export class MovementsComponent implements OnInit {
     if (isCardGrid) {
       this.gridApiCard = params.api;
       this.updatePaginationStateCard();
-      console.log('Grid de tarjetas inicializada');
     } else {
       this.gridApiCash = params.api;
       this.updatePaginationStateCash();
-      console.log('Grid de efectivo inicializada');
     }
     
     params.api.sizeColumnsToFit();
@@ -264,32 +282,70 @@ export class MovementsComponent implements OnInit {
       subtree: true
     });
 
-    // Verificar datos después de que la grid esté lista
-    if (isCardGrid) {
-      this.historyCard$.pipe(take(1)).subscribe(data => {
-        console.log('Datos en grid de tarjetas:', data);
-        console.log('Número total de registros:', data.length);
-        console.log('Páginas esperadas:', Math.ceil(data.length / this.paginationPageSize));
-      });
-    } else {
-      this.historyCash$.pipe(take(1)).subscribe(data => {
-        console.log('Datos en grid de efectivo:', data);
-        console.log('Número total de registros:', data.length);
-        console.log('Páginas esperadas:', Math.ceil(data.length / this.paginationPageSize));
-      });
+    // Grid ready, data will be loaded automatically
+  }
+
+  onFirstDataRendered(params: any, isCardGrid: boolean = true) {
+    if (isCardGrid && !this.cardGridInitialized) {
+      this.cardGridInitialized = true;
+      this.updatePaginationStateCard();
+    } else if (!isCardGrid && !this.cashGridInitialized) {
+      this.cashGridInitialized = true;
+      this.updatePaginationStateCash();
+    }
+    params.api.sizeColumnsToFit();
+  }
+
+  onPaginationChanged(params: any, isCardGrid: boolean = true) {
+    // Solo actualizar si las grids ya están inicializadas
+    if (isCardGrid && this.cardGridInitialized) {
+      this.updatePaginationStateCard();
+      // Forzar refresco de la grid para asegurar renderizado correcto
+      setTimeout(() => {
+        if (this.gridApiCard) {
+          this.gridApiCard.redrawRows();
+        }
+      }, 50);
+    } else if (!isCardGrid && this.cashGridInitialized) {
+      this.updatePaginationStateCash();
+      // Forzar refresco de la grid para asegurar renderizado correcto
+      setTimeout(() => {
+        if (this.gridApiCash) {
+          this.gridApiCash.redrawRows();
+        }
+      }, 50);
     }
   }
 
-  // Método para refrescar todos los datos
+  // 🔄 Método OPTIMIZADO para refrescar datos (con protección contra spam)
   refreshData(): void {
+    const now = Date.now();
+    
+    // 🔒 Protección contra múltiples llamadas seguidas
+    if (now - this.lastRefreshTime < this.REFRESH_DEBOUNCE_TIME) {
+      console.log('🔒 [Movements] Refresh bloqueado - muy frecuente');
+      return;
+    }
+    
+    this.lastRefreshTime = now;
+    console.log('🔄 [Movements] Ejecutando refresh de datos');
+    
+    // Resetear banderas para permitir nueva inicialización
+    this.cardGridInitialized = false;
+    this.cashGridInitialized = false;
     this.refreshTrigger$.next();
     this.cdr.markForCheck();
   }
 
+
+
   openAddMovementDialog() {
     const dialogRef = this.dialog.open(AddMovementComponent);
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(result => {
       if (result) {
+        console.log('🔄 [Movements] Movimiento agregado - refrescando datos');
         this.refreshData();
         // Refrescar límites después de agregar un movimiento
         this.planLimitsService.refreshUsage();
@@ -301,8 +357,11 @@ export class MovementsComponent implements OnInit {
     const dialogRef = this.dialog.open(AddCashComponent, {
       data: { isCash: true }
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(result => {
       if (result) {
+        console.log('🔄 [Movements] Movimiento en efectivo agregado - refrescando datos');
         this.refreshData();
         // Refrescar límites después de agregar un movimiento en efectivo
         this.planLimitsService.refreshUsage();
@@ -318,8 +377,11 @@ export class MovementsComponent implements OnInit {
         maxHeight: '90vh'
       });
     
-      dialogRef.afterClosed().subscribe(result => {
+      dialogRef.afterClosed().pipe(
+        takeUntil(this.destroy$)
+      ).subscribe(result => {
         if (result === true) {
+          console.log('🔄 [Movements] Tarjeta agregada - refrescando datos');
           this.refreshData();
         }
       });
@@ -331,8 +393,11 @@ export class MovementsComponent implements OnInit {
       width: '500px'
     });
   
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(result => {
       if (result === true) {
+        console.log('🔄 [Movements] Cartola procesada - refrescando datos');
         this.refreshData();
       }
     });
@@ -378,14 +443,12 @@ export class MovementsComponent implements OnInit {
       flex: 2,
       minWidth: 200,
       wrapText: true,
-      autoHeight: true,
       cellStyle: {
         fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)',
         whiteSpace: 'normal',
-        lineHeight: '1.5',
-        padding: '10px'
+        lineHeight: '1.5'
       }
     },
     {
@@ -400,10 +463,7 @@ export class MovementsComponent implements OnInit {
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)',
         fontWeight: '500',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        padding: '0 10px'
+        textAlign: 'right'
       },
       minWidth: 150,
       maxWidth: 150,
@@ -435,10 +495,7 @@ export class MovementsComponent implements OnInit {
       },
       cellStyle: {
         fontSize: 'var(--font-size-sm)',
-        textAlign: 'center',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        textAlign: 'center'
       },
       minWidth: 100,
       maxWidth: 100,
@@ -454,9 +511,9 @@ export class MovementsComponent implements OnInit {
       },
       sortable: false,
       filter: false,
-      width: 100,
-      minWidth: 100,
-      maxWidth: 100,
+      width: 120,
+      minWidth: 120,
+      maxWidth: 120,
       pinned: 'right',
       resizable: false
     }
@@ -502,14 +559,12 @@ export class MovementsComponent implements OnInit {
       flex: 2,
       minWidth: 150,
       wrapText: true,
-      autoHeight: true,
       cellStyle: {
         fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)',
         whiteSpace: 'normal',
-        lineHeight: '1.5',
-        padding: '10px'
+        lineHeight: '1.5'
       }
     },
     {
@@ -524,10 +579,7 @@ export class MovementsComponent implements OnInit {
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)',
         fontWeight: '500',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        padding: '0 10px'
+        textAlign: 'right'
       },
       minWidth: 150,
       maxWidth: 150,
@@ -555,14 +607,11 @@ export class MovementsComponent implements OnInit {
         };
         const category = params.data?.category?.nameCategory || 'Otros';
         const icon = categoryIcons[category] || '📦';
-        return `<div title="${category}" style="display: flex; align-items: center; justify-content: center;">${icon}</div>`;
+        return `<div title="${category}" style="text-align: center;">${icon}</div>`;
       },
       cellStyle: {
         fontSize: 'var(--font-size-sm)',
-        textAlign: 'center',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        textAlign: 'center'
       },
       minWidth: 150,
       maxWidth: 150,
@@ -578,9 +627,9 @@ export class MovementsComponent implements OnInit {
       },
       sortable: false,
       filter: false,
-      width: 100,
-      minWidth: 100,
-      maxWidth: 100,
+      width: 120,
+      minWidth: 120,
+      maxWidth: 120,
       pinned: 'right',
       resizable: false
     }
@@ -595,9 +644,7 @@ export class MovementsComponent implements OnInit {
     cellStyle: {
       fontSize: 'var(--font-size-xs)',
       fontFamily: 'var(--font-family-normal)',
-      color: 'var(--color-text)',
-      display: 'flex',
-      alignItems: 'center'
+      color: 'var(--color-text)'
     },
     headerClass: 'ag-header-cell-custom'
   };
@@ -614,7 +661,7 @@ export class MovementsComponent implements OnInit {
     textColor: 'var(--color-text)',
     fontSize: 'var(--font-size-xs)',
     fontFamily: 'var(--font-family-normal)',
-    rowHeight: 'auto',
+    rowHeight: 50,
     headerHeight: 50,
     rowHoverColor: 'var(--clr-surface-a20)',
     selectedRowBackgroundColor: 'var(--clr-primary-50)',
@@ -622,115 +669,96 @@ export class MovementsComponent implements OnInit {
 
   private updatePaginationStateCard() {
     if (this.gridApiCard) {
-      const currentPage = this.gridApiCard.paginationGetCurrentPage();
-      const totalPages = this.gridApiCard.paginationGetTotalPages();
-      const totalRows = this.gridApiCard.paginationGetRowCount();
-      
-      console.log('Estado de paginación tarjetas:', {
-        currentPage,
-        totalPages,
-        totalRows,
-        rowsPerPage: this.paginationPageSize
-      });
-
-      this.paginationStateCard = {
-        isFirstPage: currentPage === 0,
-        isLastPage: currentPage >= totalPages - 1,
-        currentPage: currentPage + 1,
-        totalPages
-      };
-      this.cdr.detectChanges();
+      try {
+        const currentPage = this.gridApiCard.paginationGetCurrentPage();
+        const totalPages = this.gridApiCard.paginationGetTotalPages();
+        const totalRows = this.gridApiCard.paginationGetRowCount();
+        
+        if (totalPages > 0) {
+          const newCurrentPage = currentPage + 1;
+          
+          // Solo actualizar si la página actual realmente cambió
+          if (this.paginationStateCard.currentPage !== newCurrentPage) {
+            this.paginationStateCard = {
+              isFirstPage: currentPage === 0,
+              isLastPage: currentPage >= totalPages - 1,
+              currentPage: newCurrentPage,
+              totalPages
+            };
+            
+            this.cdr.detectChanges();
+          }
+        }
+      } catch (error) {
+        // Error updating pagination state
+      }
     }
   }
 
   private updatePaginationStateCash() {
     if (this.gridApiCash) {
-      const currentPage = this.gridApiCash.paginationGetCurrentPage();
-      const totalPages = this.gridApiCash.paginationGetTotalPages();
-      const totalRows = this.gridApiCash.paginationGetRowCount();
-      
-      console.log('Estado de paginación efectivo:', {
-        currentPage,
-        totalPages,
-        totalRows,
-        rowsPerPage: this.paginationPageSize
-      });
-
-      this.paginationStateCash = {
-        isFirstPage: currentPage === 0,
-        isLastPage: currentPage >= totalPages - 1,
-        currentPage: currentPage + 1,
-        totalPages
-      };
-      this.cdr.detectChanges();
+      try {
+        const currentPage = this.gridApiCash.paginationGetCurrentPage();
+        const totalPages = this.gridApiCash.paginationGetTotalPages();
+        const totalRows = this.gridApiCash.paginationGetRowCount();
+        
+        if (totalPages > 0) {
+          const newCurrentPage = currentPage + 1;
+          
+          // Solo actualizar si la página actual realmente cambió
+          if (this.paginationStateCash.currentPage !== newCurrentPage) {
+            this.paginationStateCash = {
+              isFirstPage: currentPage === 0,
+              isLastPage: currentPage >= totalPages - 1,
+              currentPage: newCurrentPage,
+              totalPages
+            };
+            
+            this.cdr.detectChanges();
+          }
+        }
+      } catch (error) {
+        // Error updating pagination state
+      }
     }
   }
 
   onEditMovement(movement: Movement): void {
     const dialogRef = this.dialog.open(EditMovementDialogComponent, {
-      width: '600px',
-      maxHeight: '90vh',
-      data: { movement }
+      width: '500px',
+      data: { movement: movement } // Envolver en objeto como espera el diálogo
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(result => {
       if (result) {
+        console.log('🔄 [Movements] Movimiento editado - refrescando datos');
         this.refreshData();
         // Refrescar límites después de editar un movimiento
         this.planLimitsService.refreshUsage();
-        this.snackBar.open('Movimiento actualizado correctamente', 'Cerrar', {
-          duration: 3000,
-          horizontalPosition: 'center',
-          verticalPosition: 'top'
-        });
       }
     });
   }
 
   onDeleteMovement(movement: Movement): void {
-    let confirmMessage = `¿Estás seguro de que deseas eliminar el movimiento "${movement.description}"?`;
-    
-    // Agregar información adicional para movimientos manuales
-    if (movement.movementSource === 'manual') {
-      confirmMessage += '\n\nNota: Este es un movimiento manual. Al eliminarlo se liberará espacio en tu límite mensual de movimientos manuales.';
-    }
-    
-    const confirmed = confirm(confirmMessage);
-    
-    if (confirmed) {
-      this.movementService.deleteMovement(movement.id).subscribe({
-        next: () => {
-          this.refreshData();
-          // Refrescar límites después de eliminar un movimiento manual
-          if (movement.movementSource === 'manual') {
-            this.planLimitsService.refreshUsage();
-          }
-          let successMessage = 'Movimiento eliminado correctamente';
-          if (movement.movementSource === 'manual') {
-            successMessage += '. Se ha liberado espacio en tu límite de movimientos manuales.';
-          }
-          this.snackBar.open(successMessage, 'Cerrar', {
-            duration: 4000,
-            horizontalPosition: 'center',
-            verticalPosition: 'top'
-          });
-        },
-        error: (error) => {
-          console.error('Error al eliminar movimiento:', error);
-          console.error('Detalles del error:', error.error);
-          this.snackBar.open(
-            error.error?.message || 'Error al eliminar el movimiento', 
-            'Cerrar', 
-            {
-              duration: 5000,
-              horizontalPosition: 'center',
-              verticalPosition: 'top'
-            }
-          );
-        }
-      });
-    } else {
-      console.log('Usuario canceló la eliminación');
-    }
+    this.movementService.deleteMovement(movement.id).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => {
+        console.log('🔄 [Movements] Movimiento eliminado - refrescando datos');
+        this.refreshData();
+        this.snackBar.open('Movimiento eliminado correctamente', 'Cerrar', {
+          duration: 3000
+        });
+        this.planLimitsService.refreshUsage();
+      },
+      error: (error) => {
+        console.error('❌ [Movements] Error al eliminar movimiento:', error);
+        this.snackBar.open('Error al eliminar el movimiento', 'Cerrar', {
+          duration: 3000
+        });
+      }
+    });
   }
 }

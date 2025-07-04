@@ -26,6 +26,7 @@ router.get('/', movementController.getAll);
 router.get('/cash', movementController.getCashMovements);
 router.get('/card-movements', movementController.getCardMovements);
 router.get('/filter', movementController.getByFilters);
+router.post('/filter', movementController.getByFilters); // Agregar ruta POST para filtros
 router.get('/monthly-summary', movementController.getMonthlySummary);
 router.get('/:id', movementController.getById);
 router.post('/', movementController.create);

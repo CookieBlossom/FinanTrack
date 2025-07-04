@@ -183,6 +183,25 @@ export class ProjectedMovementController {
         }
     };
 
+    public getIntelligent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const userId = (req as AuthRequest).user?.id;
+            if (!userId) {
+                res.status(401).json({ message: 'Usuario no autenticado' });
+                return;
+            }
+
+            const movements = await this.projectedMovementService.getIntelligentProjectedMovements(userId);
+            res.json(movements);
+        } catch (error) {
+            console.error('Error al obtener movimientos proyectados inteligentes:', error);
+            res.status(500).json({
+                message: 'Error al obtener los movimientos proyectados inteligentes',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    };
+
     private validateProjectedMovementData(data: IProjectedMovementCreate): boolean {
         return !!(
             data.userId &&

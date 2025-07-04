@@ -29,9 +29,7 @@ import { of } from 'rxjs';
     MatIconModule,
     MatCheckboxModule,
     MatProgressSpinnerModule,
-    MatDialogModule,
-    // Se usa dinámicamente en openTermsDialog()
-    TermsConditionsDialogComponent
+    MatDialogModule
   ],
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css']

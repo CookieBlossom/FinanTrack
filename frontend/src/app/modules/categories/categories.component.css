@@ -131,7 +131,7 @@
 
 /* Simulador de categorización */
 .simulator-panel {
-  padding: 0.75rem;
+  padding: 0.2rem;
   background: var(--clr-surface-a10);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -198,8 +198,6 @@
 .result-content {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
   border-radius: 8px;
   border: 1px solid var(--clr-surface-a20);
   background: var(--clr-surface-a0);
@@ -229,9 +227,9 @@
 }
 
 .category-name {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  margin-top: 0.25rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin-top: 0px;
 }
 
 .matched-keywords {

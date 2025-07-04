@@ -14,6 +14,7 @@ export class PlanService {
            WHERE plan_id = $1`,
           [planId]
         );
+        
         return res.rows.reduce((map, row) => {
           map[row.limit_key] = row.limit_val;
           return map;

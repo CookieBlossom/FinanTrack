@@ -186,8 +186,22 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   openChangePasswordDialog() {
-    // Implementar diálogo de cambio de contraseña
-    console.log('Abrir diálogo de cambio de contraseña');
+    const dialogRef = this.dialog.open(ChangePasswordComponent, {
+      width: '500px',
+      maxWidth: '90vw',
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '200ms',
+      panelClass: 'change-password-dialog'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'success') {
+        console.log('Contraseña cambiada exitosamente');
+        // Opcional: Podrías cerrar sesión y redirigir al login
+        // this.authService.logout();
+        // this.router.navigate(['/login']);
+      }
+    });
   }
 
   openBillingSection() {

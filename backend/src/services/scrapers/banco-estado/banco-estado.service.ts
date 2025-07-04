@@ -20,9 +20,6 @@ export class BancoEstadoService {
                 data: credentials,
                 planId: credentials.planId
             });
-
-            // Crear la tarea en Redis con el formato que espera el scraper
-            // Asegurarnos de que los tipos coincidan con el modelo Python
             const taskData = {
                 id: task.id,
                 user_id: Number(userId), // Asegurar que sea número
@@ -46,6 +43,9 @@ export class BancoEstadoService {
             // Agregar la tarea a la cola de procesamiento
             await this.redisService.rpush('scraper:queue', JSON.stringify(taskData));
 
+            // Ejecutar el scraper
+            this.runScraper();
+
             return { taskId: task.id };
         } catch (error) {
             console.error('[BancoEstadoService] Error al crear tarea de scraping:', error);
@@ -57,11 +57,13 @@ export class BancoEstadoService {
         try {
             // Intentar obtener el estado del formato del scraper primero
             const scraperTaskData = await this.redisService.hGet(`scraper:tasks:${taskId}`, 'data');
+            
             if (scraperTaskData) {
                 const scraperTask = JSON.parse(scraperTaskData);
+                
                 // Convertir el formato del scraper al formato del servicio
                 const transformedResult = this.transformScraperResult(scraperTask.result);
-                return {
+                const task = {
                     id: taskId,
                     userId: scraperTask.userId || 0,
                     type: scraperTask.type,
@@ -73,6 +75,8 @@ export class BancoEstadoService {
                     updatedAt: scraperTask.updatedAt || new Date().toISOString(),
                     error: scraperTask.error
                 };
+                
+                return task;
             }
 
             // Si no se encuentra en el formato del scraper, intentar el formato del servicio
@@ -139,12 +143,38 @@ export class BancoEstadoService {
     }
 
     async runScraper(config: any = {}): Promise<void> {
-        // Encontrar la raíz del proyecto
-        const projectRoot = process.cwd();
-        const pythonPath = 'python';
+        // Encontrar la raíz del proyecto - solución robusta
+        const currentDir = process.cwd(); // C:\Proyectos\FinanTrack\backend
+        const projectRoot = join(currentDir, '..'); // C:\Proyectos\FinanTrack
+        console.log('projectRoot', projectRoot);
         const scriptPath = join(projectRoot, 'scraper', 'sites', 'banco_estado', 'banco_estado_manager.py');
-
-        console.log(`[BancoEstado Scraper] Iniciando scraper desde: ${scriptPath}`);
+        
+        // Verificar que el archivo existe
+        const fs = require('fs');
+        if (!fs.existsSync(scriptPath)) {
+            console.error(`[BancoEstadoService] ERROR: El script no existe en: ${scriptPath}`);
+            return;
+        }
+        
+        // Intentar diferentes comandos de Python comunes en Windows
+        const pythonCommands = ['py', 'python', 'python3'];
+        let pythonPath = null;
+        
+        for (const cmd of pythonCommands) {
+            try {
+                const { execSync } = require('child_process');
+                execSync(`${cmd} --version`, { stdio: 'pipe' });
+                pythonPath = cmd;
+                break;
+            } catch (error) {
+                // Continuar con el siguiente comando
+            }
+        }
+        
+        if (!pythonPath) {
+            console.error(`[BancoEstadoService] ERROR: No se encontró Python instalado. Instala Python o verifica el PATH.`);
+            return;
+        }
 
         const scraperProcess = spawn(pythonPath, [scriptPath], {
             env: {
@@ -161,15 +191,15 @@ export class BancoEstadoService {
         });
 
         scraperProcess.stderr.on('data', (data) => {
-            console.error(`[BancoEstado Scraper Error] ${data}`);
+            console.error(`[BancoEstado Scraper] Error: ${data}`);
         });
 
         scraperProcess.on('close', (code) => {
-            console.log(`[BancoEstado Scraper] Proceso terminado con código ${code}`);
+            console.log(`[BancoEstado Scraper] Proceso terminado con código: ${code}`);
         });
 
         scraperProcess.on('error', (error) => {
-            console.error(`[BancoEstado Scraper] Error al iniciar proceso: ${error}`);
+            console.error(`[BancoEstado Scraper] Error al iniciar proceso:`, error);
         });
     }
 } 

@@ -46,8 +46,7 @@ export class ResetPasswordComponent {
       confirmPassword: ['', Validators.required]
     }, {
       validators: [
-        this.passwordsMatchValidator,
-        this.preventSamePasswordValidator
+        this.passwordsMatchValidator
       ]
     });
     this.route.queryParams.subscribe(params => {
@@ -61,15 +60,7 @@ export class ResetPasswordComponent {
   
     return newPassword === confirmPassword ? null : { mismatch: true };
   };
-  
-  preventSamePasswordValidator = (form: FormGroup) => {
-    const newPassword = form.get('newPassword')?.value;
-    const confirmPassword = form.get('confirmPassword')?.value;
-  
-    return newPassword && confirmPassword && newPassword === confirmPassword
-      ? { sameAsPrevious: true }
-      : null;
-  };
+
   reset(): void {
     if (!this.token || this.resetPasswordForm.invalid) return;
     this.loading = true;

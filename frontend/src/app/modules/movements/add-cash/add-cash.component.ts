@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -18,7 +18,8 @@ import { LimitNotificationComponent, LimitNotificationData } from '../../../shar
 import { PLAN_LIMITS } from '../../../models/plan.model';
 import { PlanLimitAlertService } from '../../../shared/services/plan-limit-alert.service';
 import { Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-add-cash',
@@ -38,13 +39,20 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
     LimitNotificationComponent
   ]
 })
-export class AddCashComponent {
+export class AddCashComponent implements OnDestroy {
   cashForm: FormGroup;
   categories: Category[] = [];
   methodOptions = ['Caja chica', 'Banca', 'Cheque', 'Transferencia', 'Otro'];
   typeOptions = ['income', 'expense'];
   isLoading = false;
   minDate: string; // Fecha mínima para el input de fecha
+  
+  // 🔒 Variables de protección contra múltiples ejecuciones
+  isProcessing = false; // Público para usar en template
+  private hasSubmitted = false;
+  private componentDestroyed = false;
+  private destroy$ = new Subject<void>();
+  private processingId: string | null = null;
 
   // Variables para límites
   limitsInfo: any = null;
@@ -93,11 +101,19 @@ export class AddCashComponent {
     this.setupCategorizationWatcher();
   }
 
+  ngOnDestroy() {
+    console.log('🔄 [AddCash] Destruyendo componente');
+    this.componentDestroyed = true;
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadCategories(): void {
-    this.categoryService.getUserCategories().subscribe({
+    this.categoryService.getUserCategories().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (cats) => {
         this.categories = cats;
-        console.log('Categorías cargadas:', this.categories);
       },
       error: (err) => {
         console.error('Error al cargar categorías:', err.message);
@@ -107,7 +123,9 @@ export class AddCashComponent {
 
   loadLimitsInfo(): void {
     // Cargar información de límites
-    this.planLimitsService.currentUsage$.subscribe({
+    this.planLimitsService.currentUsage$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (usage) => {
         this.limitsInfo = usage;
       },
@@ -151,53 +169,104 @@ export class AddCashComponent {
   }
 
   submit() {
+    // 🔒 Múltiples protecciones contra ejecuciones duplicadas
+    if (this.componentDestroyed) {
+      console.log('🔒 [AddCash] Componente destruido, ignorando...');
+      return;
+    }
+
+    if (this.isProcessing || this.hasSubmitted) {
+      console.log('🔒 [AddCash] Ya se está procesando o ya se envió, ignorando...');
+      return;
+    }
+
     if (this.cashForm.invalid) {
       this.cashForm.markAllAsTouched();
       return;
     }
 
+    // Generar ID único para este procesamiento
+    const currentProcessingId = `cash-processing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    this.processingId = currentProcessingId;
+    this.isProcessing = true;
+    this.hasSubmitted = true;
+    
+    console.log(`🔒 [AddCash] Iniciando procesamiento único ID: ${currentProcessingId}`);
+
     // Verificar límites antes de crear el movimiento
-    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MANUAL_MOVEMENTS).subscribe({
+    this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.MANUAL_MOVEMENTS).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (limitStatus) => {
+        // Verificar que este procesamiento sigue siendo válido
+        if (this.processingId !== currentProcessingId || this.componentDestroyed) {
+          console.log('🔒 [AddCash] Procesamiento obsoleto, ignorando...');
+          return;
+        }
+
+        // Si el límite es -1, significa que es ilimitado
+        if (limitStatus.limit === -1) {
+          // Continuar con la creación del movimiento sin verificar límites
+          this.createMovement(currentProcessingId);
+          return;
+        }
+        
+        // Verificar límite solo si no es ilimitado
         if (limitStatus.currentUsage >= limitStatus.limit) {
           // Mostrar alerta modal en lugar de notificación
-          this.planLimitAlertService.showMovementLimitAlert(limitStatus.currentUsage, limitStatus.limit).subscribe({
+          this.planLimitAlertService.showMovementLimitAlert(limitStatus.currentUsage, limitStatus.limit).pipe(
+            takeUntil(this.destroy$)
+          ).subscribe({
             next: (result) => {
               if (result.action === 'upgrade') {
                 this.router.navigate(['/plans']);
               }
-              // Si es dismiss, no hacer nada y dejar que el usuario continúe
+              this.resetProcessingState();
             }
           });
           return;
         }
 
         // Continuar con la creación del movimiento
-        this.createMovement();
+        this.createMovement(currentProcessingId);
       },
       error: (error) => {
         console.error('Error al verificar límites:', error);
-        // Continuar sin verificación en caso de error
-        this.createMovement();
+        if (this.processingId === currentProcessingId && !this.componentDestroyed) {
+          // Continuar sin verificación en caso de error
+          this.createMovement(currentProcessingId);
+        }
       }
     });
   }
 
-  private createMovement() {
+  private resetProcessingState(): void {
+    this.isProcessing = false;
+    this.hasSubmitted = false;
+    this.processingId = null;
+    console.log('🔒 [AddCash] Estado de procesamiento reseteado');
+  }
+
+  private createMovement(processingId?: string) {
+    // 🔒 Verificar que el procesamiento sigue siendo válido
+    if (processingId && this.processingId !== processingId) {
+      console.log('🔒 [AddCash] Procesamiento obsoleto en createMovement, ignorando...');
+      return;
+    }
+
+    if (this.componentDestroyed) {
+      console.log('🔒 [AddCash] Componente destruido en createMovement, ignorando...');
+      return;
+    }
+
+    console.log('🚀 [AddCash] Iniciando creación de movimiento en efectivo');
     const formValue = this.cashForm.value;
-    console.log('Valores del formulario:', formValue);
-    console.log('Monto del formulario:', formValue.amount, 'tipo:', typeof formValue.amount);
-    
-    // Obtener el valor directo del control para debugging
-    const amountControl = this.cashForm.get('amount');
-    console.log('Valor del control amount:', amountControl?.value, 'tipo:', typeof amountControl?.value);
     
     // Combinar método de pago y descripción para el campo description final
     const finalDescription = `${formValue.paymentMethod} - ${formValue.description}`;
     
     // Usar parseInt para números enteros
     const amount = parseInt(formValue.amount.toString(), 10);
-    console.log('Monto después de parseInt:', amount, 'tipo:', typeof amount);
     
     const payload = {
       categoryId: formValue.categoryId,
@@ -208,20 +277,38 @@ export class AddCashComponent {
       movementSource: 'manual' as const,
       useCashCard: true // para que el backend asocie automáticamente la tarjeta "Efectivo"
     } as any;
-    
-    console.log('Payload a enviar:', payload);
-    console.log('Monto en payload:', payload.amount, 'tipo:', typeof payload.amount);
 
+    console.log('📤 [AddCash] Enviando datos al backend:', payload);
     this.isLoading = true;
 
-    this.movementService.addMovement(payload).subscribe({
+    this.movementService.addMovement(payload).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (res) => {
+        // Verificar que el procesamiento sigue siendo válido
+        if (processingId && this.processingId !== processingId) {
+          console.log('🔒 [AddCash] Procesamiento obsoleto en respuesta, ignorando...');
+          return;
+        }
+
+        console.log('✅ [AddCash] Movimiento en efectivo creado exitosamente');
         this.snackBar.open('Movimiento en efectivo agregado exitosamente', 'Cerrar', { duration: 3000 });
-        this.dialogRef.close(true); // Cerrar con true para indicar que se agregó exitosamente
+        this.resetProcessingState();
+        
+        if (!this.componentDestroyed) {
+          this.dialogRef.close(true); // Cerrar con true para indicar que se agregó exitosamente
+        }
       },
       error: (err) => {
-        console.error('Error al agregar movimiento en efectivo:', err);
+        // Verificar que el procesamiento sigue siendo válido
+        if (processingId && this.processingId !== processingId) {
+          console.log('🔒 [AddCash] Procesamiento obsoleto en error, ignorando...');
+          return;
+        }
+
+        console.error('❌ [AddCash] Error al agregar movimiento en efectivo:', err);
         this.snackBar.open('Error al agregar el movimiento', 'Cerrar', { duration: 3000 });
+        this.resetProcessingState();
         this.isLoading = false;
       }
     });
@@ -235,7 +322,8 @@ export class AddCashComponent {
     // Observar cambios en el campo de descripción
     this.cashForm.get('description')?.valueChanges.pipe(
       debounceTime(500), // Esperar 500ms después del último cambio
-      distinctUntilChanged() // Solo procesar si el valor realmente cambió
+      distinctUntilChanged(), // Solo procesar si el valor realmente cambió
+      takeUntil(this.destroy$)
     ).subscribe(description => {
       if (description && description.trim().length >= 3) {
         this.performCategorization(description);
@@ -246,7 +334,9 @@ export class AddCashComponent {
   }
 
   performCategorization(description: string): void {
-    this.categorizationService.categorizeDescription(description).subscribe(result => {
+    this.categorizationService.categorizeDescription(description).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(result => {
       this.categorizationResult = result;
       this.showCategorizationSuggestion = result.found && result.confidence > 0.3;
       

@@ -2,32 +2,32 @@
   <!-- Header con estadísticas -->
   <div class="stats-header">
     <h2 class="title-section">Próximos Movimientos</h2>
-    <div class="stats-grid">
+    <div class="stats-grid" *ngIf="upcomingStats$ | async as stats">
       <div class="stat-card">
         <div class="stat-icon">📊</div>
         <div class="stat-content">
-          <div class="stat-value">{{ upcomingStats.total }}</div>
+          <div class="stat-value">{{ stats.total }}</div>
           <div class="stat-label">Total Pendientes</div>
         </div>
       </div>
       <div class="stat-card overdue">
         <div class="stat-icon">⚠️</div>
         <div class="stat-content">
-          <div class="stat-value">{{ upcomingStats.overdue }}</div>
+          <div class="stat-value">{{ stats.overdue }}</div>
           <div class="stat-label">Vencidos</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">📅</div>
         <div class="stat-content">
-          <div class="stat-value">{{ upcomingStats.thisWeek }}</div>
+          <div class="stat-value">{{ stats.thisWeek }}</div>
           <div class="stat-label">Esta Semana</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">💰</div>
         <div class="stat-content">
-          <div class="stat-value">{{ upcomingStats.totalAmount | currency:'CLP':'symbol':'1.0-0' }}</div>
+          <div class="stat-value">{{ stats.totalAmount | currency:'CLP':'symbol':'1.0-0' }}</div>
           <div class="stat-label">Balance Proyectado</div>
         </div>
       </div>
@@ -41,10 +41,18 @@
         <h3>Movimientos Proyectados</h3>
         <span class="subtitle">Gestiona tus movimientos futuros y conviértelos en reales cuando ocurran</span>
       </div>
-      <button class="btn-add" (click)="openAddUpcomingMovement()">
-        <mat-icon>add</mat-icon>
-        Agregar Movimiento
-      </button>
+      <div class="table-actions">
+        <!-- 🔄 Botón de refresh manual -->
+        <button class="btn-refresh" (click)="refreshMovements()" [disabled]="projectedMovementsLoading$ | async">
+          <mat-icon>refresh</mat-icon>
+          <span *ngIf="!(projectedMovementsLoading$ | async)">Actualizar</span>
+          <span *ngIf="projectedMovementsLoading$ | async">Cargando...</span>
+        </button>
+        <button class="btn-add" (click)="openAddUpcomingMovement()">
+          <mat-icon>add</mat-icon>
+          Agregar Movimiento
+        </button>
+      </div>
     </div>
     
     <!-- Mostrar tabla si hay movimientos -->
@@ -70,8 +78,14 @@
       (gridSizeChanged)="onGridSizeChanged($event)">
     </ag-grid-angular>
 
+    <!-- Mostrar loading spinner -->
+    <div *ngIf="projectedMovementsLoading$ | async" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Cargando movimientos...</p>
+    </div>
+
     <!-- Mostrar mensaje cuando no hay movimientos -->
-    <div *ngIf="rowData.length === 0" class="empty-state">
+    <div *ngIf="rowData.length === 0 && !(projectedMovementsLoading$ | async)" class="empty-state">
       <div class="empty-icon">📋</div>
       <h3 class="empty-title">No tienes movimientos próximos</h3>
       <p class="empty-description">

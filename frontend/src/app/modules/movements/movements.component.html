@@ -9,58 +9,68 @@
         </button>
         <h3>Movimientos de Cuenta</h3>
         
-        <!-- Indicador de carga -->
-        <div *ngIf="(historyCard$ | async) === null" class="loading-state">
-          <mat-spinner diameter="40"></mat-spinner>
-          <p>Cargando movimientos...</p>
-        </div>
-        
-        <div class="movements-container">
-          <ag-grid-angular
-            *ngIf="(historyCard$ | async) !== null"
-            [columnDefs]="columnDefsCard"
-            [defaultColDef]="defaultColDef"
-            [rowData]="historyCard$ | async"
-            [pagination]="true"
-            [paginationPageSize]="10"
-            [suppressPaginationPanel]="true"
-            [theme]="myTheme"
-            class="ag-theme-quartz"
-            (gridReady)="onGridReady($event, true)">
-          </ag-grid-angular>
-          <div class="pagination-controls" *ngIf="(historyCard$ | async)?.length">
-            <span class="pagination-info">
-              Página {{ paginationStateCard.currentPage }} de {{ paginationStateCard.totalPages }}
-            </span>
-            <button mat-icon-button (click)="onPrevPageCard()" [disabled]="paginationStateCard.isFirstPage">
-              <mat-icon>chevron_left</mat-icon>
-            </button>
-            <button mat-icon-button (click)="onNextPageCard()" [disabled]="paginationStateCard.isLastPage">
-              <mat-icon>chevron_right</mat-icon>
-            </button>
+        <!-- 🔄 SUSCRIPCIÓN ÚNICA a historyCard$ -->
+        <div *ngIf="historyCard$ | async as cardMovements; else loadingCard">
+          <div class="movements-container">
+            <ag-grid-angular
+              [columnDefs]="columnDefsCard"
+              [defaultColDef]="defaultColDef"
+              [rowData]="cardMovements"
+              [pagination]="true"
+              [paginationPageSize]="10"
+              [suppressPaginationPanel]="true"
+              [rowHeight]="50"
+              [theme]="myTheme"
+              class="ag-theme-quartz"
+              (gridReady)="onGridReady($event, true)"
+              (firstDataRendered)="onFirstDataRendered($event, true)"
+              (paginationChanged)="onPaginationChanged($event, true)">
+            </ag-grid-angular>
+            <div class="pagination-controls" *ngIf="cardMovements?.length">
+              <span class="pagination-info">
+                Página {{ paginationStateCard.currentPage }} de {{ paginationStateCard.totalPages }}
+              </span>
+              <button mat-icon-button (click)="onPrevPageCard()" [disabled]="paginationStateCard.isFirstPage">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              <button mat-icon-button (click)="onNextPageCard()" [disabled]="paginationStateCard.isLastPage">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
           </div>
         </div>
         
-        <!-- Mostrar botón de agregar tarjeta si solo tiene tarjetas de efectivo -->
-        <button 
-          class="btn-add" 
-          (click)="openAddCardDialog()" 
-          *ngIf="hasOnlyCashCards$ | async">
-          <mat-icon>add_card</mat-icon>
-          Agregar Tarjeta
-        </button>
+        <!-- Template para estado de carga -->
+        <ng-template #loadingCard>
+          <div class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Cargando movimientos...</p>
+          </div>
+        </ng-template>
         
-        <!-- Mostrar botón de agregar movimiento si tiene tarjetas no-efectivo -->
-        <button 
-          class="btn-add" 
-          (click)="openAddMovementDialog()" 
-          *ngIf="hasNonCashCards$ | async">
-          <mat-icon>add</mat-icon>
-          Agregar Movimiento
-        </button>
+        <!-- 🔄 SUSCRIPCIÓN ÚNICA a hasOnlyCashCards$ y hasNonCashCards$ -->
+        <div *ngIf="hasOnlyCashCards$ | async as onlyCash">
+          <button 
+            class="btn-add" 
+            (click)="openAddCardDialog()" 
+            *ngIf="onlyCash">
+            <mat-icon>add_card</mat-icon>
+            Agregar Tarjeta
+          </button>
+        </div>
         
-        <!-- Mostrar mensaje si no tiene tarjetas -->
-        <div *ngIf="!(hasOnlyCashCards$ | async) && !(hasNonCashCards$ | async)" class="no-cards-message">
+        <div *ngIf="hasNonCashCards$ | async as hasNonCash">
+          <button 
+            class="btn-add" 
+            (click)="openAddMovementDialog()" 
+            *ngIf="hasNonCash">
+            <mat-icon>add</mat-icon>
+            Agregar Movimiento
+          </button>
+        </div>
+        
+        <!-- Mensaje si no tiene tarjetas (ni efectivo ni normales) -->
+        <div *ngIf="(hasOnlyCashCards$ | async) === false && (hasNonCashCards$ | async) === false" class="no-cards-message">
           <p>No tienes tarjetas configuradas. Agrega una tarjeta para comenzar a registrar movimientos.</p>
           <button class="btn-add" (click)="openAddCardDialog()">
             <mat-icon>add_card</mat-icon>
@@ -71,37 +81,45 @@
     <div class="table">
         <h3>Movimientos en Efectivo</h3>
         
-        <!-- Indicador de carga -->
-        <div *ngIf="(historyCash$ | async) === null" class="loading-state">
-          <mat-spinner diameter="40"></mat-spinner>
-          <p>Cargando movimientos en efectivo...</p>
-        </div>
-        
-        <div class="movements-container">
-          <ag-grid-angular
-              *ngIf="(historyCash$ | async) !== null"
-              class="ag-theme-quartz"
-              [rowData]="historyCash$ | async"
-              [columnDefs]="columnDefsCash"
-              [pagination]="true"
-              [paginationPageSize]="10"
-              [suppressPaginationPanel]="true"
-              [theme]="myTheme"
-              [defaultColDef]="defaultColDef"
-              (gridReady)="onGridReady($event, false)">
-          </ag-grid-angular>
-          <div class="pagination-controls" *ngIf="(historyCash$ | async)?.length">
-            <span class="pagination-info">
-              Página {{ paginationStateCash.currentPage }} de {{ paginationStateCash.totalPages }}
-            </span>
-            <button mat-icon-button (click)="onPrevPageCash()" [disabled]="paginationStateCash.isFirstPage">
-              <mat-icon>chevron_left</mat-icon>
-            </button>
-            <button mat-icon-button (click)="onNextPageCash()" [disabled]="paginationStateCash.isLastPage">
-              <mat-icon>chevron_right</mat-icon>
-            </button>
+        <!-- 🔄 SUSCRIPCIÓN ÚNICA a historyCash$ -->
+        <div *ngIf="historyCash$ | async as cashMovements; else loadingCash">
+          <div class="movements-container">
+            <ag-grid-angular
+                class="ag-theme-quartz"
+                [rowData]="cashMovements"
+                [columnDefs]="columnDefsCash"
+                [pagination]="true"
+                [paginationPageSize]="10"
+                [suppressPaginationPanel]="true"
+                [rowHeight]="50"
+                [theme]="myTheme"
+                [defaultColDef]="defaultColDef"
+                (gridReady)="onGridReady($event, false)"
+                (firstDataRendered)="onFirstDataRendered($event, false)"
+                (paginationChanged)="onPaginationChanged($event, false)">
+            </ag-grid-angular>
+            <div class="pagination-controls" *ngIf="cashMovements?.length">
+              <span class="pagination-info">
+                Página {{ paginationStateCash.currentPage }} de {{ paginationStateCash.totalPages }}
+              </span>
+              <button mat-icon-button (click)="onPrevPageCash()" [disabled]="paginationStateCash.isFirstPage">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              <button mat-icon-button (click)="onNextPageCash()" [disabled]="paginationStateCash.isLastPage">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
           </div>
         </div>
+        
+        <!-- Template para estado de carga -->
+        <ng-template #loadingCash>
+          <div class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Cargando movimientos en efectivo...</p>
+          </div>
+        </ng-template>
+        
         <button class="btn-add" (click)="openAddCashMovementDialog()">
           <mat-icon>add</mat-icon>
           Movimiento en Efectivo</button>

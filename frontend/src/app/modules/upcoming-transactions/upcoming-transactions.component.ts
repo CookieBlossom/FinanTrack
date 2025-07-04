@@ -6,7 +6,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Subject, interval, takeUntil } from 'rxjs';
+import { Subject, interval, takeUntil, Observable, combineLatest, map } from 'rxjs';
 import {
   ClientSideRowModelApiModule,
   ClientSideRowModelModule,
@@ -66,15 +66,19 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private gridApi!: GridApi;
   
-  // Datos de la tabla
+  // 🔄 Sistema reactivo - usar observables en lugar de arrays
+  projectedMovements$: Observable<ProjectedMovement[]>;
+  projectedMovementsLoading$: Observable<boolean>;
   rowData: any[] = [];
-  projectedMovements: ProjectedMovement[] = [];
+  
+  // Estadísticas calculadas reactivamente
+  upcomingStats$: Observable<any>;
   
   // Configuración de la tabla
   columnDefs: ColDef[] = [
     { 
       field: 'expectedDate', 
-      headerName: 'Fecha Esperada',
+      headerName: 'Fecha',
       flex: 1,
       valueFormatter: params => {
         if (params.value) {
@@ -84,7 +88,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
       },
       cellStyle: params => {
         const baseStyle = {
-          fontSize: 'var(--font-size-sm)',
+          fontSize: 'var(--font-size-xs)',
           fontFamily: 'var(--font-family-normal)'
         };
         const today = new Date();
@@ -97,13 +101,13 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     },
     { 
       field: 'cardName', 
-      headerName: 'Método de Pago',
+      headerName: 'Tarjeta',
       flex: 1,
       valueGetter: params => {
         return params.data.card?.nameAccount || 'No especificado';
       },
       cellStyle: {
-        fontSize: 'var(--font-size-sm)',
+        fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)'
       }
@@ -113,7 +117,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
       headerName: 'Descripción',
       flex: 1.5,
       cellStyle: {
-        fontSize: 'var(--font-size-sm)',
+        fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)'
       }
@@ -130,7 +134,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
       },
       cellStyle: params => {
         const baseStyle = {
-          fontSize: 'var(--font-size-sm)',
+          fontSize: 'var(--font-size-xs)',
           fontFamily: 'var(--font-family-normal)',
           fontWeight: '500'
         };
@@ -147,7 +151,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         return params.data.category?.nameCategory || 'Otros';
       },
       cellStyle: {
-        fontSize: 'var(--font-size-sm)',
+        fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)'
       }
@@ -166,28 +170,9 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         return types[params.value as keyof typeof types] || params.value;
       },
       cellStyle: {
-        fontSize: 'var(--font-size-sm)',
+        fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)'
-      }
-    },
-    { 
-      field: 'probability', 
-      headerName: 'Probabilidad',
-      flex: 1,
-      valueFormatter: params => {
-        return `${params.value}%`;
-      },
-      cellStyle: params => {
-        const baseStyle = {
-          fontSize: 'var(--font-size-sm)',
-          fontFamily: 'var(--font-family-normal)',
-          fontWeight: '500'
-        };
-        const prob = params.value;
-        if (prob >= 75) return { ...baseStyle, color: '#2e7d32' };
-        if (prob >= 50) return { ...baseStyle, color: '#f57c00' };
-        return { ...baseStyle, color: '#d32f2f' };
       }
     },
     { 
@@ -205,7 +190,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         return `<span class="status-badge ${config.class}" style="font-size: var(--font-size-xs); font-family: var(--font-family-normal);">${config.text}</span>`;
       },
       cellStyle: {
-        fontSize: 'var(--font-size-sm)',
+        fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)'
       }
@@ -216,9 +201,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
       cellRenderer: (params: ICellRendererParams) => {
         const isOverdue = new Date(params.data.expectedDate) < new Date();
         const isPending = params.data.status === 'pending';
-        
         let buttons = '';
-        
         if (isPending && isOverdue) {
           buttons += `<button class="action-btn complete-btn" style="font-size: var(--font-size-xs); font-family: var(--font-family-normal);" onclick="window.completeMovement(${params.data.id})">✓ Completar</button>`;
         }
@@ -230,7 +213,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         return buttons || '-';
       },
       cellStyle: {
-        fontSize: 'var(--font-size-sm)',
+        fontSize: 'var(--font-size-xs)',
         fontFamily: 'var(--font-family-normal)',
         color: 'var(--color-text)'
       }
@@ -248,7 +231,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     oddRowBackgroundColor: 'var(--clr-surface-a10)',
     headerColumnResizeHandleColor: 'var(--color-highlight)',
     // Configuración de fuentes usando variables CSS
-    fontSize: 'var(--font-size-sm)',
+    fontSize: 'var(--font-size-xs)',
     fontFamily: 'var(--font-family-normal)',
     // Configuración adicional para mejor legibilidad
     rowHeight: 60,
@@ -273,15 +256,6 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // Estadísticas
-  upcomingStats = {
-    total: 0,
-    overdue: 0,
-    thisWeek: 0,
-    thisMonth: 0,
-    totalAmount: 0
-  };
-
   constructor(
     private dialog: MatDialog,
     private projectedMovementService: ProjectedMovementService,
@@ -289,6 +263,15 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     private authTokenService: AuthTokenService,
     private snackBar: MatSnackBar
   ) {
+    // 🔄 Inicializar observables reactivos
+    this.projectedMovements$ = this.projectedMovementService.intelligentMovements$;
+    this.projectedMovementsLoading$ = this.projectedMovementService.loading$;
+    
+    // Estadísticas calculadas reactivamente
+    this.upcomingStats$ = this.projectedMovements$.pipe(
+      map(movements => this.calculateStatsFromMovements(movements))
+    );
+
     // Configurar funciones globales para los botones de acción
     (window as any).completeMovement = (id: number) => this.completeMovement(id);
     (window as any).cancelMovement = (id: number) => this.cancelMovement(id);
@@ -300,7 +283,8 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.loadUpcomingMovements();
+    // 🔄 Cargar datos usando el sistema reactivo
+    this.loadReactiveData();
     
     // Verificar movimientos vencidos cada 5 minutos
     interval(5 * 60 * 1000)
@@ -315,29 +299,46 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // Cargar movimientos futuros
-  loadUpcomingMovements(): void {
-    this.projectedMovementService.getProjectedMovements().subscribe({
+  // 🔄 Cargar datos usando el sistema reactivo
+  private loadReactiveData(): void {
+    // Cargar movimientos proyectados y procesar automáticamente
+    this.projectedMovements$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (movements) => {
-        this.projectedMovements = movements;
-        this.processMovementsData();
-        this.calculateStats();
+        this.processMovementsData(movements);
         this.checkOverdueMovements();
+        console.log('✅ [UpcomingTransactionsComponent] Movimientos cargados:', movements.length);
       },
       error: (error) => {
-        console.error('Error al cargar movimientos futuros:', error);
+        console.error('❌ [UpcomingTransactionsComponent] Error al cargar movimientos:', error);
         this.snackBar.open('Error al cargar movimientos futuros', 'Cerrar', { duration: 3000 });
-        // Asegurar que rowData esté vacío en caso de error
         this.rowData = [];
-        this.projectedMovements = [];
-        this.calculateStats();
+      }
+    });
+
+    // Cargar datos iniciales
+    this.projectedMovementService.getIntelligentProjectedMovements().subscribe();
+  }
+
+  // 🔄 Método para forzar actualización manual
+  refreshMovements(): void {
+    console.log('🔄 [UpcomingTransactionsComponent] Forzando actualización manual...');
+    this.projectedMovementService.refreshIntelligentMovements().subscribe({
+      next: (movements) => {
+        console.log('✅ [UpcomingTransactionsComponent] Actualización manual completada');
+        this.snackBar.open('Movimientos actualizados', 'Cerrar', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('❌ [UpcomingTransactionsComponent] Error en actualización manual:', error);
+        this.snackBar.open('Error al actualizar movimientos', 'Cerrar', { duration: 3000 });
       }
     });
   }
 
   // Procesar datos para la tabla
-  private processMovementsData(): void {
-    this.rowData = this.projectedMovements.map(movement => ({
+  private processMovementsData(movements: ProjectedMovement[]): void {
+    this.rowData = movements.map(movement => ({
       ...movement,
       expectedDate: new Date(movement.expectedDate),
       cardName: movement.card?.nameAccount || 'No especificado',
@@ -345,13 +346,13 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     }));
   }
 
-  // Calcular estadísticas
-  private calculateStats(): void {
+  // Calcular estadísticas desde movimientos
+  private calculateStatsFromMovements(movements: ProjectedMovement[]): any {
     const today = new Date();
     const thisWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     const thisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    this.upcomingStats = this.projectedMovements.reduce((stats, movement) => {
+    return movements.reduce((stats, movement) => {
       const movementDate = new Date(movement.expectedDate);
       const isPending = movement.status === 'pending';
       
@@ -389,62 +390,69 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
 
   // Verificar movimientos vencidos
   private checkOverdueMovements(): void {
-    const overdueMovements = this.projectedMovements.filter(movement => {
-      const movementDate = new Date(movement.expectedDate);
-      const today = new Date();
-      return movement.status === 'pending' && movementDate < today;
+    this.projectedMovements$.pipe(
+      takeUntil(this.destroy$),
+      map(movements => movements.filter(movement => {
+        const movementDate = new Date(movement.expectedDate);
+        const today = new Date();
+        return movement.status === 'pending' && movementDate < today;
+      }))
+    ).subscribe(overdueMovements => {
+      if (overdueMovements.length > 0) {
+        this.snackBar.open(
+          `Tienes ${overdueMovements.length} movimiento(s) vencido(s) pendiente(s) de completar`,
+          'Ver',
+          { duration: 5000 }
+        );
+      }
     });
-
-    if (overdueMovements.length > 0) {
-      this.snackBar.open(
-        `Tienes ${overdueMovements.length} movimiento(s) vencido(s) pendiente(s) de completar`,
-        'Ver',
-        { duration: 5000 }
-      );
-    }
   }
 
   // Completar movimiento (convertir a movimiento real)
   completeMovement(id: number): void {
-    const movement = this.projectedMovements.find(m => m.id === id);
-    if (!movement) return;
+    this.projectedMovements$.pipe(
+      takeUntil(this.destroy$),
+      map(movements => movements.find(m => m.id === id))
+    ).subscribe(movement => {
+      if (!movement) return;
 
-    const movementData: MovementCreate = {
-      cardId: movement.cardId || 1, // Usar tarjeta por defecto si no se especificó
-      categoryId: movement.categoryId,
-      amount: movement.amount,
-      description: movement.description || 'Movimiento proyectado completado',
-      movementType: movement.movementType,
-      movementSource: 'projected',
-      transactionDate: new Date(),
-      metadata: {
-        projectedMovementId: movement.id,
-        originalExpectedDate: movement.expectedDate,
-        probability: movement.probability
-      }
-    };
+      const movementData: MovementCreate = {
+        cardId: movement.cardId || 1,
+        categoryId: movement.categoryId,
+        amount: movement.amount,
+        description: movement.description || 'Movimiento proyectado completado',
+        movementType: movement.movementType,
+        movementSource: 'projected',
+        transactionDate: new Date(),
+        metadata: {
+          projectedMovementId: movement.id,
+          originalExpectedDate: movement.expectedDate,
+          probability: movement.probability
+        }
+      };
 
-    this.movementService.addMovement(movementData).subscribe({
-      next: (newMovement) => {
-        // Actualizar estado del movimiento proyectado
-        this.projectedMovementService.updateProjectedMovement(id, {
-          status: 'completed',
-          actualMovementId: newMovement.id
-        }).subscribe({
-          next: () => {
-            this.snackBar.open('Movimiento completado exitosamente', 'Cerrar', { duration: 3000 });
-            this.loadUpcomingMovements();
-          },
-          error: (error) => {
-            console.error('Error al actualizar movimiento proyectado:', error);
-            this.snackBar.open('Error al actualizar estado', 'Cerrar', { duration: 3000 });
-          }
-        });
-      },
-      error: (error) => {
-        console.error('Error al crear movimiento real:', error);
-        this.snackBar.open('Error al completar movimiento', 'Cerrar', { duration: 3000 });
-      }
+      this.movementService.addMovement(movementData).subscribe({
+        next: (newMovement) => {
+          // Actualizar estado del movimiento proyectado
+          this.projectedMovementService.updateProjectedMovement(id, {
+            status: 'completed',
+            actualMovementId: newMovement.id
+          }).subscribe({
+            next: () => {
+              this.snackBar.open('Movimiento completado exitosamente', 'Cerrar', { duration: 3000 });
+              // No necesitamos recarga manual, el sistema reactivo se actualiza automáticamente
+            },
+            error: (error) => {
+              console.error('Error al actualizar movimiento proyectado:', error);
+              this.snackBar.open('Error al actualizar estado', 'Cerrar', { duration: 3000 });
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Error al crear movimiento real:', error);
+          this.snackBar.open('Error al completar movimiento', 'Cerrar', { duration: 3000 });
+        }
+      });
     });
   }
 
@@ -455,7 +463,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: () => {
         this.snackBar.open('Movimiento cancelado exitosamente', 'Cerrar', { duration: 3000 });
-        this.loadUpcomingMovements();
+        // No necesitamos recarga manual, el sistema reactivo se actualiza automáticamente
       },
       error: (error) => {
         console.error('Error al cancelar movimiento:', error);
@@ -476,8 +484,9 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     });
 
     dialogRef.afterClosed().subscribe(result => {
+      // No necesitamos recarga manual, el sistema reactivo se actualiza automáticamente
       if (result) {
-        this.loadUpcomingMovements();
+        console.log('✅ [UpcomingTransactionsComponent] Movimiento agregado, el sistema reactivo se actualiza automáticamente');
       }
     });
   }

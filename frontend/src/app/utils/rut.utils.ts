@@ -16,11 +16,14 @@ export class RutUtils {
     const cleaned = this.clean(rut);
     if (cleaned.length <= 1) return cleaned;
 
-    let result = cleaned.slice(-4, -1) + '-' + cleaned.slice(-1);
-    for (let i = 4; i < cleaned.length; i += 3) {
-      result = cleaned.slice(-3 - i, -i) + '.' + result;
-    }
-    return result;
+    // Separar dígito verificador
+    const dv = cleaned.slice(-1);
+    const body = cleaned.slice(0, -1);
+    
+    // Agregar puntos cada 3 dígitos desde la derecha
+    const formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    return `${formattedBody}-${dv}`;
   }
 
   /**

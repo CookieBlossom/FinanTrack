@@ -95,7 +95,7 @@ export class CardController {
         // 1) Límite de tarjetas
         const limits = await this.planService.getLimitsForPlan(user.planId);
         if (limits.max_cards !== -1) {
-          const used = await this.cardService.countManualCards(user.id);
+          const used = await this.cardService.countAllManualCards(user.id);
           if (used >= limits.max_cards) {
             res.status(403).json({
               error: `Has alcanzado el límite de ${limits.max_cards} tarjetas`

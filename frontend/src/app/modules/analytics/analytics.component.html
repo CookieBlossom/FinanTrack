@@ -2,14 +2,6 @@
     <div class="chart-wrapper" #chartWrapper>
       <div class="chart-header">
         <h2>Análisis de Ingresos y Costos</h2>
-        <button 
-          mat-raised-button 
-          color="primary" 
-          (click)="exportData()"
-          *appFeatureControl="'canExportData'">
-          <mat-icon>download</mat-icon>
-          Exportar Datos
-        </button>
       </div>
       <div class="chart-container" #chartContainer>
         <!-- Estado de carga -->
@@ -54,13 +46,27 @@
           [scheme]="colorScheme"
           [curve]="curve"
           [animations]="true"
+          [yAxisTickFormatting]="formatChartAmount"
         >
         </ngx-charts-line-chart>
       </div>
     </div>
 
     <div class="summary">
-      <h3 class="summary-title">{{ selectedMonth ? 'Resumen de ' + selectedMonth : 'Resumen General' }}</h3>
+      <div class="summary-header" [class.month-selected]="selectedMonth">
+        <h3 class="summary-title">
+          {{ summaryTitle }}
+        </h3>
+        <button 
+          *ngIf="selectedMonth" 
+          mat-raised-button 
+          color="accent" 
+          (click)="resetToGeneralView()"
+          class="reset-button">
+          <mat-icon>refresh</mat-icon>
+          Ver Resumen General
+        </button>
+      </div>
       <div class="summary-content">
         <ng-container *ngIf="monthlySummary && hasData; else noSummaryData">
           <div class="summary-left">

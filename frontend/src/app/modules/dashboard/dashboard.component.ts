@@ -15,6 +15,8 @@ import {
   themeQuartz,
   ValidationModule,
   PaginationModule,
+  CellStyleModule,
+  RowSelectionModule,
 } from 'ag-grid-community';
 import { curveLinear } from 'd3-shape';
 import { DashboardService, IncomeVsExpenses, CategoryExpense, RecentMovement } from '../../services/dashboard.service';
@@ -30,6 +32,8 @@ ModuleRegistry.registerModules([
   ColumnAutoSizeModule,
   ClientSideRowModelApiModule,
   ValidationModule,
+  CellStyleModule,
+  RowSelectionModule,
   PaginationModule
 ]);
 
@@ -209,14 +213,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ).subscribe((event: NavigationEnd) => {
       // Solo limpiar si estamos saliendo del dashboard
       if (!event.url.includes('/dashboard')) {
-        console.log('Saliendo del dashboard - Limpiando datos');
+        // Dashboard cleanup
         this.clearData();
         this.cdr.detectChanges();
       }
     });
   }
   ngOnInit() {
-    console.log('Inicializando dashboard');
     this.calculateChartSizes();
     this.loadDashboardData();
     
@@ -231,7 +234,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    console.log('Destruyendo dashboard - Limpieza final');
     this.clearData();
     this.destroy$.next();
     this.destroy$.complete();
@@ -247,7 +249,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboardData() {
-    console.log('Cargando datos del dashboard');
     // Limpiar datos existentes
     this.clearData();
 
@@ -272,12 +273,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       )
     }).subscribe({
       next: (data) => {
-        console.log('Datos recibidos:', data);
-        console.log('Datos de categorías crudos:', data.categorias);
-        
         // Procesar ingresos vs costos - validar y limpiar datos
         this.ingresosVsCostos = this.validateAndCleanIncomeData(data.ingresos);
-        console.log('Datos de ingresos vs costos procesados:', JSON.stringify(this.ingresosVsCostos, null, 2));
         // Verificar que hay datos válidos en las series
         this.showIngresosVsCostos = this.ingresosVsCostos.length > 0 && 
           this.ingresosVsCostos.some(item => item.series && item.series.length > 0 && 
@@ -285,8 +282,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         
         // Procesar gastos por categoría - validar y limpiar datos
         this.gastosPorCategoria = this.validateAndCleanCategoryData(data.categorias);
-        console.log('Datos de categorías procesados:', this.gastosPorCategoria);
-        console.log('Datos que van al gráfico de pastel:', JSON.stringify(this.gastosPorCategoria, null, 2));
         // Verificar que hay categorías con valores positivos
         this.showGastosPorCategoria = this.gastosPorCategoria.length > 0 && 
           this.gastosPorCategoria.some(item => item.value > 0);
@@ -296,14 +291,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           movement.status === 'pending' && movement.amount > 0
         );
         this.showMovimientos = this.rowData.length > 0;
-        
-        console.log('Estado final:', {
-          showIngresosVsCostos: this.showIngresosVsCostos,
-          showGastosPorCategoria: this.showGastosPorCategoria,
-          showMovimientos: this.showMovimientos,
-          movimientosCount: this.rowData.length,
-          seccionesVisibles: this.getVisibleSectionsCount()
-        });
         
         this.onDataChanged();
       },
@@ -436,12 +423,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   formatLabel(value: any): string {
-    // Debug: ver qué datos llegan
-    console.log('formatLabel recibió:', value);
-    
     // Si value es solo un string (nombre), devolver el nombre directamente
     if (typeof value === 'string') {
-      console.log('formatLabel devuelve (string):', value);
       return value;
     }
     
@@ -455,12 +438,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0
         }).format(numValue);
-        console.log('formatLabel devuelve (objeto):', formattedValue);
         return formattedValue;
       }
     }
     
-    console.log('formatLabel: valor no válido');
     return '';
   }
 
@@ -481,7 +462,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     if (categoryName && categoryName !== 'Sin nombre') {
       // Opcional: Mostrar un mensaje o navegar a detalles de la categoría
-      console.log(`Mostrando detalles para la categoría: ${categoryName}`);
+      // Aquí se podría agregar navegación a una vista de detalle
     }
   }
 
@@ -509,7 +490,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const width = Math.max(containerWidth - 60, 200); // 30px de margen a cada lado
         const height = Math.max(containerHeight - 60, 200); // 30px de margen arriba y abajo
         this.pieChartView = [width, height];
-        console.log('Tamaño del gráfico de pastel:', width, 'x', height);
       }
       
       this.cdr.detectChanges();

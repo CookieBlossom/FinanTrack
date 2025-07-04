@@ -32,77 +32,87 @@
   <mat-tab label="Manual">
     <div mat-dialog-content>
       <form [formGroup]="manualForm" (ngSubmit)="onSubmit()">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Tarjeta</mat-label>
-          <mat-select formControlName="cardId" required>
-            <mat-option *ngFor="let card of cards" [value]="card.id">
-              {{card.nameAccount}} {{card.aliasAccount ? '(' + card.aliasAccount + ')' : ''}}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="manualForm.get('cardId')?.hasError('required')">
-            Debes seleccionar una tarjeta
-          </mat-error>
-        </mat-form-field>
+        <div class="form-group">
+          <label class="form-label">Tarjeta</label>
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
+            <mat-select formControlName="cardId" required>
+              <mat-option *ngFor="let card of cards$ | async" [value]="card.id">
+                {{card.nameAccount}} {{card.accountHolder ? '(' + card.accountHolder + ')' : ''}}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="manualForm.get('cardId')?.hasError('required')">
+              Debes seleccionar una tarjeta
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Tipo de Movimiento</mat-label>
-          <mat-select formControlName="movementType" required>
-            <mat-option value="income">💰 Ingreso</mat-option>
-            <mat-option value="expense">💸 Gasto</mat-option>
-          </mat-select>
-          <mat-error *ngIf="manualForm.get('movementType')?.hasError('required')">
-            El tipo de movimiento es requerido
-          </mat-error>
-        </mat-form-field>
+        <div class="form-group">
+          <label class="form-label">Tipo de Movimiento</label>
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
+            <mat-select formControlName="movementType" required>
+              <mat-option value="income">💰 Ingreso</mat-option>
+              <mat-option value="expense">💸 Gasto</mat-option>
+            </mat-select>
+            <mat-error *ngIf="manualForm.get('movementType')?.hasError('required')">
+              El tipo de movimiento es requerido
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Descripción</mat-label>
-          <input matInput 
-                 placeholder="Ej: Pago de luz, Netflix, Salario, etc." 
-                 formControlName="description" 
-                 required />
-          <mat-error *ngIf="manualForm.get('description')?.hasError('required')">
-            La descripción es requerida
-          </mat-error>
-        </mat-form-field>
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
+            <input matInput 
+                   placeholder="Ej: Pago de luz, Netflix, Salario, etc." 
+                   formControlName="description" 
+                   required />
+            <mat-error *ngIf="manualForm.get('description')?.hasError('required')">
+              La descripción es requerida
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Monto</mat-label>
-          <input matInput 
-                 type="number" 
-                 placeholder="Ej: 25000" 
-                 formControlName="amount" 
-                 min="1"
-                 required />
-          <mat-error *ngIf="manualForm.get('amount')?.hasError('required')">
-            El monto es requerido
-          </mat-error>
-          <mat-error *ngIf="manualForm.get('amount')?.hasError('min')">
-            El monto debe ser mayor a 0
-          </mat-error>
-        </mat-form-field>
+        <div class="form-group">
+          <label class="form-label">Monto</label>
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
+            <input matInput 
+                   type="number" 
+                   placeholder="Ej: 25000" 
+                   formControlName="amount" 
+                   min="1"
+                   required />
+            <mat-error *ngIf="manualForm.get('amount')?.hasError('required')">
+              El monto es requerido
+            </mat-error>
+            <mat-error *ngIf="manualForm.get('amount')?.hasError('min')">
+              El monto debe ser mayor a 0
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Fecha</mat-label>
-          <input matInput 
-                 formControlName="transactionDate" 
-                 type="date" 
-                 [min]="minDate"
-                 class="date-input"
-                 required />
-          <mat-icon matSuffix class="date-icon" (click)="openDatePicker()">calendar_today</mat-icon>
-          <mat-error *ngIf="manualForm.get('transactionDate')?.hasError('required')">
-            La fecha es requerida
-          </mat-error>
-          <mat-error *ngIf="manualForm.get('transactionDate')?.hasError('minDate')">
-            La fecha no puede ser anterior a hoy
-          </mat-error>
-        </mat-form-field>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
+            <input matInput 
+                   formControlName="transactionDate" 
+                   type="date" 
+                   [min]="minDate"
+                   class="date-input"
+                   required />
+            <mat-icon matSuffix class="date-icon" (click)="openDatePicker()">calendar_today</mat-icon>
+            <mat-error *ngIf="manualForm.get('transactionDate')?.hasError('required')">
+              La fecha es requerida
+            </mat-error>
+            <mat-error *ngIf="manualForm.get('transactionDate')?.hasError('minDate')">
+              La fecha no puede ser anterior a hoy
+            </mat-error>
+          </mat-form-field>
+        </div>
 
         <div mat-dialog-actions align="end">
-          <button mat-button type="button" (click)="onCancel()">Cancelar</button>
-          <button mat-raised-button color="primary" type="submit" [disabled]="!manualForm.valid">
-            Agregar
+          <button mat-button type="button" (click)="onCancel()" [disabled]="isProcessing">Cancelar</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="!manualForm.valid || isProcessing">
+            {{ isProcessing ? 'Procesando...' : 'Agregar' }}
           </button>
         </div>
       </form>

@@ -10,7 +10,6 @@ import { generateToken } from '../utils/tokenUtils';
 import { sendResetPasswordEmail } from '../utils/mailer';
 import { hashPassword, comparePasswords } from '../utils/passwordUtils';
 import { getPasswordResetTemplate } from '../utils/templates';
-import bcrypt from 'bcrypt';
 export class UserService {
   private readonly SALT_ROUNDS = 10;
   private pool: Pool;
@@ -118,10 +117,10 @@ export class UserService {
         INSERT INTO cards (
           user_id, 
           name_account, 
-          alias_account, 
           card_type_id, 
           balance, 
-          currency, 
+          balance_source,
+          source,
           status_account
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -129,10 +128,10 @@ export class UserService {
       const cardInsertValues = [
         user.id,
         'Efectivo',
-        'Efectivo',
         efectivoCardTypeId,
         0,
-        'CLP',
+        'manual',
+        'manual',
         'active'
       ];
       
@@ -465,12 +464,12 @@ export class UserService {
       throw new DatabaseError('El token ha expirado');
     }
   
-    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    const isSamePassword = await compare(newPassword, user.password);
     if (isSamePassword) {
       throw new DatabaseError('La nueva contraseña no puede ser igual a la anterior');
     }
   
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await hash(newPassword, this.SALT_ROUNDS);
   
     await this.pool.query(
       `UPDATE "user"

@@ -113,5 +113,10 @@
         "normalizedName": "Farmacia Ahumada",
         "keywords": ["FARM AHUM", "FARMACIA AHUMADA", "AHUM", "AHUMADA"],
         "category": "Salud"
+    },
+    {
+        "normalizedName": "BIP",
+        "keywords": ["PAGO AUTOMATICO QR", "PASAJE QR", "DEUDA PASAJE QR"],
+        "category": "Transporte"
     }
-] 
+]

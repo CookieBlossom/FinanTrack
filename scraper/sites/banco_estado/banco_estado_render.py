@@ -58,9 +58,9 @@ class BancoEstadoRenderScraper:
                     await modal_btn.click(timeout=3000)
                     print("🔕 Modal de infobar cerrado")
                 except Exception:
-                    print("⚠️ No se pudo cerrar el modal de infobar")
+                    print("[WARNING] No se pudo cerrar el modal de infobar")
             else:
-                print("✅ No apareció el modal de infobar")
+                print("[OK] No apareció el modal de infobar")
         except Exception as e:
             print(f"ℹ️ Info al intentar cerrar el modal: {e}")
 
@@ -89,7 +89,7 @@ class BancoEstadoRenderScraper:
             except Exception:
                 pass
             
-            print("✅ No hay sidebars para cerrar")
+            print("[OK] No hay sidebars para cerrar")
             return False
         except Exception as e:
             print(f"ℹ️ Info: {str(e)}")
@@ -141,7 +141,7 @@ class BancoEstadoRenderScraper:
             await page.wait_for_timeout(random.randint(150, 300))
             
         except Exception as e:
-            print(f"❌ Error en type_like_human: {e}")
+            print(f"ERROR: Error en type_like_human: {e}")
             await page.fill(selector, text)
 
     async def simular_comportamiento_humano(self, page):
@@ -177,7 +177,7 @@ class BancoEstadoRenderScraper:
             await self.cerrar_sidebar(page)
             
             # PASO 1: Click en "Banca en Línea"
-            print("🔍 Buscando botón 'Banca en Línea'...")
+            print("[INFO] Buscando botón 'Banca en Línea'...")
             try:
                 banca_button = None
                 banca_selectors = [
@@ -191,7 +191,7 @@ class BancoEstadoRenderScraper:
                         button = await page.wait_for_selector(selector, timeout=5000, state="visible")
                         if button:
                             banca_button = button
-                            print(f"✅ Botón 'Banca en Línea' encontrado con selector: {selector}")
+                            print(f"[OK] Botón 'Banca en Línea' encontrado con selector: {selector}")
                             break
                     except Exception:
                         continue
@@ -203,10 +203,10 @@ class BancoEstadoRenderScraper:
                 await banca_button.hover()
                 await page.wait_for_timeout(random.randint(150, 300))
                 await banca_button.click()
-                print("✅ Click en 'Banca en Línea' realizado")
+                print("[OK] Click en 'Banca en Línea' realizado")
                 
             except Exception as e:
-                print(f"❌ Error al hacer click en 'Banca en Línea': {str(e)}")
+                print(f"ERROR: Error al hacer click en 'Banca en Línea': {str(e)}")
                 raise
             
             # Esperar a que cargue la página de login
@@ -251,7 +251,7 @@ class BancoEstadoRenderScraper:
                         button = await page.wait_for_selector(selector, timeout=5000, state="visible")
                         if button:
                             login_button = button
-                            print(f"✅ Botón 'Ingresar' encontrado con selector: {selector}")
+                            print(f"[OK] Botón 'Ingresar' encontrado con selector: {selector}")
                             break
                     except Exception:
                         continue
@@ -311,17 +311,17 @@ class BancoEstadoRenderScraper:
                     raise Exception("No se pudo hacer click en el botón 'Ingresar'")
                 
                 await page.wait_for_load_state("networkidle", timeout=30000)
-                print("✅ Navegación completada")
+                print("[OK] Navegación completada")
                 
             except Exception as e:
-                print(f"❌ Error al intentar hacer click en el botón: {str(e)}")
+                print(f"ERROR: Error al intentar hacer click en el botón: {str(e)}")
                 raise
             
             # Verificar errores visibles
             modal_error = page.locator("text='ha ocurrido un error'")
             if await modal_error.count() > 0:
-                print("⚠️ Modal de error detectado tras login")
-                raise Exception("❌ Error visible en pantalla después de iniciar sesión")
+                print("[WARNING] Modal de error detectado tras login")
+                raise Exception("ERROR: Error visible en pantalla después de iniciar sesión")
             
             # Esperar y verificar errores en el contenido
             await page.wait_for_timeout(6000)
@@ -336,7 +336,7 @@ class BancoEstadoRenderScraper:
             
             if any(e in content.lower() for e in errores):
                 error_msg = next((e for e in errores if e in content.lower()), "Error general al iniciar sesión")
-                raise Exception(f"❌ {error_msg.capitalize()}")
+                raise Exception(f"ERROR: {error_msg.capitalize()}")
             
             # Verificar que estamos en la página correcta después del login
             current_url = page.url
@@ -357,7 +357,7 @@ class BancoEstadoRenderScraper:
                     try:
                         element = await page.wait_for_selector(selector, timeout=3000)
                         if element:
-                            print(f"✅ Login exitoso detectado con selector: {selector}")
+                            print(f"[OK] Login exitoso detectado con selector: {selector}")
                             login_success = True
                             break
                     except Exception:
@@ -366,30 +366,30 @@ class BancoEstadoRenderScraper:
                 if not login_success:
                     # Verificar por URL o contenido específico
                     if "dashboard" in current_url.lower() or "home" in current_url.lower():
-                        print("✅ Login exitoso detectado por URL")
+                        print("[OK] Login exitoso detectado por URL")
                         login_success = True
                     elif "bienvenido" in content.lower() or "saldo" in content.lower():
-                        print("✅ Login exitoso detectado por contenido")
+                        print("[OK] Login exitoso detectado por contenido")
                         login_success = True
                 
                 if login_success:
                     print("🎉 ¡LOGIN EXITOSO EN RENDER!")
                     return True
                 else:
-                    print("⚠️ No se pudo confirmar el login exitoso")
+                    print("[WARNING] No se pudo confirmar el login exitoso")
                     return False
                     
             except Exception as e:
-                print(f"⚠️ Error al verificar login exitoso: {e}")
+                print(f"[WARNING] Error al verificar login exitoso: {e}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Error durante el login: {str(e)}")
+            print(f"ERROR: Error durante el login: {str(e)}")
             raise
 
     async def test_login(self, rut: str, password: str):
         """Función principal para probar el login en Render"""
-        print("🚀 Iniciando prueba de login en Render...")
+        print("[SCRAPER] Iniciando prueba de login en Render...")
         
         async with async_playwright() as p:
             # Configurar navegador optimizado para Render
@@ -564,11 +564,11 @@ class BancoEstadoRenderScraper:
                     print("💡 Ahora puedes expandir las funcionalidades para extraer datos.")
                     return True
                 else:
-                    print("❌ La prueba no fue exitosa en Render.")
+                    print("ERROR: La prueba no fue exitosa en Render.")
                     return False
                     
             except Exception as e:
-                print(f"❌ Error durante la prueba en Render: {str(e)}")
+                print(f"ERROR: Error durante la prueba en Render: {str(e)}")
                 return False
             finally:
                 await context.close()
@@ -583,7 +583,7 @@ async def main():
     password = input("Ingresa tu contraseña: ").strip()
     
     if not rut or not password:
-        print("❌ Credenciales incompletas")
+        print("ERROR: Credenciales incompletas")
         return
     
     # Crear scraper y probar
@@ -591,10 +591,10 @@ async def main():
     success = await scraper.test_login(rut, password)
     
     if success:
-        print("\n✅ ¡Prueba completada exitosamente en Render!")
+        print("\n[OK] ¡Prueba completada exitosamente en Render!")
         print("💡 El scraper está funcionando correctamente en el hosting.")
     else:
-        print("\n❌ La prueba no fue exitosa en Render.")
+        print("\nERROR: La prueba no fue exitosa en Render.")
         print("💡 Revisa los errores anteriores para identificar el problema.")
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ const router = Router();
 const controller = new ProjectedMovementController();
 
 // Las rutas aquí ya están protegidas por authMiddleware desde routes/index.ts
+router.get('/intelligent', controller.getIntelligent);
 router.get('/', controller.getAll);
 router.get('/filter', controller.getByFilters);
 router.get('/:id', controller.getById);

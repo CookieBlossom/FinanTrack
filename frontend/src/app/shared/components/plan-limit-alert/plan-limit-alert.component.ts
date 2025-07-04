@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { PlanLimitAlertData, PlanLimitAlertResult } from '../../services/plan-limit-alert.service';
+import { LimitDisplayPipe } from '../../pipes/limit-display.pipe';
 
 @Component({
   selector: 'app-plan-limit-alert',
@@ -14,7 +15,8 @@ import { PlanLimitAlertData, PlanLimitAlertResult } from '../../services/plan-li
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    LimitDisplayPipe
   ],
   template: `
     <div class="limit-alert-container">
@@ -34,15 +36,15 @@ import { PlanLimitAlertData, PlanLimitAlertResult } from '../../services/plan-li
         <div class="usage-info">
           <div class="usage-header">
             <span class="usage-label">Uso actual:</span>
-            <span class="usage-count">{{ data.currentUsage }} / {{ data.limit }}</span>
+            <span class="usage-count">{{ data.currentUsage }} / {{ data.limit | limitDisplay }}</span>
           </div>
           <mat-progress-bar 
-            [value]="(data.currentUsage / data.limit) * 100"
+            [value]="getProgressValue()"
             color="warn"
             class="usage-progress">
           </mat-progress-bar>
           <div class="usage-percentage">
-            {{ ((data.currentUsage / data.limit) * 100).toFixed(0) }}% utilizado
+            {{ getUsagePercentage() }}% utilizado
           </div>
         </div>
 
@@ -95,22 +97,30 @@ export class PlanLimitAlertComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Configurar el diálogo para que no se cierre al hacer clic fuera
     this.dialogRef.disableClose = false;
   }
 
   /**
-   * Cierra el diálogo sin acción
+   * Calcula el valor de la barra de progreso
    */
+  getProgressValue(): number {
+    if (this.data.limit === -1) return 0;
+    return Math.min((this.data.currentUsage / this.data.limit) * 100, 100);
+  }
+
+  /**
+   * Calcula el porcentaje de uso
+   */
+  getUsagePercentage(): string {
+    if (this.data.limit === -1) return '0';
+    return Math.min((this.data.currentUsage / this.data.limit) * 100, 100).toFixed(0);
+  }
+
   dismiss(): void {
     this.dialogRef.close({ action: 'dismiss' });
   }
 
-  /**
-   * Cierra el diálogo y redirige a planes
-   */
   upgradePlan(): void {
     this.dialogRef.close({ action: 'upgrade' });
-    // La redirección se manejará en el componente que llamó al servicio
   }
 } 

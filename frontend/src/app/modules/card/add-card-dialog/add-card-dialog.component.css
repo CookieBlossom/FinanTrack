@@ -798,3 +798,68 @@ mat-spinner {
   padding: 0 !important;
   margin: 0 !important;
 }
+
+/* Estilos para la información del banco */
+.banco-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--clr-surface-a10);
+  border-radius: 12px;
+  border: 2px solid var(--color-primary-lightest);
+  margin-bottom: 16px;
+}
+
+.banco-info mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: var(--color-primary);
+}
+
+.banco-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.banco-details strong {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.banco-details span {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+/* Acciones del progreso */
+.progress-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.progress-actions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.progress-actions button mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.progress-actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}

@@ -1,10 +1,69 @@
 .full-width {
   width: 100%;
-  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Contenedor del formulario */
+form {
+  padding: 0;
+  margin: 0;
+}
+
+/* Espaciado entre secciones */
+mat-tab-group + * {
+  margin-top: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--color-text, #333);
+  font-size: 14px;
+  letter-spacing: 0.5px;
 }
 
 ::ng-deep .mat-mdc-dialog-surface {
   background-color: var(--clr-surface-a10) !important;
+  width: 100% !important;
+  max-width: 80vw !important;
+  min-width: 500px !important;
+  min-height: 500px !important;
+  max-height: 90vh !important;
+  margin: 0px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+::ng-deep .mat-mdc-dialog-container {
+  padding: 0 !important;
+}
+
+::ng-deep .mat-mdc-dialog-content {
+  padding: 24px !important;
+  margin: 0 !important;
+  max-height: none !important;
+}
+
+::ng-deep .mat-mdc-dialog-title {
+  padding: 24px 24px 0 24px !important;
+  margin: 0 !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+}
+
+::ng-deep .mat-mdc-dialog-actions {
+  padding: 0 24px 24px 24px !important;
+  margin: 0 !important;
+  min-height: auto !important;
 }
 
 ::ng-deep .mat-mdc-form-field {
@@ -40,11 +99,12 @@
 }
 
 .limits-info {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 12px;
-  margin: 16px 0;
+  background: var(--clr-surface-a10);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0 0 24px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .limit-item {
@@ -136,7 +196,48 @@ mat-dialog-actions {
   padding: 16px 0 0;
   margin-bottom: 0;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
+}
+
+/* Estilos mejorados para los botones del diálogo */
+mat-dialog-actions button {
+  min-width: 100px;
+  height: 40px;
+  border-radius: 6px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+mat-dialog-actions button[color="primary"] {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%) !important;
+  color: white !important;
+  border: none;
+  box-shadow: 0 2px 8px rgba(168, 79, 104, 0.3);
+}
+
+mat-dialog-actions button[color="primary"]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 79, 104, 0.4);
+}
+
+mat-dialog-actions button[color="primary"]:disabled {
+  background: #ccc !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+mat-dialog-actions button:not([color="primary"]) {
+  background: transparent !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border);
+}
+
+mat-dialog-actions button:not([color="primary"]):hover {
+  background: var(--clr-surface-a10) !important;
+  border-color: var(--color-primary);
 }
 
 mat-spinner {
@@ -145,7 +246,34 @@ mat-spinner {
 }
 
 :host::ng-deep .mat-tab-body-content {
-  padding: 16px;
+  padding: 24px 0 0 0;
+}
+
+/* Mejorar el aspecto de los tabs */
+::ng-deep .mat-mdc-tab-group {
+  margin-bottom: 20px;
+}
+
+::ng-deep .mat-mdc-tab-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+::ng-deep .mat-mdc-tab {
+  min-width: 120px !important;
+  padding: 0 24px !important;
+}
+
+/* Mejorar los form fields */
+::ng-deep .mat-mdc-form-field {
+  margin-bottom: 16px;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-form-field-outline {
+  border-radius: 8px;
+}
+
+::ng-deep .mat-mdc-form-field .mat-mdc-form-field-subscript-wrapper {
+  margin-top: 8px;
 }
 
 /* Estilos para el icono de fecha */
@@ -171,5 +299,51 @@ mat-spinner {
 
 :host::ng-deep .mat-mdc-form-field .mat-mdc-form-field-suffix .mat-icon {
   pointer-events: auto;
+}
+
+/* Estilos responsive para el diálogo */
+@media (max-width: 768px) {
+  ::ng-deep .mat-mdc-dialog-surface {
+    min-width: 90vw !important;
+    max-width: 95vw !important;
+    min-height: auto !important;
+    margin: 10px !important;
+  }
+  
+  ::ng-deep .mat-mdc-dialog-content {
+    padding: 16px !important;
+  }
+  
+  ::ng-deep .mat-mdc-dialog-title {
+    padding: 16px 16px 0 16px !important;
+    font-size: 20px !important;
+  }
+  
+  ::ng-deep .mat-mdc-dialog-actions {
+    padding: 0 16px 16px 16px !important;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  ::ng-deep .mat-mdc-dialog-actions button {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  ::ng-deep .mat-mdc-dialog-surface {
+    min-width: 95vw !important;
+    max-width: 98vw !important;
+    margin: 5px !important;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
 }
 

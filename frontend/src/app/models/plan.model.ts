@@ -51,6 +51,11 @@ export interface PlanUsage {
     limit: number;
     remaining: number;
   };
+  projected_movements: {
+    used: number;
+    limit: number;
+    remaining: number;
+  };
 }
 
 export interface PlanLimitStatus {
@@ -121,7 +126,8 @@ export const PLAN_LIMITS = {
   CARTOLA_MOVEMENTS: 'cartola_movements',
   SCRAPER_MOVEMENTS: 'scraper_movements',
   MONTHLY_CARTOLAS: 'monthly_cartolas',
-  MONTHLY_SCRAPES: 'monthly_scrapes'
+  MONTHLY_SCRAPES: 'monthly_scrapes',
+  PROJECTED_MOVEMENTS: 'projected_movements'
 } as const;
 
 // Constantes para las claves de permisos (actualizadas para coincidir con el backend)

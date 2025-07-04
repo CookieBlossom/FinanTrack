@@ -13,6 +13,7 @@ export interface IAnalyticsData {
         }[];
         expectedBudgets: {
             month: Date;
+            type: string;
             total: number;
         }[];
     };

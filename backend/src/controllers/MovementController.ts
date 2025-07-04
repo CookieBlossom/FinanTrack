@@ -107,20 +107,23 @@ export class MovementController {
                 return;
             }
 
+            // Determinar si los datos vienen del body (POST) o query params (GET)
+            const source = req.method === 'POST' ? req.body : req.query;
+
             const filters: IMovementFilters = {
                 userId,
-                cardId: req.query.cardId ? parseInt(req.query.cardId as string) : undefined,
-                categoryId: req.query.categoryId ? parseInt(req.query.categoryId as string) : undefined,
-                movementType: req.query.movementType as 'income' | 'expense' | undefined,
-                movementSource: req.query.movementSource as 'manual' | 'scraper' | 'subscription' | 'projected' | undefined,
-                startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
-                endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
-                minAmount: req.query.minAmount ? parseFloat(req.query.minAmount as string) : undefined,
-                maxAmount: req.query.maxAmount ? parseFloat(req.query.maxAmount as string) : undefined,
-                limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-                offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
-                orderBy: req.query.orderBy as string | undefined,
-                orderDirection: req.query.orderDirection as 'ASC' | 'DESC' | undefined
+                cardId: source.cardId ? parseInt(source.cardId as string) : undefined,
+                categoryId: source.categoryId ? parseInt(source.categoryId as string) : undefined,
+                movementType: source.movementType as 'income' | 'expense' | undefined,
+                movementSource: source.movementSource as 'manual' | 'scraper' | 'subscription' | 'projected' | undefined,
+                startDate: source.startDate ? new Date(source.startDate as string) : undefined,
+                endDate: source.endDate ? new Date(source.endDate as string) : undefined,
+                minAmount: source.minAmount ? parseFloat(source.minAmount as string) : undefined,
+                maxAmount: source.maxAmount ? parseFloat(source.maxAmount as string) : undefined,
+                limit: source.limit ? parseInt(source.limit as string) : undefined,
+                offset: source.offset ? parseInt(source.offset as string) : undefined,
+                orderBy: source.orderBy as string | undefined,
+                orderDirection: source.orderDirection as 'ASC' | 'DESC' | undefined
             };
 
             const movements = await this.movementService.getMovements(filters);

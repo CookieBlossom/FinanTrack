@@ -5,6 +5,7 @@ import { MovementService } from '../services/movement.service';
 import { CardService } from '../services/card.service';
 import { CategoryService } from '../services/category.service';
 import { ScraperService } from '../services/scrapers/scraper.service';
+import { ProjectedMovementService } from '../services/projectedMovement.service';
 import { RedisService } from '../services/redis.service';
 
 export class PlanController {
@@ -13,6 +14,7 @@ export class PlanController {
   private cardService: CardService;
   private categoryService: CategoryService;
   private scraperService: ScraperService;
+  private projectedMovementService: ProjectedMovementService;
 
   constructor() {
     this.planService = new PlanService();
@@ -21,6 +23,7 @@ export class PlanController {
     this.categoryService = new CategoryService();
     const redisService = new RedisService();
     this.scraperService = new ScraperService(redisService);
+    this.projectedMovementService = new ProjectedMovementService();
   }
 
   public getPlan = async (req: Request, res: Response, next: NextFunction) => {
@@ -80,13 +83,15 @@ export class PlanController {
         manualCardsCount,
         keywordsCount,
         cartolaMovesCount,
-        scraperTasksCount
+        scraperTasksCount,
+        projectedMovesCount
       ] = await Promise.all([
         this.movementService.countMonthlyManualMoves(user.id),
-        this.cardService.countManualCards(user.id),
+        this.cardService.countAllManualCards(user.id),
         this.getKeywordsCount(user.id),
         this.getCartolaMovesCount(user.id, startOfMonth),
-        this.getScraperTasksCount(user.id, startOfMonth)
+        this.getScraperTasksCount(user.id, startOfMonth),
+        this.projectedMovementService.countProjectedByUser(user.id)
       ]);
 
       const usage = {
@@ -114,6 +119,11 @@ export class PlanController {
           used: scraperTasksCount,
           limit: limits.scraper_movements,
           remaining: await this.planService.getRemainingLimit(user.planId, 'scraper_movements', scraperTasksCount)
+        },
+        projected_movements: {
+          used: projectedMovesCount,
+          limit: limits.projected_movements,
+          remaining: await this.planService.getRemainingLimit(user.planId, 'projected_movements', projectedMovesCount)
         }
       };
 

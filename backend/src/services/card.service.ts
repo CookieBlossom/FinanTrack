@@ -15,6 +15,44 @@ export class CardService {
     this.pool = pool
     this.planService = new PlanService();
   }
+
+  private getCardSelectFields(): string {
+    return `
+      id,
+      user_id as "userId",
+      name_account as "nameAccount",
+      account_holder as "accountHolder",
+      card_type_id as "cardTypeId",
+      bank_id as "bankId",
+      balance,
+      balance_source as "balanceSource",
+      last_balance_update as "lastBalanceUpdate",
+      source,
+      status_account as "statusAccount",
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+    `;
+  }
+
+  private getCardSelectFieldsWithPrefix(prefix: string = ''): string {
+    const p = prefix ? `${prefix}.` : '';
+    return `
+      ${p}id,
+      ${p}user_id as "userId",
+      ${p}name_account as "nameAccount",
+      ${p}account_holder as "accountHolder",
+      ${p}card_type_id as "cardTypeId",
+      ${p}bank_id as "bankId",
+      ${p}balance,
+      ${p}balance_source as "balanceSource",
+      ${p}last_balance_update as "lastBalanceUpdate",
+      ${p}source,
+      ${p}status_account as "statusAccount",
+      ${p}created_at as "createdAt",
+      ${p}updated_at as "updatedAt"
+    `;
+  }
+
   public async getTotalBalanceByUserId(userId: number): Promise<number> {
     const query = `
       SELECT COALESCE(SUM(balance), 0) as total
@@ -24,6 +62,7 @@ export class CardService {
     const result = await this.pool.query(query, [userId]);
     return Number(result.rows[0]?.total) || 0;
   }
+
   async countManualCards(userId: number): Promise<number> {
     const res = await this.pool.query(
       `SELECT COUNT(*) AS cnt
@@ -34,112 +73,96 @@ export class CardService {
     return Number(res.rows[0].cnt);
   }
 
+  async countAllManualCards(userId: number): Promise<number> {
+    const res = await this.pool.query(
+      `SELECT COUNT(*) AS cnt
+       FROM cards
+       WHERE user_id = $1 AND source = 'manual'`,
+      [userId]
+    );
+    return Number(res.rows[0].cnt);
+  }
+
   async getCardById(cardId: number, userId: number): Promise<ICard | null> {
     try {
       const query = `
-        SELECT 
-          id,
-          user_id as "userId",
-          name_account as "nameAccount",
-          alias_account as "aliasAccount",
-          card_type_id as "cardTypeId",
-          bank_id as "bankId",
-          balance,
-          currency,
-          source,
-          status_account as "statusAccount",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
+        SELECT ${this.getCardSelectFields()}
         FROM cards
         WHERE id = $1 AND user_id = $2
       `;
 
       const result = await this.pool.query(query, [cardId, userId]);
-      return result.rows[0] || null;
+      const card = result.rows[0] || null;
+      
+      console.log(`[CardService] getCardById: cardId=${cardId}, userId=${userId}, found=${!!card}`);
+      if (!card) {
+        console.log(`[CardService] No se encontró la tarjeta con ID ${cardId} para el usuario ${userId}`);
+      }
+      
+      return card;
     } catch (error) {
       console.error('Error al obtener tarjeta:', error);
       throw new DatabaseError('Error al obtener la tarjeta');
     }
   }
 
-  async updateBalance(cardId: number, userId: number, amount: number): Promise<void> {
+  async updateBalance(cardId: number, userId: number, amount: number, source: 'manual' | 'cartola' = 'manual'): Promise<void> {
+    const client = await this.pool.connect();
     try {
-      console.log(`[CardService] Actualizando balance:`);
-      console.log(`  - Card ID: ${cardId} (tipo: ${typeof cardId})`);
-      console.log(`  - User ID: ${userId} (tipo: ${typeof userId})`);
-      console.log(`  - Amount: ${amount} (tipo: ${typeof amount})`);
-      
-      const query = `
-        UPDATE cards
-        SET 
-          balance = balance + $1,
-          updated_at = NOW()
-        WHERE id = $2 AND user_id = $3
-        RETURNING *
-      `;
+      await client.query('BEGIN');
 
-      console.log(`[CardService] Ejecutando query con parámetros: [${amount}, ${cardId}, ${userId}]`);
-      const result = await this.pool.query(query, [amount, cardId, userId]);
-      
-      console.log(`[CardService] Resultado de la query:`, {
-        rowCount: result.rowCount,
-        rows: result.rows
-      });
-      
+      const result = await client.query(
+        `UPDATE cards 
+         SET balance = balance + $1,
+             balance_source = $2,
+             last_balance_update = NOW(),
+             updated_at = NOW()
+         WHERE id = $3 AND user_id = $4 
+         RETURNING *`,
+        [amount, source, cardId, userId]
+      );
+
       if (result.rowCount === 0) {
-        console.log(`[CardService] No se encontró tarjeta con ID ${cardId} para usuario ${userId}`);
-        throw new DatabaseError('Tarjeta no encontrada');
+        throw new Error(`No se encontró tarjeta con ID ${cardId} para usuario ${userId}`);
       }
-      
-      console.log(`[CardService] Balance actualizado exitosamente`);
+
+      await client.query('COMMIT');
     } catch (error) {
-      console.error('[CardService] Error al actualizar saldo:', error);
-      console.error('[CardService] Error message:', (error as Error).message);
-      console.error('[CardService] Error stack:', (error as Error).stack);
-      console.error('[CardService] Error name:', (error as Error).name);
-      if (error instanceof DatabaseError) {
-        throw error;
-      }
-      throw new DatabaseError('Error al actualizar el saldo de la tarjeta');
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
   }
 
   async getCardsByUserId(userId: number): Promise<ICard[]> {
     try {
       const query = `
-        SELECT 
-          id,
-          user_id as "userId",
-          name_account as "nameAccount",
-          alias_account as "aliasAccount",
-          card_type_id as "cardTypeId",
-          bank_id as "bankId",
-          balance,
-          currency,
-          source,
-          status_account as "statusAccount",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
+        SELECT ${this.getCardSelectFields()}
         FROM cards
         WHERE user_id = $1
         ORDER BY created_at DESC
       `;
 
       const result = await this.pool.query(query, [userId]);
-      return result.rows;
+      const cards = result.rows;
+      
+      console.log(`[CardService] getCardsByUserId: userId=${userId}, found=${cards.length} cards`);
+      cards.forEach(card => {
+        console.log(`  - ID: ${card.id}, Name: ${card.nameAccount}, Status: ${card.statusAccount}`);
+      });
+      
+      return cards;
     } catch (error) {
       console.error('Error al obtener tarjetas del usuario:', error);
       throw new DatabaseError('Error al obtener las tarjetas');
     }
   }
-  async createCard(
-    cardData: Partial<ICard>,
-    userId: number,
-    planId: number
-  ): Promise<ICard> {
+
+  async createCard(cardData: ICardCreate, userId: number, planId: number): Promise<ICard> {
     const limits = await this.planService.getLimitsForPlan(planId);
-    if (limits.max_cards !== -1) {
-      const used = await this.countManualCards(userId);
+    if (limits.max_cards !== undefined && limits.max_cards !== -1) {
+      const used = await this.countAllManualCards(userId);
       if (used >= limits.max_cards) {
         throw new DatabaseError(
           `Has alcanzado el límite de ${limits.max_cards} tarjetas para tu plan`
@@ -149,38 +172,55 @@ export class CardService {
 
     const query = `
       INSERT INTO cards (
-        user_id, name_account, alias_account, card_type_id,
-        bank_id, balance, currency, source,
-        status_account, created_at, updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$9)
-      RETURNING
-        id, user_id AS "userId", name_account AS "nameAccount",
-        alias_account AS "aliasAccount", card_type_id AS "cardTypeId",
-        bank_id AS "bankId", balance, currency, source,
-        status_account AS "statusAccount", created_at AS "createdAt",
-        updated_at AS "updatedAt";
+        user_id, name_account, account_holder, card_type_id,
+        bank_id, balance, balance_source, source,
+        status_account, last_balance_update, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', NOW(), NOW(), NOW())
+      RETURNING ${this.getCardSelectFields()}
     `;
+
     const values = [
       userId,
-      cardData.nameAccount!,
-      cardData.aliasAccount || null,
-      cardData.cardTypeId!,
+      cardData.nameAccount,
+      cardData.accountHolder || null,
+      cardData.cardTypeId,
       cardData.bankId || null,
-      cardData.balance ?? 0,
-      cardData.currency ?? 'CLP',
-      cardData.source ?? 'manual',
-      new Date()
+      cardData.balance || 0,
+      cardData.balanceSource || 'manual',
+      cardData.source || 'manual'
     ];
+
     const res = await this.pool.query(query, values);
     return res.rows[0];
   }
 
   public async deleteCard(cardId: number, userId: number): Promise<void> {
-    // 1. Elimina movimientos asociados (si NO tienes ON DELETE CASCADE)
-    await this.pool.query('DELETE FROM movements WHERE card_id = $1', [cardId]);
-    // 2. Elimina la tarjeta
-    await this.pool.query('DELETE FROM cards WHERE id = $1 AND user_id = $2', [cardId, userId]);
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Eliminar movimientos asociados
+      await client.query('DELETE FROM movements WHERE card_id = $1', [cardId]);
+      
+      // Eliminar la tarjeta
+      const result = await client.query(
+        'DELETE FROM cards WHERE id = $1 AND user_id = $2 RETURNING name_account',
+        [cardId, userId]
+      );
+
+      if (result.rowCount === 0) {
+        throw new DatabaseError('No se encontró la tarjeta para eliminar');
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
+
   async cardExists(userId: number, nameAccount: string, cardTypeId: number, bankId?: number): Promise<boolean> {
     const query = `
       SELECT 1 FROM cards
@@ -188,13 +228,13 @@ export class CardService {
         AND name_account = $2
         AND card_type_id = $3
         AND bank_id IS NOT DISTINCT FROM $4
-        AND status_account = 'active'
       LIMIT 1;
     `;
     const result = await this.pool.query(query, [userId, nameAccount, cardTypeId, bankId ?? null]);
     return result.rows.length > 0;
   }
-  async updateCard(cardId: number, userId: number, cardData: Partial<ICard>): Promise<ICard> {
+
+  async updateCard(cardId: number, userId: number, cardData: ICardUpdate): Promise<ICard> {
     try {
       const updateFields = [];
       const values = [];
@@ -202,19 +242,25 @@ export class CardService {
 
       const fieldsToUpdate = {
         nameAccount: 'name_account',
-        aliasAccount: 'alias_account',
+        accountHolder: 'account_holder',
         cardTypeId: 'card_type_id',
         balance: 'balance',
-        currency: 'currency',
+        balanceSource: 'balance_source',
         source: 'source',
         statusAccount: 'status_account'
       };
+
       for (const [key, dbField] of Object.entries(fieldsToUpdate)) {
-        if (cardData[key as keyof ICard] !== undefined) {
+        if (cardData[key as keyof ICardUpdate] !== undefined) {
           updateFields.push(`${dbField} = $${paramCount}`);
-          values.push(cardData[key as keyof ICard]);
+          values.push(cardData[key as keyof ICardUpdate]);
           paramCount++;
         }
+      }
+
+      // Si se actualiza el balance, actualizar también la fecha de última actualización
+      if (cardData.balance !== undefined) {
+        updateFields.push('last_balance_update = NOW()');
       }
 
       updateFields.push('updated_at = NOW()');
@@ -224,18 +270,7 @@ export class CardService {
         UPDATE cards
         SET ${updateFields.join(', ')}
         WHERE id = $${paramCount} AND user_id = $${paramCount + 1}
-        RETURNING 
-          id,
-          user_id as "userId",
-          name_account as "nameAccount",
-          alias_account as "aliasAccount",
-          card_type_id as "cardTypeId",
-          balance,
-          currency,
-          source,
-          status_account as "statusAccount",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
+        RETURNING ${this.getCardSelectFields()}
       `;
 
       const result = await this.pool.query(query, values);
@@ -252,7 +287,7 @@ export class CardService {
   async findOrCreateCard(
     userId: number,
     nameAccount: string,
-    aliasAccount: string | null,
+    accountHolder: string | null,
     initialBalance: number,
     createdAt: Date,
     source: 'manual' | 'scraper' | 'imported' | 'api',
@@ -273,28 +308,21 @@ export class CardService {
 
       const createQuery = `
         INSERT INTO cards (
-          user_id,
-          name_account,
-          alias_account,
-          card_type_id,
-          bank_id,
-          balance,
-          currency,
-          source,
-          status_account,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'CLP', $7, 'active', $8, $8)
+          user_id, name_account, account_holder, card_type_id,
+          bank_id, balance, balance_source, source,
+          status_account, last_balance_update, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, $9, $9)
         RETURNING id
       `;
 
       const values = [
         userId,
         nameAccount,
-        aliasAccount,
+        accountHolder,
         cardTypeId,
         bankId,
         initialBalance,
+        source === 'manual' ? 'manual' : 'cartola',
         source,
         createdAt
       ];
@@ -304,6 +332,99 @@ export class CardService {
     } catch (error) {
       console.error('Error al buscar o crear tarjeta:', error);
       throw new DatabaseError('Error al buscar o crear la tarjeta');
+    }
+  }
+
+  async findCardByRut(rut: string, userId: number): Promise<ICard | null> {
+    try {
+      const query = `
+        SELECT ${this.getCardSelectFieldsWithPrefix('c')}
+        FROM cards c 
+        WHERE c.user_id = $1 
+        AND c.name_account = $2
+        AND c.status_account = 'active'
+        LIMIT 1
+      `;
+      
+      const result = await this.pool.query(query, [userId, rut]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Error al buscar tarjeta por RUT:', error);
+      throw new DatabaseError('Error al buscar la tarjeta');
+    }
+  }
+
+  async findOrUpdateCardFromCartola(
+    userId: number,
+    nameAccount: string,
+    accountHolder: string,
+    balance: number,
+    cardTypeId: number,
+    bankId: number
+  ): Promise<{ card: ICard; wasUpdated: boolean }> {
+    try {
+      const findQuery = `
+        SELECT ${this.getCardSelectFields()}
+        FROM cards 
+        WHERE user_id = $1 
+        AND name_account = $2 
+        AND card_type_id = $3 
+        AND bank_id = $4
+        AND status_account = 'active'
+      `;
+      const existingCard = await this.pool.query(findQuery, [userId, nameAccount, cardTypeId, bankId]);
+
+      if (existingCard.rows.length > 0) {
+        const updateQuery = `
+          UPDATE cards 
+          SET balance = $1,
+              balance_source = 'cartola',
+              last_balance_update = NOW(),
+              account_holder = $2,
+              updated_at = NOW()
+          WHERE id = $3
+          RETURNING ${this.getCardSelectFields()}
+        `;
+        const result = await this.pool.query(updateQuery, [balance, accountHolder, existingCard.rows[0].id]);
+        return { card: result.rows[0], wasUpdated: true };
+      } else {
+        const insertQuery = `
+          INSERT INTO cards (
+            user_id, name_account, account_holder, balance, 
+            balance_source, card_type_id, bank_id, source,
+            status_account, last_balance_update, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, 'cartola', $5, $6, 'imported', 'active', NOW(), NOW(), NOW())
+          RETURNING ${this.getCardSelectFields()}
+        `;
+        const result = await this.pool.query(insertQuery, [
+          userId, nameAccount, accountHolder, balance, cardTypeId, bankId
+        ]);
+        return { card: result.rows[0], wasUpdated: false };
+      }
+    } catch (error) {
+      console.error('Error en findOrUpdateCardFromCartola:', error);
+      throw new DatabaseError('Error al procesar la tarjeta desde la cartola');
+    }
+  }
+
+  async updateBalanceFromCartola(cardId: number, userId: number, newBalance: number): Promise<void> {
+    try {
+      const updateQuery = `
+        UPDATE cards 
+        SET balance = $1,
+            balance_source = 'cartola',
+            last_balance_update = NOW(),
+            updated_at = NOW()
+        WHERE id = $2 AND user_id = $3
+      `;
+      const result = await this.pool.query(updateQuery, [newBalance, cardId, userId]);
+      
+      if (result.rowCount === 0) {
+        throw new DatabaseError('No se encontró la tarjeta para actualizar');
+      }
+    } catch (error) {
+      console.error('Error al actualizar saldo desde cartola:', error);
+      throw new DatabaseError('Error al actualizar el saldo de la tarjeta');
     }
   }
 } 

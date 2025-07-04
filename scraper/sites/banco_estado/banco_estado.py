@@ -53,11 +53,11 @@ class BancoEstadoScraper:
             password = task_data.get('data', {}).get('password')
 
             if not rut or not password:
-                print("❌ Credenciales incompletas")
+                print("ERROR: Credenciales incompletas")
                 update_task_status(self.redis_client, task_id, 'failed', 'Credenciales incompletas')
                 return None
 
-            print("[🚀 Scraper BancoEstado iniciado]")
+            print("[Scraper BancoEstado iniciado]")
             async with async_playwright() as p:
                 # Iniciar navegador con configuración mejorada
                 update_task_status(self.redis_client, task_id, 'processing', 'Iniciando navegador', 10)
@@ -283,17 +283,17 @@ class BancoEstadoScraper:
 
                     # Guardar resultados
                     store_result(self.redis_client, task_id, result)
-                    print(f"✅ Scraping completado para RUT: {rut}")
+                    print(f"Scraping completado para RUT: {rut}")
 
                     return result
 
                 except Exception as e:
-                    print(f"❌ Error durante el scraping: {str(e)}")
+                    print(f"ERROR durante el scraping: {str(e)}")
                     update_task_status(self.redis_client, task_id, 'failed', str(e))
                     raise
 
         except Exception as e:
-            print(f"❌ Error durante el scraping: {str(e)}")
+            print(f"ERROR durante el scraping: {str(e)}")
             update_task_status(self.redis_client, task_id, 'failed', str(e))
             return None
 
@@ -326,13 +326,13 @@ class BancoEstadoScraper:
                     await modal_btn.scroll_into_view_if_needed()
                     await page.wait_for_timeout(600)  # Aumentado de 300ms a 600ms
                     await modal_btn.click(timeout=5000)
-                    print("🔕 Modal de infobar cerrado")
+                    print("Modal de infobar cerrado")
                 except Exception:
-                    print("⚠️ No se pudo cerrar el modal de infobar")
+                    print("No se pudo cerrar el modal de infobar")
             else:
-                print("✅ No apareció el modal de infobar")
+                print("No apareció el modal de infobar")
         except Exception as e:
-            print(f"ℹ️ Info al intentar cerrar el modal: {e}")
+            print(f"Info al intentar cerrar el modal: {e}")
 
     async def cerrar_sidebar(self, page):
         try:
@@ -344,7 +344,7 @@ class BancoEstadoScraper:
                     sidebar = page.locator(f"#{sidebar_id} button[aria-label='Cerrar']")
                     if await sidebar.count() > 0 and await sidebar.is_visible():
                         await sidebar.click()
-                        print(f"🔕 Sidebar {sidebar_id} cerrado")
+                        print(f"Sidebar {sidebar_id} cerrado")
                         await page.wait_for_timeout(1000)
                         return True
                 except Exception:
@@ -354,7 +354,7 @@ class BancoEstadoScraper:
                 sidebar_class = page.locator(".sidebar-container button[aria-label='Cerrar'], .modal-container button[aria-label='Cerrar']")
                 if await sidebar_class.count() > 0 and await sidebar_class.is_visible():
                     await sidebar_class.click()
-                    print("🔕 Sidebar genérico cerrado")
+                    print("Sidebar genérico cerrado")
                     await page.wait_for_timeout(1000)
                     return True
             except Exception:
@@ -374,17 +374,17 @@ class BancoEstadoScraper:
                             """)
                             if parent:
                                 await button.click()
-                                print("🔕 Sidebar/modal cerrado")
+                                print("Sidebar/modal cerrado")
                                 await page.wait_for_timeout(1000)
                                 return True
                     except Exception:
                         continue
             except Exception:
                 pass
-            print("✅ No hay sidebars para cerrar")
+            print("No hay sidebars para cerrar")
             return False
         except Exception as e:
-            print(f"ℹ️ Info: {str(e)}")
+            print(f"Info: {str(e)}")
             return False
 
     async def type_like_human(self, page, selector, text, delay=None):
@@ -435,7 +435,7 @@ class BancoEstadoScraper:
             await page.wait_for_timeout(random.randint(400, 1200))  # Aumentado de 200-400ms a 400-1200ms
             
         except Exception as e:
-            print(f"❌ Error en type_like_human: {e}")
+            print(f"ERROR en type_like_human: {e}")
             await page.fill(selector, text)
 
     async def simular_comportamiento_humano(self, page):
@@ -460,7 +460,7 @@ class BancoEstadoScraper:
         try:
             # Intentar cerrar cualquier sidebar antes de interactuar
             await self.cerrar_sidebar(page)
-            print("👁️ Intentando mostrar saldos...")
+            print("Intentando mostrar saldos...")
             
             # Comenzar directamente con el método que sabemos que funciona
             print("  Intentando mostrar saldos con botón mostrar/ocultar...")
@@ -486,16 +486,16 @@ class BancoEstadoScraper:
                 
                 # Verificar si los saldos son visibles
                 if await self.verificar_saldos_visibles(page):
-                    print("✅ Saldos mostrados correctamente")
+                    print("[OK] Saldos mostrados correctamente")
                     return True
                     
                 # Si no funcionó, intentar una vez más con un pequeño delay
                 await page.wait_for_timeout(500)
                 if await self.verificar_saldos_visibles(page):
-                    print("✅ Saldos mostrados correctamente en segundo intento")
+                    print("[OK] Saldos mostrados correctamente en segundo intento")
                     return True
                     
-                print("⚠️ No se pudieron mostrar los saldos")
+                print("[WARNING] No se pudieron mostrar los saldos")
                 return False
                 
             except Exception as e:
@@ -576,7 +576,7 @@ class BancoEstadoScraper:
                             nombre_obtenido = True
 
             except Exception as e:
-                print(f"⚠️ Error al extraer nombre con selectores h3 directos: {e}")
+                print(f"[WARNING] Error al extraer nombre con selectores h3 directos: {e}")
             
             # Si no encontramos el nombre con los h3 directos, intentar desde otros elementos (selector alternativo)
             if "nombre" not in info or not info.get("nombre"):
@@ -608,7 +608,7 @@ class BancoEstadoScraper:
                                 info["nombre"] = nombre_alt.strip()
                                 
                 except Exception as e_alt:
-                    print(f"⚠️ Error al extraer nombre con selector alternativo .m-card-global__header--title h3: {e_alt}")
+                    print(f"[WARNING] Error al extraer nombre con selector alternativo .m-card-global__header--title h3: {e_alt}")
             
             # Si aún no tenemos nombre, extraerlo del HTML como último recurso
             if "nombre" not in info or not info.get("nombre"):
@@ -622,7 +622,7 @@ class BancoEstadoScraper:
                         info["nombre"] = "Cuenta sin nombre"
                 except Exception as e:
                     info["nombre"] = "Cuenta sin nombre"
-                    print(f"⚠️ Error al extraer nombre del HTML: {e}")
+                    print(f"[WARNING] Error al extraer nombre del HTML: {e}")
             
             # Extraer número de cuenta
             try:
@@ -656,7 +656,7 @@ class BancoEstadoScraper:
                         """)
             except Exception as e:
                 info["numero"] = ""
-                print(f"⚠️ Error al extraer número: {e}")
+                print(f"[WARNING] Error al extraer número: {e}")
             
             # Extraer saldo
             try:
@@ -696,7 +696,7 @@ class BancoEstadoScraper:
                     """)
             except Exception as e:
                 info["saldo"] = ""
-                print(f"⚠️ Error al extraer saldo: {e}")
+                print(f"[WARNING] Error al extraer saldo: {e}")
             
             # Verificar que tengamos información mínima
             if not info["nombre"] or info["nombre"] == "Cuenta sin nombre":
@@ -705,24 +705,24 @@ class BancoEstadoScraper:
             
             return info
         except Exception as e:
-            print(f"❌ Error general al extraer info de tarjeta: {e}")
+            print(f"ERROR: Error general al extraer info de tarjeta: {e}")
             return None
 
     async def extract_cuentas(self, page):
-        print("🔍 Extrayendo cuentas...")
+        print("[INFO] Extrayendo cuentas...")
         await self.cerrar_modal_infobar(page)
         
         try:
             await page.wait_for_selector("app-carrusel-productos-wrapper", timeout=30000)
-            print("🔍 Encontramos el carrusel")
+            print("[INFO] Encontramos el carrusel")
         except Exception as e:
-            print(f"⚠️ No se encontró el carrusel: {e}")
+            print(f"[WARNING] No se encontró el carrusel: {e}")
             # Intentar un selector alternativo más genérico
             try:
                 await page.wait_for_selector("div[role='list'], div.carousel, div.slider", timeout=15000)
-                print("🔍 Encontramos un carrusel alternativo")
+                print("[INFO] Encontramos un carrusel alternativo")
             except Exception as e2:
-                print(f"⚠️ No se encontró ningún carrusel: {e2}")
+                print(f"[WARNING] No se encontró ningún carrusel: {e2}")
                 
         await self.cerrar_sidebar(page)
 
@@ -740,15 +740,15 @@ class BancoEstadoScraper:
         for selector in selectores_tarjetas:
             try:
                 await page.wait_for_selector(selector, timeout=15000)
-                print(f"✅ Tarjetas encontradas con selector: {selector}")
+                print(f"[OK] Tarjetas encontradas con selector: {selector}")
                 tarjetas_encontradas = True
                 break
             except Exception:
-                print(f"⚠️ No se encontraron tarjetas con selector: {selector}")
+                print(f"[WARNING] No se encontraron tarjetas con selector: {selector}")
                 continue
         
         if not tarjetas_encontradas:
-            print("⚠️ No se encontraron tarjetas con ningún selector")
+            print("[WARNING] No se encontraron tarjetas con ningún selector")
         
         cuentas = []
         total_cuentas = 0
@@ -796,7 +796,7 @@ class BancoEstadoScraper:
         
         # Si no encontramos cuentas, intentar un enfoque alternativo: extraer directamente del HTML
         if not cuentas:
-            print("⚠️ No se encontraron cuentas con métodos estándar. Intentando extracción directa del HTML...")
+            print("[WARNING] No se encontraron cuentas con métodos estándar. Intentando extracción directa del HTML...")
             try:
                 # Evaluar JavaScript para extraer información de tarjetas directamente
                 raw_cuentas = await page.evaluate("""
@@ -859,13 +859,13 @@ class BancoEstadoScraper:
                         total_cuentas += 1
                         print(f"➡️ Cuenta extraída de HTML #{total_cuentas}: {cuenta_raw.get('nombre')} - {cuenta_raw.get('numero')} - Saldo: {cuenta_raw.get('saldo')}")
             except Exception as e:
-                print(f"⚠️ Error en extracción alternativa: {e}")
+                print(f"[WARNING] Error en extracción alternativa: {e}")
         
         # Si aún no encontramos cuentas, tomar una captura completa y fallar
         if not cuentas:       
             raise Exception("No se pudo extraer ninguna cuenta")
         
-        print(f"✅ Se extrajeron {len(cuentas)} cuentas exitosamente")
+        print(f"[OK] Se extrajeron {len(cuentas)} cuentas exitosamente")
         return cuentas
 
     async def extract_ultimos_movimientos(self, page):
@@ -877,9 +877,9 @@ class BancoEstadoScraper:
             # Reducir timeout de espera inicial de 30s a 20s
             try:
                 await page.wait_for_selector("app-ultimos-movimientos-home, div[class*='ultimos-movimientos']", timeout=20000)
-                print("✅ Sección de últimos movimientos encontrada")
+                print("[OK] Sección de últimos movimientos encontrada")
             except Exception as e:
-                print(f"❌ Error esperando sección de movimientos: {str(e)}")
+                print(f"ERROR: Error esperando sección de movimientos: {str(e)}")
                 return []
             
             # Reducir MAX_SCROLL_ATTEMPTS de 5 a 3
@@ -896,17 +896,17 @@ class BancoEstadoScraper:
                     
                     # ... resto del código de extracción de movimientos ...
                 except Exception as e_scroll:
-                    print(f"    ❌ Error durante el intento de scroll: {e_scroll}")
+                    print(f"    ERROR: Error durante el intento de scroll: {e_scroll}")
                     break
                 
                 scroll_attempt += 1
 
-            print(f"✅ Se extrajeron {len(movimientos)} movimientos generales en total.")
+            print(f"[OK] Se extrajeron {len(movimientos)} movimientos generales en total.")
             print("[🌐]--- Fin: Extracción de ÚLTIMOS MOVIMIENTOS GENERALES (Home) ---")
             return movimientos
             
         except Exception as e:
-            print(f"❌ Error al extraer movimientos: {str(e)}")
+            print(f"ERROR: Error al extraer movimientos: {str(e)}")
             return []
 
     async def extract_movimientos_cuenta(self, page, cuenta_info):
@@ -988,7 +988,7 @@ class BancoEstadoScraper:
                                 movimientos.append(movimiento)
                                 print(f"                [+] Movimiento: {fecha} | {descripcion} | {monto}")
                             except Exception as e:
-                                print(f"                ⚠️ Error procesando movimiento: {e}")
+                                print(f"                [WARNING] Error procesando movimiento: {e}")
                                 continue
                                             
                         # Intentar ir a la siguiente página
@@ -1008,14 +1008,14 @@ class BancoEstadoScraper:
                     # Volver a la página principal
                     print("    [🏠] Fin de procesamiento para tarjeta objetivo. Asegurando retorno a Home...")
                     await self.verificar_y_volver_home(page)
-                    print("[✅] Tarjeta objetivo procesada. Saliendo del bucle del carrusel.")
+                    print("[[OK]] Tarjeta objetivo procesada. Saliendo del bucle del carrusel.")
                     break
 
             print(f"💰 Total final de movimientos extraídos para '{cuenta_info.get('nombre')}': {len(movimientos)}")
             return movimientos
 
         except Exception as e:
-            print(f"❌ Error extrayendo movimientos: {e}")
+            print(f"ERROR: Error extrayendo movimientos: {e}")
             return movimientos
 
     async def login_banco_estado(self, page, credentials: Credentials):
@@ -1033,7 +1033,7 @@ class BancoEstadoScraper:
             await self.cerrar_sidebar(page)
             
             # PASO 1: Click en "Banca en Línea"
-            print("🔍 Buscando botón 'Banca en Línea'...")
+            print("[INFO] Buscando botón 'Banca en Línea'...")
             try:
                 # Intentar encontrar el botón de Banca en Línea
                 banca_button = None
@@ -1048,7 +1048,7 @@ class BancoEstadoScraper:
                         button = await page.wait_for_selector(selector, timeout=5000, state="visible")
                         if button:
                             banca_button = button
-                            print(f"✅ Botón 'Banca en Línea' encontrado con selector: {selector}")
+                            print(f"[OK] Botón 'Banca en Línea' encontrado con selector: {selector}")
                             break
                     except Exception:
                         continue
@@ -1060,10 +1060,10 @@ class BancoEstadoScraper:
                 await banca_button.hover()
                 await page.wait_for_timeout(random.randint(100, 300))
                 await banca_button.click()
-                print("✅ Click en 'Banca en Línea' realizado")
+                print("[OK] Click en 'Banca en Línea' realizado")
                 
             except Exception as e:
-                print(f"❌ Error al hacer click en 'Banca en Línea': {str(e)}")
+                print(f"ERROR: Error al hacer click en 'Banca en Línea': {str(e)}")
                 raise
             
             # Esperar a que cargue la página de login
@@ -1111,7 +1111,7 @@ class BancoEstadoScraper:
                         button = await page.wait_for_selector(selector, timeout=5000, state="visible")
                         if button:
                             login_button = button
-                            print(f"✅ Botón 'Ingresar' encontrado con selector: {selector}")
+                            print(f"[OK] Botón 'Ingresar' encontrado con selector: {selector}")
                             break
                     except Exception:
                         continue
@@ -1181,17 +1181,17 @@ class BancoEstadoScraper:
                 
                 # Esperar a que la página cargue completamente
                 await page.wait_for_load_state("networkidle", timeout=30000)
-                print("✅ Navegación completada")
+                print("[OK] Navegación completada")
                 
             except Exception as e:
-                print(f"❌ Error al intentar hacer click en el botón: {str(e)}")
+                print(f"ERROR: Error al intentar hacer click en el botón: {str(e)}")
                 raise
             
             # Verificar errores visibles
             modal_error = page.locator("text='ha ocurrido un error'")
             if await modal_error.count() > 0:
-                print("⚠️ Modal de error detectado tras login")
-                raise Exception("❌ Error visible en pantalla después de iniciar sesión")
+                print("[WARNING] Modal de error detectado tras login")
+                raise Exception("ERROR: Error visible en pantalla después de iniciar sesión")
             
             # Esperar y verificar errores en el contenido
             await page.wait_for_timeout(7000)
@@ -1206,7 +1206,7 @@ class BancoEstadoScraper:
             
             if any(e in content.lower() for e in errores):
                 error_msg = next((e for e in errores if e in content.lower()), "Error general al iniciar sesión")
-                raise Exception(f"❌ {error_msg.capitalize()}")
+                raise Exception(f"ERROR: {error_msg.capitalize()}")
             
             # Verificar que estamos en la página correcta después del login
             current_url = page.url
@@ -1226,25 +1226,25 @@ class BancoEstadoScraper:
                 for selector in success_selectors:
                     try:
                         await page.wait_for_selector(selector, timeout=5000)
-                        print(f"✅ Login confirmado: Elemento {selector} encontrado")
+                        print(f"[OK] Login confirmado: Elemento {selector} encontrado")
                         return content
                     except Exception:
                         continue
                 
                 # Si no encontramos ningún elemento de éxito, verificar la URL
                 if any(x in current_url.lower() for x in ["personas/home", "personas/inicio", "#home", "dashboard"]):
-                    print("✅ Login confirmado por URL")
+                    print("[OK] Login confirmado por URL")
                     return content
                     
-                print(f"⚠️ URL inesperada después del login: {current_url}")
-                raise Exception("❌ Redirección incorrecta después del login")
+                print(f"[WARNING] URL inesperada después del login: {current_url}")
+                raise Exception("ERROR: Redirección incorrecta después del login")
                 
             except Exception as e:
-                print(f"❌ Error verificando login exitoso: {str(e)}")
+                print(f"ERROR: Error verificando login exitoso: {str(e)}")
                 raise
             
         except Exception as e:
-            print(f"❌ Error durante el login: {str(e)}")
+            print(f"ERROR: Error durante el login: {str(e)}")
             raise Exception(f"Error durante el login: {str(e)}")
             
 
@@ -1266,5 +1266,5 @@ class BancoEstadoScraper:
             # Convertir a float
             return float(saldo_str or '0')
         except Exception as e:
-            print(f"❌ Error al convertir saldo: {e}")
+            print(f"ERROR: Error al convertir saldo: {e}")
             return 0

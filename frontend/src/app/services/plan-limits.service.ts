@@ -93,6 +93,13 @@ export class PlanLimitsService {
   }
 
   /**
+   * Verifica si el usuario puede crear un movimiento proyectado
+   */
+  canCreateProjectedMovement(): Observable<LimitCheck> {
+    return this.checkLimit(PLAN_LIMITS.PROJECTED_MOVEMENTS, 'movimientos proyectados');
+  }
+
+  /**
    * Obtiene los datos de uso para una clave específica
    */
   private getUsageData(usage: PlanUsage | null, limitKey: string): { used: number; limit: number; remaining: number } | null {
@@ -109,6 +116,8 @@ export class PlanLimitsService {
         return usage.cartola_movements;
       case PLAN_LIMITS.SCRAPER_MOVEMENTS:
         return usage.scraper_movements;
+      case PLAN_LIMITS.PROJECTED_MOVEMENTS:
+        return usage.projected_movements;
       case PLAN_LIMITS.MONTHLY_CARTOLAS:
         // Para límites que no están en PlanUsage, devolver null
         return null;
@@ -142,19 +151,14 @@ export class PlanLimitsService {
         const currentUsage = usageData?.used || 0;
         const remaining = usageData?.remaining || 0;
 
-        // Si es ilimitado (-1), siempre permitir
-        if (limit === -1) {
+        // Si el límite no está definido o es -1, es ilimitado
+        if (limit === undefined || limit === -1) {
           return {
             canPerform: true,
-            isUnlimited: true
-          };
-        }
-
-        // Si no hay límite configurado, permitir por defecto
-        if (limit === undefined) {
-          return {
-            canPerform: true,
-            isUnlimited: false
+            isUnlimited: true,
+            limit: -1,
+            used: currentUsage,
+            remaining: -1
           };
         }
 

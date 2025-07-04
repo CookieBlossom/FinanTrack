@@ -50,8 +50,9 @@ export class EditMovementDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: { movement: Movement }
   ) {
 
-    // Verificar si es movimiento en efectivo
-    this.isCashMovement = data.movement.card?.nameAccount?.toLowerCase() === 'efectivo';
+    // Verificar si es movimiento en efectivo (con validación robusta)
+    this.isCashMovement = data.movement.card?.nameAccount?.toLowerCase() === 'efectivo' || 
+                          (data.movement.cardId === 1); // Fallback: cardId 1 suele ser efectivo
 
     // Si es movimiento en efectivo, separar método de pago y descripción
     if (this.isCashMovement && data.movement.description) {

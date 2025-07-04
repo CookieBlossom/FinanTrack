@@ -11,13 +11,14 @@ const scraperController = new ScraperController();
 router.post('/task', scraperController.createTask);
 router.get('/task/:taskId', scraperController.getTaskStatus); // Corregido de getTask a getTaskStatus
 router.post('/task/:taskId/cancel', scraperController.cancelTask);
+router.get('/tasks', scraperController.getUserTasks); // Obtener historial de tareas del usuario
 
 // --- Rutas Antiguas/No Implementadas en el ScraperController actual ---
 // Se comentan porque ScraperController fue simplificado para enfocarse en el flujo de Banco Estado.
 // Para reactivarlas, ScraperController necesitaría implementar los métodos correspondientes
 // y potencialmente interactuar con un GeneralScraperService más completo.
 
-// router.get('/tasks', scraperController.getAllTasks); // Método no implementado en ScraperController actual
+// router.get('/tasks', scraperController.getAllTasks); // Método no implementado en ScraperController actual (ahora implementado como getUserTasks)
 // router.get('/status', scraperController.getScraperStatus); // Método no implementado
 // router.post('/cleanup', scraperController.cleanupTasks); // Método no implementado
 

@@ -195,46 +195,52 @@ export class MovementService {
     }
   }
   public async getCashMovementsByUser(userId: number): Promise<IMovement[]> {
-    const efectivoCardQuery = `
-      SELECT id FROM cards 
-      WHERE user_id = $1 AND card_type_id = (
-        SELECT id FROM card_types WHERE name = 'Efectivo' LIMIT 1
-      )
-      LIMIT 1;
-    `;
-    const efectivoCardResult = await this.pool.query(efectivoCardQuery, [userId]);
-    const efectivoCardId = efectivoCardResult.rows[0]?.id;
-  
-    if (!efectivoCardId) return [];
-  
-    const movementsQuery = `
-      SELECT 
-        m.id, m.card_id as "cardId", m.category_id as "categoryId",
-        cat.name_category as "categoryName",
-        cat.color as "categoryColor",
-        m.amount, m.description, m.movement_type as "movementType",
-        m.movement_source as "movementSource", 
-        m.transaction_date as "transactionDate", 
-        m.metadata,
-        m.created_at as "createdAt", m.updated_at as "updatedAt",
-        c.name_account as "cardName"
-      FROM movements m
-      JOIN cards c ON m.card_id = c.id
-      LEFT JOIN categories cat ON m.category_id = cat.id
-      WHERE m.card_id = $1 AND m.movement_source = 'manual'
-      ORDER BY m.transaction_date DESC, m.created_at DESC
-    `;
-    const result = await this.pool.query(movementsQuery, [efectivoCardId]);
-    return result.rows.map(row => ({ 
-      ...row, 
-      transactionDate: new Date(row.transactionDate),
-      card: { nameAccount: row.cardName },
-      category: row.categoryId ? {
-        id: row.categoryId,
-        nameCategory: row.categoryName,
-        color: row.categoryColor
-      } : undefined
-    }));
+    try {
+      const efectivoCardQuery = `
+        SELECT id FROM cards 
+        WHERE user_id = $1 AND card_type_id = (
+          SELECT id FROM card_types WHERE name = 'Efectivo' LIMIT 1
+        )
+        AND status_account = 'active'
+        LIMIT 1;
+      `;
+      const efectivoCardResult = await this.pool.query(efectivoCardQuery, [userId]);
+      const efectivoCardId = efectivoCardResult.rows[0]?.id;
+    
+      if (!efectivoCardId) return [];
+    
+      const movementsQuery = `
+        SELECT 
+          m.id, m.card_id as "cardId", m.category_id as "categoryId",
+          cat.name_category as "categoryName",
+          cat.color as "categoryColor",
+          m.amount, m.description, m.movement_type as "movementType",
+          m.movement_source as "movementSource", 
+          m.transaction_date as "transactionDate", 
+          m.metadata,
+          m.created_at as "createdAt", m.updated_at as "updatedAt",
+          c.name_account as "cardName"
+        FROM movements m
+        JOIN cards c ON m.card_id = c.id
+        LEFT JOIN categories cat ON m.category_id = cat.id
+        WHERE m.card_id = $1
+        ORDER BY m.transaction_date DESC, m.created_at DESC
+      `;
+      const result = await this.pool.query(movementsQuery, [efectivoCardId]);
+      return result.rows.map(row => ({ 
+        ...row, 
+        transactionDate: new Date(row.transactionDate),
+        card: { nameAccount: row.cardName },
+        category: row.categoryId ? {
+          id: row.categoryId,
+          nameCategory: row.categoryName,
+          color: row.categoryColor
+        } : undefined
+      }));
+    } catch (error) {
+      console.error('[MovementService] Error al obtener movimientos en efectivo:', error);
+      throw new DatabaseError('Error al obtener los movimientos en efectivo');
+    }
   }
 
   public async getCardMovementsByUser(userId: number): Promise<IMovement[]> {
@@ -254,6 +260,7 @@ export class MovementService {
         JOIN cards c ON m.card_id = c.id
         LEFT JOIN categories cat ON m.category_id = cat.id
         WHERE c.user_id = $1 
+        AND c.status_account = 'active'
         AND c.card_type_id != (
           SELECT id FROM card_types WHERE name = 'Efectivo' LIMIT 1
         )
@@ -326,8 +333,8 @@ export class MovementService {
       const limits = await this.planService.getLimitsForPlan(planId);
       
       if (movementData.movementSource === 'manual') {
-        // Verificar límite de movimientos manuales
-        if (limits.manual_movements !== -1) {
+        // Verificar límite de movimientos manuales solo si no es ilimitado
+        if (limits.manual_movements !== undefined && limits.manual_movements !== -1) {
           const used = await this.countMonthlyManualMoves(userId);
           if (used >= limits.manual_movements) {
             throw new DatabaseError(
@@ -336,8 +343,8 @@ export class MovementService {
           }
         }
       } else if (movementData.movementSource === 'cartola') {
-        // Verificar límite de movimientos de cartola
-        if (limits.cartola_movements !== -1) {
+        // Verificar límite de movimientos de cartola solo si no es ilimitado
+        if (limits.cartola_movements !== undefined && limits.cartola_movements !== -1) {
           const used = await this.countMonthlyCartolaMoves(userId);
           if (used >= limits.cartola_movements) {
             throw new DatabaseError(
@@ -351,8 +358,8 @@ export class MovementService {
           throw new DatabaseError('Tu plan no permite subir cartolas bancarias');
         }
       } else if (movementData.movementSource === 'scraper') {
-        // Verificar límite de movimientos del scraper
-        if (limits.scraper_movements !== -1) {
+        // Verificar límite de movimientos del scraper solo si no es ilimitado
+        if (limits.scraper_movements !== undefined && limits.scraper_movements !== -1) {
           const used = await this.countMonthlyScraperMoves(userId);
           if (used >= limits.scraper_movements) {
             throw new DatabaseError(
@@ -370,6 +377,15 @@ export class MovementService {
         const hasPermission = await this.planService.hasPermission(planId, 'cartola_upload');
         if (!hasPermission) {
           throw new DatabaseError('Tu plan no permite importar movimientos');
+        }
+      }
+
+      // Determinar el tipo de movimiento basado en la descripción si viene de cartola
+      if (movementData.movementSource === 'cartola' && !movementData.movementType) {
+        if (movementData.description.match(/COMPRA|GIRO|PAGO|TEF A|TRANSFERENCIA A/i)) {
+          movementData.movementType = 'expense';
+        } else if (movementData.description.match(/TEF DE|TRANSFERENCIA DE|DEPOSITO|ABONO/i)) {
+          movementData.movementType = 'income';
         }
       }
   
@@ -450,6 +466,10 @@ export class MovementService {
         throw new DatabaseError('El movimiento no pertenece a una tarjeta válida del usuario.');
       }
 
+      // Primero revertimos el balance actual
+      const amountToRevert = currentMovement.movementType === 'income' ? -Number(currentMovement.amount) : Number(currentMovement.amount);
+      await this.cardService.updateBalance(currentMovement.cardId, userId, amountToRevert);
+
       const updateFields: string[] = [];
       const values: any[] = [];
       let paramCount = 1;
@@ -498,6 +518,11 @@ export class MovementService {
       if (result.rows.length === 0) return null;
 
       const updatedMovement = result.rows[0];
+
+      // Aplicar el nuevo balance
+      const newAmountForBalance = updatedMovement.movementType === 'income' ? Number(updatedMovement.amount) : -Number(updatedMovement.amount);
+      await this.cardService.updateBalance(updatedMovement.cardId, userId, newAmountForBalance);
+
       let categoryName: string | undefined = undefined;
       let categoryColor: string | undefined = undefined;
       if (updatedMovement.categoryId) {
@@ -592,72 +617,29 @@ export class MovementService {
     try {
       const cartola = await this.cartolaService.procesarCartolaPDF(buffer);
       
-      // Verificar límites del plan
-      const limits = await this.planService.getLimitsForPlan(planId);
-      if (limits.cartola_movements !== -1) {
-        const currentCount = await this.countMonthlyCartolaMoves(userId);
-        if (currentCount + cartola.movimientos.length > limits.cartola_movements) {
-          throw new DatabaseError(
-            `La cartola excede el límite de ${limits.cartola_movements} movimientos por mes de tu plan`
-          );
-        }
-      }
-
-      // Obtener los tipos de tarjeta disponibles
-      const cardTypesQuery = 'SELECT id, name FROM card_types';
-      const cardTypesResult = await this.pool.query(cardTypesQuery);
-      const cardTypesMap = cardTypesResult.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name.toLowerCase().replace(/\s+/g, '').normalize("NFD").replace(/[\u0300-\u036f]/g, '')
-      }));
-
-      const cleanedTitle = cartola.tituloCartola
-        .toLowerCase()
-        .replace(/cartola|consulta|de|la|el|saldo|cuenta|corriente|vista|tarjeta/gi, '')
-        .replace(/\s+/g, '')
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, '');
-
-      let tipoCuenta = cardTypesMap.find(t => cleanedTitle.includes(t.name))?.id;
-      if (!tipoCuenta) {
-        tipoCuenta = cardTypesMap.find(t => t.name === 'otros')?.id || 9;
-      }
-
-      const cardId = await this.cardService.findOrCreateCard(
+      // Determinar el tipo de tarjeta basándose en el título
+      const cardTypeId = this.cartolaService.detectCardTypeFromTitle(cartola.tituloCartola);
+      const bankId = 1; // ID de BancoEstado
+      const { card } = await this.cardService.findOrUpdateCardFromCartola(
         userId,
         cartola.tituloCartola,
         cartola.clienteNombre,
         cartola.saldoFinal,
-        cartola.fechaHoraConsulta,
-        'imported',
-        tipoCuenta,
-        1
+        cardTypeId,
+        bankId
       );
 
-      // Procesar cada movimiento
-      for (const movement of cartola.movimientos) {
-        let categoryId: number | undefined;
-        
-        // Intentar categorizar el movimiento
-        if (movement.descripcion) {
-          const categoryIdStr = await this.companyService.findCategoryForDescription(movement.descripcion);
-          if (categoryIdStr) {
-            categoryId = parseInt(categoryIdStr);
-          }
-        }
-        
-        await this.createMovement({
-          cardId,
-          categoryId,
-          amount: Math.abs(movement.abonos || movement.cargos || 0),
-          description: movement.descripcion,
-          movementType: (movement.tipo?.includes('RECIBIDA') || movement.abonos) ? 'income' : 'expense',
-          movementSource: 'cartola',
-          transactionDate: movement.fecha
-        }, userId, planId);
-      }
+      // Guardar los movimientos
+      await this.cartolaService.guardarMovimientos(
+        card.id,
+        cartola.movimientos,
+        userId,
+        planId,
+        cartola.saldoFinal
+      );
     } catch (error) {
-      console.error('[MovementService] Error al procesar cartola:', error);
-      throw new DatabaseError('Error al procesar la cartola');
+      console.error('Error al procesar cartola:', error);
+      throw error;
     }
   }
 
@@ -738,5 +720,13 @@ export class MovementService {
       diaMayorGasto,
       hasData
     };
+  }
+
+  async validateMovement(movement: IMovement, userId: number): Promise<void> {
+    // Verificar que la tarjeta pertenece al usuario
+    const card = await this.cardService.getCardById(movement.cardId, userId);
+    if (!card) {
+      throw new Error('Tarjeta no encontrada o no pertenece al usuario');
+    }
   }
 } 

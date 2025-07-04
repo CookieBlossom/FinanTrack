@@ -25,6 +25,7 @@ import { PLAN_LIMITS } from '../../../models/plan.model';
 import { FeatureControlService } from '../../../services/feature-control.service';
 import { PlanLimitAlertService } from '../../../shared/services/plan-limit-alert.service';
 import { Router } from '@angular/router';
+import { ScraperService } from '../../../services/scraper.service';
 
 interface CardCredentials {
   rut: string;
@@ -68,6 +69,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   activeTab = 'automatic'; // Tab activo por defecto
   hidePassword = true; // Para mostrar/ocultar contraseña
   private destroy$ = new Subject<void>();
+  currentTaskId: string | null = null; // Para rastrear la tarea activa (público para template)
   matcher = new InstantErrorStateMatcher();
 
   // Variables para límites
@@ -96,7 +98,8 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     private planLimitsService: PlanLimitsService,
     private featureControlService: FeatureControlService,
     private planLimitAlertService: PlanLimitAlertService,
-    private router: Router
+    private router: Router,
+    private scraperService: ScraperService
   ) {
     // Scraper form
     this.cardForm = this.fb.group({
@@ -104,20 +107,25 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
         Validators.required,
         (control: AbstractControl) => {
           const value = control.value;
+          
+          // Solo validar si el RUT tiene al menos 8 caracteres (formato mínimo)
+          if (!value || value.length < 8) {
+            return null; // No mostrar error hasta que tenga longitud mínima
+          }
+          
           return RutUtils.validate(value) ? null : { invalidRut: true };
         }
       ]],
       password: ['', [
         Validators.required,
         Validators.minLength(4)
-      ]],
-      bank: ['', Validators.required]
+      ]]
     });
 
     // Manual form
     this.manualForm = this.fb.group({
       nameAccount: ['', Validators.required],
-      aliasAccount: [''],
+      accountHolder: [''],
       cardTypeId: [null, Validators.required],
       bankId: [null],
       balance: [0, [Validators.required, Validators.min(0)]],
@@ -148,6 +156,8 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     this.banks = await firstValueFrom(this.cardService.getBanks());
   }
 
+
+
   loadLimitsInfo(): void {
     // Cargar información de límites
     this.planLimitsService.currentUsage$.subscribe({
@@ -167,7 +177,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
         this.currentPlanName = control.planName;
         
         // Controlar qué pestañas mostrar según el plan
-        this.showAutomaticTab = ['premium', 'enterprise'].includes(control.planName.toLowerCase());
+        this.showAutomaticTab = ['premium', 'pro'].includes(control.planName.toLowerCase());
         this.showManualTab = true; // Siempre mostrar manual
         
         // Si no se puede mostrar automático, cambiar a manual por defecto
@@ -200,13 +210,17 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   // --- Scraper TAB
   onRutInput(event: Event): void {
     const input = event.target as HTMLInputElement;
-    input.value = RutUtils.format(input.value);
+    const formatted = RutUtils.format(input.value);
+    input.value = formatted;
+    // Actualizar el formulario con el valor formateado y permitir que se ejecuten las validaciones
+    this.cardForm.get('rut')?.setValue(formatted);
   }
   getErrorMessage(field: string): string {
     const control = this.cardForm.get(field);
     if (!control) return '';
+    
     if (control.hasError('required')) return `El ${field} es requerido`;
-    if (field === 'rut' && control.hasError('invalidRut')) return 'RUT inválido';
+    if (field === 'rut' && control.hasError('invalidRut')) return 'Formato de RUT inválido. Ejemplo: 12.345.678-9';
     if (field === 'password' && control.hasError('minlength')) return 'La contraseña debe tener al menos 4 caracteres';
     return '';
   }
@@ -223,41 +237,38 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     }
 
     // Verificar límites usando datos ya cargados
-    if (this.limitsInfo?.max_cards?.used >= this.limitsInfo?.max_cards?.limit) {
-      // Mostrar alerta modal en lugar de notificación
-      this.planLimitAlertService.showCardLimitAlert(
-        this.limitsInfo.max_cards.used, 
-        this.limitsInfo.max_cards.limit
-      ).subscribe({
+    const cardLimit = this.limitsInfo?.max_cards?.limit;
+    const cardsUsed = this.limitsInfo?.max_cards?.used || 0;
+    
+    // Solo verificar límite si no es ilimitado (-1) y se ha alcanzado el límite
+    if (cardLimit !== -1 && cardsUsed >= cardLimit) {
+      this.planLimitAlertService.showCardLimitAlert(cardsUsed, cardLimit).subscribe({
         next: (result) => {
           if (result.action === 'upgrade') {
             this.router.navigate(['/plans']);
           }
-          // Si es dismiss, no hacer nada y dejar que el usuario continúe
         }
       });
       return;
     }
 
     // Verificar también límites del scraper si están disponibles
-    if (this.limitsInfo?.monthly_scrapes?.used >= this.limitsInfo?.monthly_scrapes?.limit) {
-      // Mostrar alerta modal para límite de scraper
-      this.planLimitAlertService.showScraperLimitAlert(
-        this.limitsInfo.monthly_scrapes.used, 
-        this.limitsInfo.monthly_scrapes.limit
-      ).subscribe({
+    const scraperLimit = this.limitsInfo?.monthly_scrapes?.limit;
+    const scrapesUsed = this.limitsInfo?.monthly_scrapes?.used || 0;
+    
+    if (scraperLimit !== -1 && scrapesUsed >= scraperLimit) {
+      this.planLimitAlertService.showScraperLimitAlert(scrapesUsed, scraperLimit).subscribe({
         next: (result) => {
           if (result.action === 'upgrade') {
             this.router.navigate(['/plans']);
           }
-          // Si es dismiss, no hacer nada
         }
-          });
-          return;
-        }
+      });
+      return;
+    }
 
-        // Continuar con la sincronización
-        this.proceedWithScraperSync();
+    // Continuar con la sincronización
+    this.proceedWithScraperSync();
   }
 
   private proceedWithScraperSync(): void {
@@ -269,30 +280,59 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
 
     const formValue = this.cardForm.value;
     const credentials = {
-      rut: RutUtils.clean(formValue.rut),
+      rut: RutUtils.clean(formValue.rut), // RUT sin puntos ni guión para el scraper
       password: formValue.password,
-      site: formValue.bank
+      site: 'banco-estado' // Fijo para Banco Estado
     };
-    this.cardService.addCardFromScraper(credentials).pipe(
-      takeUntil(this.destroy$),
-      finalize(() => {
-        if (this.error) this.loading = false;
-      })
+    // Iniciar el scraper
+    this.scraperService.startScraping(credentials).pipe(
+      takeUntil(this.destroy$)
     ).subscribe({
       next: (response) => {
-        if (response.progress !== undefined) this.progress = response.progress;
-        if (response.status) this.statusMessage = this.getStatusMessage(response.status);
-        if (response.error) {
-          this.error = response.error;
-          this.canRetry = true;
-        }
-        if (response.card) {
-          this.snackBar.open('¡Tarjeta agregada exitosamente!', 'Cerrar', { duration: 3000 });
-          this.dialogRef.close(true);
+        if (response.taskId) {
+          this.currentTaskId = response.taskId; // Guardar ID de la tarea activa
+          this.statusMessage = 'Iniciando scraper...';
+          this.progress = 10;
+          // Monitorear el progreso
+          this.monitorScrapingProgress(response.taskId);
         }
       },
       error: (err) => {
-        const errorMessage = this.getErrorMessageFromError(err) || 'Ocurrió un error al sincronizar la tarjeta.';
+        this.currentTaskId = null; // Limpiar tarea si falla al iniciar
+        const errorMessage = this.getErrorMessageFromError(err) || 'Error al iniciar el scraper.';
+        this.error = errorMessage;
+        this.canRetry = true;
+        this.loading = false;
+        this.snackBar.open(errorMessage, 'Cerrar', { duration: 7000 });
+      }
+    });
+  }
+
+  private monitorScrapingProgress(taskId: string): void {
+    this.scraperService.monitorTask(taskId).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (status) => {
+        this.progress = status.progress;
+        this.statusMessage = this.getStatusMessage(status.status);
+        
+        if (status.status === 'completed') {
+          this.currentTaskId = null; // Limpiar tarea activa
+          this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { duration: 3000 });
+          this.dialogRef.close(true);
+        } else if (status.status === 'failed') {
+          this.currentTaskId = null; // Limpiar tarea activa
+          this.error = status.error || 'Error durante la sincronización';
+          this.canRetry = true;
+          this.loading = false;
+        } else if (status.status === 'cancelled') {
+          this.currentTaskId = null; // Limpiar tarea activa
+          this.loading = false;
+        }
+      },
+      error: (err) => {
+        this.currentTaskId = null; // Limpiar tarea activa en caso de error
+        const errorMessage = this.getErrorMessageFromError(err) || 'Error al monitorear el progreso.';
         this.error = errorMessage;
         this.canRetry = true;
         this.loading = false;
@@ -305,23 +345,22 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   onManualSubmit(): void {
     if (this.manualForm.invalid) return;
 
-    // Verificar límites solo si no se ha verificado recientemente
-    if (this.limitsInfo?.max_cards?.used >= this.limitsInfo?.max_cards?.limit) {
-      // Mostrar alerta modal en lugar de notificación
-      this.planLimitAlertService.showCardLimitAlert(
-        this.limitsInfo.max_cards.used, 
-        this.limitsInfo.max_cards.limit
-      ).subscribe({
+    // Verificar límites solo si no es ilimitado (-1) y se ha alcanzado el límite
+    const cardLimit = this.limitsInfo?.max_cards?.limit;
+    const cardsUsed = this.limitsInfo?.max_cards?.used || 0;
+    
+    if (cardLimit !== -1 && cardsUsed >= cardLimit) {
+      this.planLimitAlertService.showCardLimitAlert(cardsUsed, cardLimit).subscribe({
         next: (result) => {
           if (result.action === 'upgrade') {
             this.router.navigate(['/plans']);
           }
-          // Si es dismiss, no hacer nada y dejar que el usuario continúe
         }
-          });
-          return;
-        }
-        this.proceedWithManualCard();
+      });
+      return;
+    }
+    
+    this.proceedWithManualCard();
   }
 
   private proceedWithManualCard(): void {
@@ -346,21 +385,59 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   }
 
   onCancel(): void {
-    this.dialogRef.close();
+    // Si hay una tarea activa, cancelarla antes de cerrar
+    if (this.currentTaskId) {
+      this.scraperService.cancelTask(this.currentTaskId).subscribe({
+        next: () => {
+          this.currentTaskId = null;
+          this.dialogRef.close();
+        },
+        error: (err) => {
+          // Cerrar de todas formas aunque falle la cancelación
+          this.currentTaskId = null;
+          this.dialogRef.close();
+        }
+      });
+    } else {
+      this.dialogRef.close();
+    }
   }
   retrySync(): void {
     this.error = null;
     this.canRetry = false;
+    this.currentTaskId = null; // Limpiar tarea anterior antes de reintentar
     this.onSubmitScraper();
+  }
+
+  cancelCurrentTask(): void {
+    if (this.currentTaskId) {
+      this.scraperService.cancelTask(this.currentTaskId).subscribe({
+        next: () => {
+          this.currentTaskId = null;
+          this.loading = false;
+          this.error = null;
+          this.statusMessage = '';
+          this.progress = 0;
+          this.snackBar.open('Sincronización cancelada', 'Cerrar', { duration: 3000 });
+        },
+        error: (err) => {
+          this.error = 'Error al cancelar la sincronización';
+          this.canRetry = true;
+          this.loading = false;
+        }
+      });
+    }
   }
   getStatusMessage(status: string): string {
     const messages: { [key: string]: string } = {
-      'initializing': 'Iniciando sincronización...',
-      'logging_in': 'Iniciando sesión en el banco...',
-      'fetching_data': 'Obteniendo información de la cuenta...',
+      'pending': 'Esperando inicio...',
       'processing': 'Procesando información...',
       'completed': 'Sincronización completada',
-      'error': 'Error en la sincronización'
+      'failed': 'Error en la sincronización',
+      'cancelled': 'Sincronización cancelada',
+      'initializing': 'Iniciando sincronización...',
+      'logging_in': 'Iniciando sesión en el banco...',
+      'fetching_data': 'Obteniendo información de la cuenta...'
     };
     return messages[status] || status;
   }
@@ -380,6 +457,19 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Cancelar tarea activa si existe antes de destruir el componente
+    if (this.currentTaskId) {
+      this.scraperService.cancelTask(this.currentTaskId).subscribe({
+        next: () => {
+          // Tarea cancelada exitosamente
+        },
+        error: (err) => {
+          // Error al cancelar, pero continuar con la destrucción
+        }
+      });
+      this.currentTaskId = null;
+    }
+    
     this.destroy$.next();
     this.destroy$.complete();
   }

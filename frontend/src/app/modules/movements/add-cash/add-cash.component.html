@@ -135,9 +135,10 @@
 
     <div mat-dialog-actions align="end">
       <button mat-button type="button" (click)="cancel()">Cancelar</button>
-      <button mat-raised-button color="primary" type="submit" [disabled]="cashForm.invalid || isLoading">
-        <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
-        <span *ngIf="!isLoading">Guardar</span>
+      <button mat-raised-button color="primary" type="submit" [disabled]="cashForm.invalid || isLoading || isProcessing">
+        <mat-spinner *ngIf="isLoading || isProcessing" diameter="20"></mat-spinner>
+        <span *ngIf="!isLoading && !isProcessing">Guardar</span>
+        <span *ngIf="isProcessing">Procesando...</span>
       </button>
     </div>
   </form>

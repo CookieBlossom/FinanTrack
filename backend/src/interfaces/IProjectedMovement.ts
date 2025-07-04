@@ -24,7 +24,7 @@ export interface IProjectedMovement {
   card?: {
     id: number;
     nameAccount: string;
-    aliasAccount?: string;
+    accountHolder?: string;
   };
 }
 

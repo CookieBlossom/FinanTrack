@@ -76,21 +76,21 @@ async def test_scraper():
             # 1. Probar login
             print("🔐 Probando login...")
             await scraper.login_banco_estado(page, credentials)
-            print("✅ Login exitoso")
+            print("[OK] Login exitoso")
             
             # 2. Probar extracción de saldos
             print("\n💰 Probando extracción de saldos...")
             await scraper.mostrar_saldos(page)
             await page.wait_for_timeout(1000)
             cuentas = await scraper.extract_cuentas(page)
-            print(f"✅ Se encontraron {len(cuentas)} cuentas:")
+            print(f"[OK] Se encontraron {len(cuentas)} cuentas:")
             for cuenta in cuentas:
                 print(f"  - {cuenta['nombre']}: {cuenta['saldo']}")
             
             # 3. Probar extracción de movimientos recientes
             print("\n📊 Probando extracción de movimientos recientes...")
             movimientos = await scraper.extract_ultimos_movimientos(page)
-            print(f"✅ Se encontraron {len(movimientos)} movimientos recientes")
+            print(f"[OK] Se encontraron {len(movimientos)} movimientos recientes")
             
             # 4. Probar extracción de movimientos por cuenta
             print("\n📝 Probando extracción de movimientos por cuenta...")
@@ -98,9 +98,9 @@ async def test_scraper():
                 print(f"\nProcesando cuenta: {cuenta['nombre']}")
                 movimientos_cuenta = await scraper.extract_movimientos_cuenta(page, cuenta)
                 if movimientos_cuenta:
-                    print(f"✅ Se encontraron {len(movimientos_cuenta)} movimientos")
+                    print(f"[OK] Se encontraron {len(movimientos_cuenta)} movimientos")
                 else:
-                    print("❌ No se encontraron movimientos")
+                    print("ERROR: No se encontraron movimientos")
             
             # Guardar resultados
             result = {
@@ -121,7 +121,7 @@ async def test_scraper():
             await browser.close()
             
     except Exception as e:
-        print(f"❌ Error durante la prueba: {str(e)}")
+        print(f"ERROR: Error durante la prueba: {str(e)}")
         raise
 
 if __name__ == "__main__":

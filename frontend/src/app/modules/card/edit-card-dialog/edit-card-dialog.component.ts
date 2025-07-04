@@ -49,7 +49,7 @@ export class EditCardDialogComponent implements OnInit, OnDestroy {
   ) {
     // Inicializa el formulario con los valores actuales de la tarjeta
     this.editCardForm = this.fb.group({
-      aliasAccount: [card.aliasAccount || '', [Validators.maxLength(100)]],
+      accountHolder: [card.accountHolder || '', [Validators.maxLength(255)]],
       balance: [card.balance, [Validators.required]],
       statusAccount: [card.statusAccount, [Validators.required]]
     });
@@ -66,10 +66,10 @@ export class EditCardDialogComponent implements OnInit, OnDestroy {
     if (this.editCardForm.invalid) return;
     this.error = null;
 
-    const { aliasAccount, balance, statusAccount } = this.editCardForm.value;
+    const { accountHolder, balance, statusAccount } = this.editCardForm.value;
 
     this.cardService.updateCard(this.card.id, {
-      aliasAccount,
+      accountHolder,
       balance,
       statusAccount
     }).subscribe({

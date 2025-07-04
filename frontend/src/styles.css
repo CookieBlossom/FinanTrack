@@ -704,3 +704,40 @@ mat-icon {
   background-color: var(--color-primary-darkest) !important;
   color: var(--color-text-inverse) !important;
 }
+
+/* Estilos globales para formularios con labels fijos arriba */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--color-text, #333);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+/* Para formularios con floatLabel="always" - labels siempre visibles arriba */
+.mat-mdc-form-field[floatLabel="always"] .mat-mdc-floating-label {
+  transform: translateY(-50%) scale(0.75) !important;
+  top: 8px !important;
+}
+
+/* Mejorar estilos de los formularios globalmente */
+.mat-mdc-form-field.mat-mdc-form-field {
+  margin-bottom: 16px;
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-outline {
+  border-radius: 8px;
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-outline .mat-mdc-notch {
+  border-radius: 8px 8px 0 0;
+}

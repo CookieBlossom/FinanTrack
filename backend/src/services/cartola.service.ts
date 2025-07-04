@@ -5,12 +5,14 @@ import pdfParse from 'pdf-parse';
 import { CardTypeService } from './cardType.service';
 import { PlanService } from './plan.service';
 import { pool } from '../config/database/connection';
+import companies from '../config/companies.json';
 
 export class CartolaService {
   private pool: Pool;
   private cardTypeService: CardTypeService = new CardTypeService();
   private planService: PlanService = new PlanService();
   private cardTypes: { id: number; name: string }[] = [];
+  private lastProcessedText: string | null = null;
 
   constructor() {
     this.pool = pool;
@@ -69,6 +71,10 @@ export class CartolaService {
   }
   private async extraerDatosCartola(texto: string): Promise<ICartola> {
     console.log("🔍 Iniciando extracción de datos de la cartola...");
+    
+    // Almacenar el texto para uso en otras funciones
+    this.lastProcessedText = texto;
+    
     await this.loadCardTypes();
 
     const tituloCartola = this.extraerTituloCartola(texto);
@@ -90,8 +96,7 @@ export class CartolaService {
     if (!cartolaInfo.numero || !cartolaInfo.fechaEmision || !cartolaInfo.fechaInicio || !cartolaInfo.fechaFinal) {
       throw new Error('Información de la cartola incompleta');
     }
-    const añoCartola = cartolaInfo.fechaEmision.getFullYear();
-    const movimientos = this.extraerMovimientos(texto, añoCartola);
+    const movimientos = this.extraerMovimientos(texto, cartolaInfo.fechaInicio!, cartolaInfo.fechaFinal!);
     console.log(`📝 Movimientos extraídos: ${movimientos.length}`);
     if (movimientos.length === 0) {
       console.log("❌ No se encontraron movimientos. Texto de la cartola:", texto);
@@ -125,99 +130,246 @@ export class CartolaService {
       .trim();
   }
   private extraerTituloCartola(texto: string): string | null {
-    // Buscar patrones comunes de títulos de cartola
-    const patrones = [
-      /CARTOLA CUENTARUT N°\s*\d+/i,
-      /CARTOLA CUENTA VISTA N°\s*\d+/i,
-      /CARTOLA CREDITO N°\s*\d+/i,
-      /CARTOLA CUENTA AHORRO N°\s*\d+/i,
-      /CARTOLA.*N°\s*\d+/i  // Patrón genérico por si no coincide ninguno específico
-    ];
+    // Buscar el título de la cartola
+    const patronTitulo = /CARTOLA\s+(CUENTARUT|CUENTA\s+VISTA|CUENTA\s+AHORRO|CREDITO)\s+N°\s*(\d+)/i;
+    const match = texto.match(patronTitulo);
+    
+    if (match) {
+      const tipoTarjeta = match[1].replace(/\s+/g, '').toUpperCase();
+      const numeroCuenta = match[2];
 
-    for (const patron of patrones) {
-      const match = texto.match(patron);
-      if (match) {
-        // Extraer el tipo de cuenta del título
-        let tipoCuenta = '';
-        if (match[0].toUpperCase().includes('CUENTARUT')) {
+      // Determinar el tipo de cuenta
+      let tipoCuenta = '';
+      switch (tipoTarjeta) {
+        case 'CUENTARUT':
           tipoCuenta = 'CuentaRUT';
-        } else if (match[0].toUpperCase().includes('CUENTA VISTA')) {
+          break;
+        case 'CUENTAVISTA':
           tipoCuenta = 'Cuenta Vista';
-        } else if (match[0].toUpperCase().includes('CREDITO')) {
-          tipoCuenta = 'Crédito';
-        } else if (match[0].toUpperCase().includes('CUENTA AHORRO')) {
+          break;
+        case 'CUENTAAHORRO':
           tipoCuenta = 'Cuenta Ahorro';
-        } else {
+          break;
+        case 'CREDITO':
+          tipoCuenta = 'Tarjeta de Crédito';
+          break;
+        default:
           tipoCuenta = 'Cuenta';
-        }
-
-        // Extraer el número de cuenta si existe
-        const numeroMatch = match[0].match(/N°\s*(\d+)/i);
-        const numeroCuenta = numeroMatch ? numeroMatch[1] : '';
-
-        // Generar un nombre más amigable
-        return `${tipoCuenta}${numeroCuenta ? ` - ${numeroCuenta}` : ''}`;
       }
+
+      // Para CuentaRUT, formatear el número como RUT
+      if (tipoTarjeta === 'CUENTARUT') {
+        // Primero intentar obtener el RUT completo del cliente
+        const rutCliente = this.extraerRut(texto);
+        if (rutCliente) {
+          return `${tipoCuenta} - ${rutCliente}`;
+        }
+        
+        // Si no se puede extraer el RUT completo, formatear el número de cuenta como RUT
+        // Asumir que el número de cuenta es el RUT sin puntos ni guión
+        if (numeroCuenta.length >= 8) {
+          // Agregar el dígito verificador típico (esto es una aproximación)
+          // En un caso real, necesitaríamos calcular o extraer el DV correcto
+          const rutFormateado = this.formatearRutFromNumber(numeroCuenta);
+          return `${tipoCuenta} - ${rutFormateado}`;
+        }
+      }
+
+      return `${tipoCuenta} - ${numeroCuenta}`;
     }
 
     return 'Cuenta Bancaria';
   }
-  private extraerInfoCliente(texto: string): Partial<ICartola> {
-    // Patrones específicos para el formato de la cartola
-    const patrones = [
-      /Cliente\s*Nombre\s*RUT\s*Fecha y Hora\s*([^\n]+?)\s+(\d{1,2}\.\d{3}\.\d{3}-[\dkK])\s+(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/i,
-      /(?:Cliente|Nombre)[^\n]*\n\s*([^\n]+?)\s+(\d{1,2}\.\d{3}\.\d{3}-[\dkK])\s+(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/i,
-      /([^\n]+?)\s+(\d{1,2}\.\d{3}\.\d{3}-[\dkK])\s+(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/i
-    ];
-    for (const patron of patrones) {
-      const match = texto.match(patron);
-      if (match) {
-        const clienteNombre = match[1].trim();
-        const clienteRut = match[2];
-        const fechaHora = match[3];
-        
-        // Convertir la fecha y hora
-        const [fecha, hora] = fechaHora.split(' ');
-        const fechaHoraConsulta = new Date(this.convertirFecha(fecha));
-        const [horas, minutos] = hora.split(':');
-        fechaHoraConsulta.setHours(parseInt(horas), parseInt(minutos));
 
-        return {
-          clienteNombre,
-          clienteRut,
-          fechaHoraConsulta
-        };
+  private formatearRutFromNumber(numero: string): string {
+    // Para un número como "21737273", formatearlo como RUT
+    
+    // Si el número tiene exactamente 8 dígitos, probablemente incluye el DV
+    if (numero.length === 8) {
+      const cuerpo = numero.slice(0, -1); // 2173727
+      const dv = numero.slice(-1); // 3
+      return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+    }
+    
+    // Si tiene 7 o más dígitos, buscar el RUT completo en el texto
+    if (this.lastProcessedText && numero.length >= 7) {
+      // Buscar el RUT formateado en el texto usando el número
+      const numeroSinFormato = numero.replace(/[.-]/g, '');
+      const patronCompleto = new RegExp(`(${numeroSinFormato.slice(0, -1) || numeroSinFormato})[-]?([0-9kK])`, 'i');
+      const match = this.lastProcessedText.match(patronCompleto);
+      
+      if (match) {
+        const cuerpo = match[1];
+        const dv = match[2].toUpperCase();
+        return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+      }
+      
+      // También buscar el RUT ya formateado
+      const patronFormateado = new RegExp(`\\b(\\d{1,2}\\.\\d{3}\\.\\d{3}[-][0-9kK])\\b`, 'gi');
+      const matchesFormateados = this.lastProcessedText.match(patronFormateado);
+      
+      if (matchesFormateados) {
+        // Buscar el que coincida con nuestro número
+        for (const rutFormateado of matchesFormateados) {
+          const rutSinFormato = rutFormateado.replace(/[.-]/g, '');
+          if (rutSinFormato.startsWith(numeroSinFormato.slice(0, -1)) || rutSinFormato.includes(numeroSinFormato)) {
+            return rutFormateado;
+          }
+        }
       }
     }
-    const nombreMatch = texto.match(/(?:Cliente|Nombre)[^\n]*\n\s*([^\n]+)/i);
-    const rutMatch = this.extraerRut(texto);
-    const fechaHoraMatch = texto.match(/(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/);
+    
+    // Fallback: formatear con puntos
+    if (numero.length >= 7) {
+      const cuerpo = numero.slice(0, -1);
+      const dv = numero.slice(-1);
+      return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+    }
+    
+    // Fallback final: formatear con puntos y asumir DV como 'K'
+    return numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-K';
+  }
 
-    if (nombreMatch) {
+  private extraerInfoCliente(texto: string): Partial<ICartola> {
+    // Patrones más específicos para extraer nombre y RUT
+    const patronesCliente = [
+      // Patrón para formato CuentaRUT específico
+      /(?:Nombre\s+RUT\s+Fecha[^\n]*\n\s*)([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)\s+(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i,
+      // Patrón para formato "NOMBRE APELLIDO RUT 12.345.678-9"
+      /([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)(?:\s+)?(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i,
+      // Patrón para formato "Cliente: NOMBRE APELLIDO RUT: 12.345.678-9"
+      /Cliente:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)(?:\s+)?(?:RUT|R\.U\.T\.?):?\s*(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i,
+      // Patrón para formato "RUT: 12.345.678-9 NOMBRE APELLIDO"
+      /(?:RUT|R\.U\.T\.?):?\s*(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)/i
+    ];
+    
+    // Buscar después de "Cliente" y antes de cualquier otro encabezado
+    const bloqueCliente = texto.match(/Cliente\s*([\s\S]*?)(?=(?:Movimientos|Detalle|Saldo|Fecha))/i);
+    
+    if (bloqueCliente) {
+      const lineas = bloqueCliente[1].split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.match(/^(?:Nombre|RUT|Fecha\s+y\s+Hora)$/i)); // Ignorar líneas de encabezado
+
+      // Buscar en cada línea con cada patrón
+      for (const linea of lineas) {
+        for (const patron of patronesCliente) {
+          const match = linea.match(patron);
+          if (match) {
+            let nombreCompleto, rut;
+            
+            // Si el patrón tiene el RUT primero
+            if (match[1].match(/^\d/)) {
+              rut = match[1];
+              nombreCompleto = match[2];
+            } else {
+              nombreCompleto = match[1];
+              rut = match[2];
+            }
+            
+            // Limpiar y formatear el nombre
+            nombreCompleto = nombreCompleto
+              .trim()
+              .replace(/\s+/g, ' ')
+              .toUpperCase();
+            
+            // Formatear el RUT
+            rut = this.formatearRut(rut);
+            
+            // Buscar la fecha y hora con el formato específico
+            const fechaHoraMatch = texto.match(/(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/);
+            const fechaHora = fechaHoraMatch ? new Date(this.convertirFecha(fechaHoraMatch[1])) : new Date();
+            
+            return {
+              clienteNombre: nombreCompleto,
+              clienteRut: rut,
+              fechaHoraConsulta: fechaHora
+            };
+          }
+        }
+      }
+    }
+
+    // Si no se encontró la información, intentar buscar por separado
+    const rutSolo = this.extraerRut(texto);
+    const nombreSolo = this.extraerNombre(texto);
+
+    if (rutSolo || nombreSolo) {
       return {
-        clienteNombre: nombreMatch[1].trim(),
-        clienteRut: rutMatch || 'No especificado',
-        fechaHoraConsulta: fechaHoraMatch ? new Date(this.convertirFecha(fechaHoraMatch[1])) : new Date()
+        clienteNombre: nombreSolo || 'NO ESPECIFICADO',
+        clienteRut: rutSolo || 'NO ESPECIFICADO',
+        fechaHoraConsulta: new Date()
       };
     }
 
     throw new Error('No se pudo extraer la información del cliente');
   }
+
   private extraerRut(texto: string): string | null {
     const patronesRut = [
+      // Patrón específico para el formato que mostró el usuario: "VEGA SOTO MARIA JESUS21.737.273-908/06/2025"
+      /([A-ZÁÉÍÓÚÑ\s]+)(\d{1,2}\.\d{3}\.\d{3}-[\dkK])(\d{2}\/\d{2}\/\d{4})/i,
+      // Patrón específico para CuentaRUT
+      /(?:Nombre\s+RUT\s+Fecha[^\n]*\n\s*)[A-ZÁÉÍÓÚÑ\s]+(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i,
+      // Patrón para RUT en el título de la cartola
+      /CARTOLA\s+CUENTARUT\s+N°\s*(\d{1,2}\.?\d{3}\.?\d{3})/i,
+      // Patrones generales
       /\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/,
       /RUT:?\s*(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i,
-      /R\.U\.T\.?:?\s*(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i
+      /R\.U\.T\.?:?\s*(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i,
+      /CLIENTE:?\s*(?:[A-ZÁÉÍÓÚÑ\s]+)?\s*(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i
     ];
 
-    for (const patron of patronesRut) {
+    for (let i = 0; i < patronesRut.length; i++) {
+      const patron = patronesRut[i];
       const match = texto.match(patron);
       if (match) {
-        return match[1];
+        let rutCapturado;
+        
+        // Para el primer patrón específico, el RUT está en el grupo 2
+        if (i === 0) {
+          rutCapturado = match[2];
+        } else {
+          rutCapturado = match[1];
+        }
+        
+        return this.formatearRut(rutCapturado);
       }
     }
 
     return null;
+  }
+
+  private extraerNombre(texto: string): string | null {
+    const patronesNombre = [
+      // Patrón específico para CuentaRUT
+      /(?:Nombre\s+RUT\s+Fecha[^\n]*\n\s*)([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)(?=\s+\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])/i,
+      // Patrones generales
+      /Cliente:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+?)(?=\s+\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]|$)/i,
+      /Titular:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+?)(?=\s+(?:RUT|R\.U\.T\.?)|$)/i,
+      /(?:RUT|R\.U\.T\.?):?\s*(?:\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+)/i
+    ];
+
+    for (const patron of patronesNombre) {
+      const match = texto.match(patron);
+      if (match) {
+        return match[1].trim().replace(/\s+/g, ' ').toUpperCase();
+      }
+    }
+
+    return null;
+  }
+
+  private formatearRut(rut: string): string {
+    // Eliminar puntos y guiones
+    let rutLimpio = rut.replace(/[.-]/g, '');
+    
+    // Separar cuerpo y dígito verificador
+    const cuerpo = rutLimpio.slice(0, -1);
+    const dv = rutLimpio.slice(-1).toUpperCase();
+    
+    // Formatear con puntos y guión
+    return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
   }
 
   private extraerInfoCartola(texto: string): Partial<ICartola> {
@@ -334,60 +486,128 @@ export class CartolaService {
       totalAbonos
     };
   }
-  private extraerMovimientos(texto: string, añoCartola: number): IMovimiento[] {
+  private extraerMovimientos(texto: string, fechaInicio: Date, fechaFinal: Date): IMovimiento[] {
     const movimientos: IMovimiento[] = [];
-  
-    // 1) Aísla el bloque de “Detalle de movimientos” hasta que aparezca “Subtotales” (si existe)
-    const inicio = texto.search(/Detalle de movimientos:/i);
-    const fin    = texto.search(/Subtotales/i);
-    if (inicio < 0) return movimientos;
-    const bloque = texto.substring(inicio, fin > 0 ? fin : undefined);
-  
-    // 2) Normaliza saltos de línea y espacios
-    const normalizado = bloque
-      .replace(/\r\n|\r/g, '\n')   // unifica saltos
-      .replace(/[ \t]+/g, ' ')     // tabs y múltiples espacios → 1 espacio
-      .trim();
-  
-    // 3) Patrón para cada entrada:
-    //    - (\d{2}\/[A-Za-z]{3}) fecha dd/MMM
-    //    - (\d+) número de operación
-    //    - ([\s\S]*?) descripción + montos hasta el primer “$”
-    const entryRE = /(\d{2}\/[A-Za-z]{3})\s+(\d+)\s+([\s\S]*?)(?=\$\s*\d)/g;
-    let match;
-    while ((match = entryRE.exec(normalizado)) !== null) {
-      const [_, fechaStr, opStr, descYMontos] = match;
-  
-      // Dentro de descYMontos, busca abono, cargo y saldo: $x.xxx $y.yyy $z.zzz
-      const montosRE = /\$\s*([\d.]+)\s*\$\s*([\d.]+)\s*\$\s*([\d.]+)/;
-      const m = montosRE.exec(descYMontos);
-      if (!m) continue;
-      const [__, montoAbonoStr, montoCargoStr, saldoStr] = m;
-  
-      // La descripción es lo que viene antes del primer “$”
-      const descripcion = descYMontos.split(/\$/)[0].trim();
-  
-      const abono = parseFloat(montoAbonoStr.replace(/\./g, '')) || null;
-      const cargo = parseFloat(montoCargoStr.replace(/\./g, '')) || null;
-      const saldo = parseFloat(saldoStr.replace(/\./g, '')) || undefined;
-  
-      movimientos.push({
-        fecha: this.parseFechaContextual(fechaStr, añoCartola),
-        numeroOperacion: opStr,
-        descripcion,
-        abonos: abono,
-        cargos: cargo,
-        saldo,
-        tipo: this.determinarTipoMovimiento(descripcion)
-      });
+    console.log("🔍 Iniciando extracción de movimientos...");
+    
+    // 1) Encontrar el bloque de movimientos
+    const bloqueMatch = texto.match(/Detalle de movimientos:[\s\S]*?(?=Subtotales|$)/i);
+    if (!bloqueMatch) {
+      console.log("❌ No se encontró el bloque de movimientos");
+      return movimientos;
     }
-  
+    
+    const bloque = bloqueMatch[0];
+    console.log("✅ Bloque de movimientos encontrado");
+    
+    // 2) Dividir en líneas y limpiar
+    const lineas = bloque
+      .split('\n')
+      .map(linea => linea.trim())
+      .filter(linea => linea && !linea.startsWith('Detalle de movimientos') && !linea.match(/^FechaN|^Operación|^Descripción/i));
+    
+    // 3) Agrupar líneas por movimiento
+    const movimientosTexto: string[] = [];
+    let movimientoActual: string[] = [];
+    const patronFecha = /^(\d{2}\/[A-Za-z]{3})/;
+    
+    for (const linea of lineas) {
+      if (patronFecha.test(linea)) {
+        // Si encontramos una nueva fecha y ya teníamos un movimiento en proceso
+        if (movimientoActual.length > 0) {
+          movimientosTexto.push(movimientoActual.join('\n'));
+          movimientoActual = [];
+        }
+        movimientoActual.push(linea);
+      } else if (movimientoActual.length > 0) {
+        movimientoActual.push(linea);
+      }
+    }
+    
+    // Agregar el último movimiento
+    if (movimientoActual.length > 0) {
+      movimientosTexto.push(movimientoActual.join('\n'));
+    }
+    
+    // 4) Procesar cada movimiento agrupado
+    for (const movimientoTexto of movimientosTexto) {
+      const lineasMovimiento = movimientoTexto.split('\n');
+      const primeraLinea = lineasMovimiento[0];
+      const matchFecha = primeraLinea.match(patronFecha);
+      
+      if (matchFecha) {
+        const fecha = matchFecha[1];
+        const restoLinea = primeraLinea.substring(matchFecha[0].length).trim();
+        
+        // Extraer número de operación
+        const numeroOperacion = restoLinea.split(/\s+/)[0];
+        
+        // Unir todas las líneas y buscar montos
+        let textoCompleto = lineasMovimiento.join(' ').trim();
+        
+        // Buscar montos al final del texto
+        const montosMatch = textoCompleto.match(/\$[\d,.]+(?:\s*\$[\d,.]+)*$/);
+        let descripcion = textoCompleto;
+        let montos: string[] = [];
+        
+        if (montosMatch) {
+          // Extraer la parte de montos y limpiar la descripción
+          montos = montosMatch[0].split('$').filter(Boolean).map(m => m.trim());
+          descripcion = textoCompleto.substring(0, montosMatch.index).trim();
+        }
+        
+        // Extraer la descripción sin el número de operación
+        descripcion = descripcion.substring(numeroOperacion.length).trim();
+        descripcion = descripcion.replace(/\s+/g, ' ').trim();
+        
+        // Procesar montos
+        let abonos: number | null = null;
+        let cargos: number | null = null;
+        let saldo: number | undefined;
+        
+        // El último monto siempre es el saldo
+        if (montos.length > 0) {
+          saldo = this.convertirMonto(montos[montos.length - 1]);
+          
+          // Si hay más montos, determinar si son cargos o abonos
+          if (montos.length > 1) {
+            const monto = this.convertirMonto(montos[0]);
+            
+            // Determinar si es cargo o abono basado en la descripción y el saldo
+            if (descripcion.match(/COMPRA|GIRO|PAGO|TEF A|TRANSFERENCIA A/i)) {
+              cargos = monto;
+            } else if (descripcion.match(/TEF DE|TRANSFERENCIA DE|DEPOSITO|ABONO/i)) {
+              abonos = monto;
+            } else {
+              // Si no podemos determinar por la descripción, usar el saldo
+              if (saldo !== undefined && monto !== undefined) {
+                if (saldo > monto) {
+                  cargos = monto;
+                } else {
+                  abonos = monto;
+                }
+              }
+            }
+          }
+        }
+        
+        const movimiento: IMovimiento = {
+          fecha: this.parseFechaContextual(fecha, fechaInicio, fechaFinal),
+          numeroOperacion,
+          descripcion,
+          abonos,
+          cargos,
+          saldo,
+          tipo: this.determinarTipoMovimiento(descripcion, abonos !== null)
+        };
+        
+        console.log("Movimiento procesado:", movimiento);
+        movimientos.push(movimiento);
+      }
+    }
+    
     return movimientos;
   }
-
-  /**
-   * Convierte una fecha del formato "dd/MMM" a una fecha completa
-   */
   private convertirFecha(fecha: string): string {
     if (!fecha) return '';
 
@@ -412,18 +632,57 @@ export class CartolaService {
     }
     return fecha;
   }
-  private parseFechaContextual(fecha: string, añoCartola: number): Date {
-    const [dd, MMM] = fecha.split('/');
-    const mesesMap: Record<string, number> = {
-      Ene: 1, Feb: 2, Mar: 3, Abr: 4,
-      May: 5, Jun: 6, Jul: 7, Ago: 8,
-      Sep: 9, Oct: 10, Nov: 11, Dic: 12
-    };
-    const mes = mesesMap[MMM];
-    // Si el movimiento es en diciembre (mes 12) pero la cartola es de enero,
-    // debemos restar un año.
-    const año = (mes > 1) ? añoCartola - 1 : añoCartola;
-    return new Date(año, mes - 1, parseInt(dd, 10));
+  private parseFechaContextual(fecha: string, fechaInicio: Date, fechaFinal: Date): Date {
+    try {
+      // Primero limpiamos la fecha de cualquier texto adicional
+      const fechaLimpia = fecha.split(/[^0-9/A-Za-z]/)[0];
+      const [dd, MMM] = fechaLimpia.split('/');
+      
+      const mesesMap: Record<string, number> = {
+        'Ene': 0, 'Feb': 1, 'Mar': 2, 'Abr': 3,
+        'May': 4, 'Jun': 5, 'Jul': 6, 'Ago': 7,
+        'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dic': 11
+      };
+      
+      const mes = mesesMap[MMM];
+      if (mes === undefined) {
+        console.error(`Mes inválido en fecha "${fecha}", usando fecha actual`);
+        return new Date();
+      }
+      
+      // Determinar el año correcto basándose en el período de la cartola
+      // Esto resuelve el problema de cartolas que cruzan años (ej: 02/12/2024 → 03/01/2025)
+      const añoInicio = fechaInicio.getFullYear();
+      const añoFinal = fechaFinal.getFullYear();
+      const mesInicio = fechaInicio.getMonth();
+      const mesFinal = fechaFinal.getMonth();
+      
+      let añoMovimiento = añoFinal; // Por defecto usar el año final
+      
+      // Si la cartola cruza años (ej: dic 2024 - ene 2025)
+      if (añoInicio !== añoFinal) {
+        // Si el mes del movimiento pertenece al período del año inicial (ej: diciembre)
+        if (mes >= mesInicio) {
+          añoMovimiento = añoInicio; // Usar 2024 para movimientos de diciembre
+        }
+        // Si el mes del movimiento pertenece al período del año final (ej: enero)
+        else if (mes <= mesFinal) {
+          añoMovimiento = añoFinal; // Usar 2025 para movimientos de enero
+        }
+      }
+      
+      const nuevaFecha = new Date(añoMovimiento, mes, parseInt(dd, 10));
+      if (isNaN(nuevaFecha.getTime())) {
+        console.error(`Fecha inválida generada para "${fecha}", usando fecha actual`);
+        return new Date();
+      }
+      
+      console.log(`📅 Fecha procesada: ${fecha} → ${nuevaFecha.toISOString().substring(0, 10)} (año determinado: ${añoMovimiento})`);
+      return nuevaFecha;
+    } catch (error) {
+      console.error(`Error al parsear fecha "${fecha}":`, error);
+      return new Date();
+    }
   }
 
   private formatearFechaParaDB(fecha: Date): string {
@@ -438,15 +697,18 @@ export class CartolaService {
     // Eliminar el símbolo de peso y los puntos, reemplazar la coma por punto
     return parseFloat(monto.replace(/[$\s.]/g, '').replace(',', '.'));
   }
-  private determinarTipoMovimiento(descripcion: string): TipoMovimiento {
+  private determinarTipoMovimiento(descripcion: string, esAbono: boolean): TipoMovimiento {
     const descripcionUpper = descripcion.toUpperCase();
     
-    if (descripcionUpper.includes('TEF DE') || descripcionUpper.includes('TRANSFERENCIA DE')) {
-      return TipoMovimiento.TRANSFERENCIA_RECIBIDA;
+    // Si es un abono (ingreso)
+    if (esAbono) {
+      if (descripcionUpper.includes('TEF DE') || descripcionUpper.includes('TRANSFERENCIA DE')) {
+        return TipoMovimiento.TRANSFERENCIA_RECIBIDA;
+      }
+      return TipoMovimiento.OTRO;
     }
-    if (descripcionUpper.includes('TEF A') || descripcionUpper.includes('TRANSFERENCIA A')) {
-      return TipoMovimiento.TRANSFERENCIA_ENVIADA;
-    }
+    
+    // Si es un cargo (egreso)
     if (descripcionUpper.includes('COMPRA WEB')) {
       return TipoMovimiento.COMPRA_WEB;
     }
@@ -456,96 +718,179 @@ export class CartolaService {
     if (descripcionUpper.includes('PAGO AUTOMATICO') || descripcionUpper.includes('PAGO DEUDA')) {
       return TipoMovimiento.PAGO_AUTOMATICO;
     }
+    if (descripcionUpper.includes('TEF A') || descripcionUpper.includes('TRANSFERENCIA A')) {
+      return TipoMovimiento.TRANSFERENCIA_ENVIADA;
+    }
     
     return TipoMovimiento.OTRO;
   }
-  private determinarCategoria(descripcion: string): string | undefined {
-    const descripcionUpper = descripcion.toUpperCase();
-    if (descripcionUpper.includes('MCDONALDS')) return 'COMIDA_RAPIDA';
-    if (descripcionUpper.includes('PEDIDOSYA')) return 'DELIVERY';
-    if (descripcionUpper.includes('GOOGLE PLAY') || descripcionUpper.includes('YOUTUBE')) return 'SUSCRIPCIONES';
-    if (descripcionUpper.includes('PASAJE') || descripcionUpper.includes('TRANSPORTE')) return 'TRANSPORTE';
-    if (descripcionUpper.includes('RIOT GAMES') || descripcionUpper.includes('GAMECLUB')) return 'JUEGOS';
-    if (descripcionUpper.includes('BEAUTY') || descripcionUpper.includes('BODY SHO')) return 'CUIDADO_PERSONAL';
-    if (descripcionUpper.includes('TEF DE') || descripcionUpper.includes('TRANSFERENCIA DE')) return 'INGRESO';
-    if (descripcionUpper.includes('TEF A') || descripcionUpper.includes('TRANSFERENCIA A')) return 'TRANSFERENCIA';
-    if (descripcionUpper.includes('COMPRA WEB')) return 'COMPRA_ONLINE';
-    if (descripcionUpper.includes('COMPRA NACIONAL')) return 'COMPRA_PRESENCIAL';
-    return undefined;
+
+  private determinarMovementType(descripcion: string, defaultType: 'income' | 'expense'): 'income' | 'expense' {
+    if (descripcion.match(/COMPRA|GIRO|PAGO|TEF A|TRANSFERENCIA A/i)) {
+      return 'expense';
+    } else if (descripcion.match(/TEF DE|TRANSFERENCIA DE|DEPOSITO|ABONO/i)) {
+      return 'income';
+    }
+    return defaultType;
   }
-  async guardarMovimientos(cardId: number, movimientos: IMovimiento[], userId: number, planId: number): Promise<void> {
-    // Verificar permisos y límites antes de procesar
-    await this.checkCartolaPermission(planId);
-    await this.checkCartolaLimits(userId, planId);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      for (const movimiento of movimientos) {
-        // Solo procesar si hay un abono o un cargo
-        if (movimiento.abonos === null && movimiento.cargos === null) {
-          continue;
+  private determinarCategoria(descripcion: string): string {
+    const descripcionUpper = descripcion.toUpperCase();
+    
+    // Primero, limpiar la descripción de términos genéricos
+    const descripcionLimpia = descripcionUpper
+      .replace(/TEF A|TEF DE|TRANSFERENCIA A|TRANSFERENCIA DE|COMPRA WEB|COMPRA NACIONAL/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    console.log(`🔍 Analizando descripción: "${descripcion}" -> "${descripcionLimpia}"`);
+
+    // Buscar coincidencias en el archivo companies.json
+    for (const company of companies) {
+      for (const keyword of company.keywords) {
+        if (descripcionLimpia.includes(keyword)) {
+          console.log(`✅ Coincidencia encontrada: "${keyword}" -> ${company.normalizedName} (${company.category})`);
+          return company.category;
         }
-
-        const amount = movimiento.abonos || -movimiento.cargos!;
-        const movementType = movimiento.abonos ? 'income' : 'expense';
-        const fechaMovimiento = this.formatearFechaParaDB(movimiento.fecha);
-        // Limpiar la descripción de prefijos genéricos
-        const prefijosAIgnorar = [
-          'TEF',
-          'COMPRA WEB',
-          'COMPRA NACIONAL',
-          'TRANSFERENCIA',
-          'PAGO',
-          'FACTU CL',
-          'FACTURACION',
-          'CARGO',
-          'ABONO'
-        ];
-
-        let descripcion = movimiento.descripcion.toUpperCase().trim();
-        for (const prefijo of prefijosAIgnorar) {
-          if (descripcion.startsWith(prefijo)) {
-            descripcion = descripcion.substring(prefijo.length).trim();
-          }
-        }
-
-        await client.query(
-          `INSERT INTO movements (
-            card_id,
-            amount,
-            description,
-            movement_type,
-            movement_source,
-            transaction_date
-          ) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            cardId,
-            amount,
-            descripcion,
-            movementType,
-            'cartola',
-            fechaMovimiento
-          ]
-        );
       }
-      await client.query('COMMIT');
+    }
+
+    // Categorización por patrones generales si no se encuentra empresa específica
+    if (descripcionLimpia.includes('PAGO AUTOMATICO QR') || descripcionLimpia.includes('PASAJE QR') || descripcionLimpia.includes('PAGO DEUDA')) {
+      return 'Transporte';
+    }
+    
+    if (descripcionLimpia.includes('SUPERMERCADO') || descripcionLimpia.includes('MARKET') || 
+        descripcionLimpia.includes('TIENDA') || descripcionLimpia.includes('FARMACIA')) {
+      return 'Compras';
+    }
+    
+    if (descripcionLimpia.includes('GASOLINA') || descripcionLimpia.includes('COMBUSTIBLE') || 
+        descripcionLimpia.includes('COPEC') || descripcionLimpia.includes('SHELL')) {
+      return 'Transporte';
+    }
+    
+    if (descripcionLimpia.includes('RESTAURANT') || descripcionLimpia.includes('CAFE') || 
+        descripcionLimpia.includes('PIZZA') || descripcionLimpia.includes('COMIDA')) {
+      return 'Alimentacion';
+    }
+
+    console.log(`❌ No se encontró categoría específica para: "${descripcionLimpia}"`);
+    
+    // Si no se encuentra ninguna coincidencia, retornar 'Otros'
+    return 'Otros';
+  }
+  async guardarMovimientos(cardId: number, movimientos: IMovimiento[], userId: number, planId: number, saldoFinal: number): Promise<void> {
+    try {
+      // Verificar límites y permisos
+      await this.checkCartolaLimits(userId, planId);
+      await this.checkCartolaPermission(planId);
+
+      // Actualizar el saldo de la tarjeta con los nuevos campos
+      const updateCardQuery = `
+        UPDATE cards 
+        SET balance = $1, 
+            balance_source = 'cartola',
+            last_balance_update = NOW(),
+            updated_at = NOW() 
+        WHERE id = $2 AND user_id = $3
+        RETURNING *
+      `;
+      await this.pool.query(updateCardQuery, [saldoFinal, cardId, userId]);
+
+      // Procesar cada movimiento
+      for (const movimiento of movimientos) {
+        const movementType = this.determinarMovementType(
+          movimiento.descripcion,
+          movimiento.cargos !== null ? 'expense' : 'income'
+        );
+
+        const amount = movimiento.cargos || movimiento.abonos || 0;
+
+        // Determinar categoría automáticamente
+        const categoryName = this.determinarCategoria(movimiento.descripcion);
+        console.log(`🏷️  Categoría determinada para "${movimiento.descripcion}": ${categoryName}`);
+
+        // Buscar el ID de la categoría en la base de datos (las categorías del sistema no tienen user_id)
+        let categoryId = null;
+        try {
+          const categoryQuery = `
+            SELECT id FROM categories 
+            WHERE name_category = $1 AND is_system = true
+            LIMIT 1
+          `;
+          const categoryResult = await this.pool.query(categoryQuery, [categoryName]);
+          
+          if (categoryResult.rows.length > 0) {
+            categoryId = categoryResult.rows[0].id;
+          } else {
+            // Si no existe la categoría del sistema, usar la categoría "Otros"
+            const otherCategoryQuery = `
+              SELECT id FROM categories 
+              WHERE name_category = 'Otros' AND is_system = true
+              LIMIT 1
+            `;
+            const otherCategoryResult = await this.pool.query(otherCategoryQuery);
+            if (otherCategoryResult.rows.length > 0) {
+              categoryId = otherCategoryResult.rows[0].id;
+            }
+            console.log(`⚠️  Categoría "${categoryName}" no encontrada, usando 'Otros' con ID: ${categoryId}`);
+          }
+        } catch (categoryError) {
+          console.error('Error al buscar categoría:', categoryError);
+          // Si hay error, continuar sin categoría
+        }
+
+        const movementData = {
+          cardId,
+          amount,
+          description: movimiento.descripcion,
+          movementType,
+          movementSource: 'cartola',
+          transactionDate: movimiento.fecha,
+          categoryId
+        };
+
+        // Crear el movimiento con categoría automática
+        const query = `
+          INSERT INTO movements (
+            card_id, amount, description, 
+            movement_type, movement_source, transaction_date,
+            category_id, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        `;
+        
+        await this.pool.query(query, [
+          movementData.cardId,
+          movementData.amount,
+          movementData.description,
+          movementData.movementType,
+          movementData.movementSource,
+          movementData.transactionDate,
+          movementData.categoryId
+        ]);
+      }
     } catch (error) {
-      await client.query('ROLLBACK');
+      console.error('Error al guardar movimientos:', error);
       throw error;
-    } finally {
-      client.release();
     }
   }
-  private detectCardTypeFromTitle(title: string): number {
-    const normalizedTitle = this.cleanTitle(title);
-    for (const { id, name } of this.cardTypes) {
-      const normalizedName = name.toLowerCase().replace(/[^a-z\d ]/gi, '').trim();
-      if (normalizedTitle.includes(normalizedName)) {
+  public detectCardTypeFromTitle(title: string): number {
+    const tipoMap = {
+      'CUENTARUT': 9,    // ID para CuentaRUT
+      'CUENTAVISTA': 2,  // ID para Cuenta Vista
+      'CREDITO': 3,      // ID para Tarjeta de Crédito
+      'AHORRO': 4        // ID para Cuenta Ahorro
+    };
+
+    const titleUpper = title.toUpperCase().replace(/\s+/g, '');
+    
+    for (const [tipo, id] of Object.entries(tipoMap)) {
+      if (titleUpper.includes(tipo)) {
         return id;
       }
     }
-    const other = this.cardTypes.find((ct) => ct.name.toLowerCase() === 'otros');
-    return other ? other.id : -1;
+
+    return 1; // ID por defecto para Otro tipo de cuenta
   }
 } 
