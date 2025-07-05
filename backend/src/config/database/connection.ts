@@ -6,6 +6,13 @@ dotenv.config();
 
 // Configuración inteligente para Railway/local
 const getDatabaseConfig = () => {
+    // Debug: mostrar variables de entorno relevantes
+    console.log('=== DEBUG DATABASE CONFIG ===');
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+    console.log('DB_HOST:', process.env.DB_HOST || 'NOT SET');
+    console.log('NODE_ENV:', process.env.NODE_ENV || 'NOT SET');
+    console.log('===============================');
+    
     // Si existe DATABASE_URL (Railway/Heroku style), usarla
     if (process.env.DATABASE_URL) {
         console.log('Usando DATABASE_URL para conexión');
