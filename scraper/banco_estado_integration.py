@@ -8,6 +8,7 @@ import redis
 import time
 import os
 from datetime import datetime
+from urllib.parse import urlparse
 from sites.banco_estado.banco_estado_local_v2 import BancoEstadoScraper, ScraperConfig, Credentials
 
 class ScraperIntegration:
@@ -15,21 +16,42 @@ class ScraperIntegration:
         # Configuración automática para Railway/local
         redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
         
-        if redis_url.startswith('redis://'):
-            # Parse Redis URL
-            redis_info = redis_url.replace('redis://', '').split(':')
-            if len(redis_info) >= 2:
-                redis_host = redis_info[0]
-                redis_port = int(redis_info[1].split('/')[0])
-            else:
-                redis_host = 'localhost'
-                redis_port = 6379
-        else:
-            redis_host = 'localhost'
-            redis_port = 6379
+        print(f"[DEBUG] REDIS_URL: {redis_url}")
+        
+        try:
+            # Parse URL correctamente usando urllib.parse
+            parsed_url = urlparse(redis_url)
             
-        self.redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
-        print(f"[INFO] Configuración Redis: {redis_host}:{redis_port}")
+            redis_host = parsed_url.hostname or 'localhost'
+            redis_port = parsed_url.port or 6379
+            redis_password = parsed_url.password
+            redis_username = parsed_url.username or 'default'
+            
+            print(f"[DEBUG] Redis config: host={redis_host}, port={redis_port}, username={redis_username}")
+            
+            # Configurar cliente Redis
+            redis_config = {
+                'host': redis_host,
+                'port': redis_port,
+                'decode_responses': True,
+                'socket_connect_timeout': 5,
+                'socket_timeout': 5,
+                'retry_on_timeout': True
+            }
+            
+            if redis_password:
+                redis_config['password'] = redis_password
+                if redis_username != 'default':
+                    redis_config['username'] = redis_username
+            
+            self.redis_client = redis.Redis(**redis_config)
+            print(f"[INFO] Configuración Redis: {redis_host}:{redis_port}")
+            
+        except Exception as e:
+            print(f"[ERROR] Error parseando REDIS_URL: {e}")
+            # Fallback a configuración local
+            self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+            print("[INFO] Usando configuración Redis local como fallback")
         
     async def process_tasks(self):
         """Procesa tareas de la cola de Redis"""
@@ -74,14 +96,11 @@ class ScraperIntegration:
         try:
             # Configurar el scraper según el entorno
             redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
-            redis_info = redis_url.replace('redis://', '').split(':')
             
-            if len(redis_info) >= 2:
-                redis_host = redis_info[0]
-                redis_port = int(redis_info[1].split('/')[0])
-            else:
-                redis_host = 'localhost'
-                redis_port = 6379
+            # Parse URL correctamente usando urllib.parse
+            parsed_url = urlparse(redis_url)
+            redis_host = parsed_url.hostname or 'localhost'
+            redis_port = parsed_url.port or 6379
             
             config = ScraperConfig(
                 redis_host=redis_host,
