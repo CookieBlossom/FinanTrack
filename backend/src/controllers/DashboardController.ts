@@ -169,6 +169,8 @@ export class DashboardController {
                 return res.status(400).json({ message: 'Datos inválidos' });
             }
 
+            console.log(`[DashboardController] Procesando ${rawMovements.length} movimientos del scraper`);
+
             const createdMovements: IMovement[] = [];
             const errors: any[] = [];
 
@@ -177,21 +179,55 @@ export class DashboardController {
                     const movementToCreate = await this.convertScraperMovement(rawMov as IScraperMovement, scraperTaskId, defaultCardId);
                     const newMovement = await this.movementService.createMovement(movementToCreate, userId, (req as AuthRequest).user!.planId);
                     createdMovements.push(newMovement);
+                    console.log(`[DashboardController] Movimiento creado: ${newMovement.description} - ${newMovement.amount}`);
                 } catch (error) {
+                    console.error(`[DashboardController] Error procesando movimiento:`, error);
                     errors.push({ rawMovement: rawMov, error: error instanceof Error ? error.message : 'Error desconocido' });
                 }
             }
+
+            // Estadísticas del procesamiento
+            const stats = {
+                total_procesados: rawMovements.length,
+                exitosos: createdMovements.length,
+                errores: errors.length,
+                por_categoria: this.getMovementsByCategory(createdMovements)
+            };
+
+            console.log(`[DashboardController] Estadísticas del procesamiento:`, stats);
+
             if (errors.length > 0 && createdMovements.length > 0) {
-                return res.status(207).json({ message: 'Procesamiento completado con algunos errores.', createdMovements, errors });
+                return res.status(207).json({ 
+                    message: 'Procesamiento completado con algunos errores.',
+                    createdMovements,
+                    errors,
+                    stats
+                });
             } else if (errors.length > 0) {
-                return res.status(400).json({ message: 'Error al procesar todos los movimientos.', errors });
+                return res.status(400).json({ 
+                    message: 'Error al procesar todos los movimientos.',
+                    errors,
+                    stats
+                });
             } else {
-                return res.status(201).json({ message: 'Movimientos procesados exitosamente.', movements: createdMovements });
+                return res.status(201).json({ 
+                    message: 'Movimientos procesados exitosamente.',
+                    movements: createdMovements,
+                    stats
+                });
             }
 
         } catch (error) {
             console.error('Error general en processScraperMovements:', error);
             return res.status(500).json({ message: 'Error al procesar los movimientos del scraper' });
         }
+    }
+
+    private getMovementsByCategory(movements: IMovement[]): { [key: string]: number } {
+        return movements.reduce((acc, mov) => {
+            const categoryName = mov.category?.nameCategory || 'Otros';
+            acc[categoryName] = (acc[categoryName] || 0) + 1;
+            return acc;
+        }, {} as { [key: string]: number });
     }
 } 

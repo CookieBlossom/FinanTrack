@@ -55,7 +55,7 @@ export class CompanyService {
         return desc;
     }
 
-    public async findCategoryForDescription(description: string): Promise<string | null> {
+    public async findCategoryForDescription(description: string): Promise<number | null> {
         try {
             // Limpiar y normalizar la descripción
             const cleanedDesc = this.cleanDescription(description);

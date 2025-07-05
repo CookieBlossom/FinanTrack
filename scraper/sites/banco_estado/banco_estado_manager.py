@@ -72,6 +72,7 @@ class BancoEstadoScraperManager:
             if not rut or not password:
                 raise ValueError("Credenciales incompletas")
 
+            logger.info(f"Procesando tarea {task.id} para RUT: {rut}")
             update_task_status(self.redis_client, task.id, 'processing', 'Iniciando proceso de scraping', 0)
             
             # Crear configuración del scraper
@@ -82,21 +83,53 @@ class BancoEstadoScraperManager:
             )
             
             logger.info(f"Configuración del scraper creada exitosamente")
+            
+            # Actualizar progreso
+            update_task_status(self.redis_client, task.id, 'processing', 'Configurando scraper...', 10)
+            
             scraper = banco_estado_local_v2.BancoEstadoScraper(config)
+            
+            # Actualizar progreso
+            update_task_status(self.redis_client, task.id, 'processing', 'Ejecutando scraping...', 20)
+            
             result = await scraper.run(task.id, task_dict)
-            if result:
-                # El resultado ya viene como diccionario desde el scraper
+            
+            if result and result.get('success'):
+                # Mostrar estadísticas en el log
+                logger.info(f"Scraping completado exitosamente:")
+                logger.info(f"  - Cuentas: {result.get('total_cuentas', 0)}")
+                logger.info(f"  - Movimientos: {result.get('total_movimientos', 0)}")
+                
+                if 'categorization_stats' in result:
+                    stats = result['categorization_stats']
+                    logger.info(f"  - Categorizados: {stats.get('categorized', 0)}")
+                    logger.info(f"  - Sin categorizar: {stats.get('uncategorized', 0)}")
+                
+                # Guardar el resultado en Redis
                 store_result(self.redis_client, task.id, result)
-                # Luego actualizamos el estado
+                
+                # Actualizar estado final
                 update_task_status(
                     self.redis_client,
                     task.id,
                     'completed',
-                    'Scraping completado exitosamente',
+                    f'Scraping completado: {result.get("total_movimientos", 0)} movimientos procesados',
                     100
                 )
+                
+                logger.info(f"Tarea {task.id} completada exitosamente")
             else:
-                raise ValueError("El scraper no retornó resultados")
+                error_message = result.get('error', 'Error desconocido') if result else "El scraper no retornó resultados"
+                logger.error(f"Scraping falló: {error_message}")
+                
+                update_task_status(
+                    self.redis_client,
+                    task.id,
+                    'failed',
+                    f'Error en scraping: {error_message}',
+                    0,
+                    error_message
+                )
 
         except Exception as e:
             logger.error(f"Error en el scraping: {str(e)}\n{traceback.format_exc()}")
@@ -105,7 +138,8 @@ class BancoEstadoScraperManager:
                 task.id,
                 'failed',
                 'Error durante el proceso de scraping',
-                error=str(e)
+                0,
+                str(e)
             )
 
     async def run(self) -> None:

@@ -3,10 +3,12 @@ export interface IScraperMovement {
     descripcion: string;     // Descripción del movimiento
     monto: number;          // Monto del movimiento (positivo para ingresos, negativo para gastos)
     categoria?: string;     // Categoría del movimiento (opcional)
+    categoria_automatica?: string; // Categoría automática determinada por el scraper
     tipo?: string;         // Tipo de movimiento según el banco
     cuenta?: string;       // Número o identificador de la cuenta
     referencia?: string;   // Número de referencia o ID de la transacción
     estado?: string;       // Estado del movimiento (ej: "procesado", "pendiente")
+    movement_type?: 'income' | 'expense'; // Tipo de movimiento procesado
   }
   
   export interface IScraperAccount {

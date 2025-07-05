@@ -203,29 +203,34 @@ export class PlansComponent implements OnInit {
   getPlanFeatures(planName: string): string[] {
     const features = {
       basic: [
-        'Hasta 100 movimientos por cada tipo (tarjeta y efectivo)',
+        '100 movimientos manuales por mes',
         'Máximo 2 tarjetas activas',
-        'Subida manual de movimientos',
-        'Subida manual de tarjetas',
-        '5 Palabras clave por categoría',
+        '5 palabras clave por categoría',
+        '5 movimientos proyectados',
         'Categorización básica',
-        'Soporte por email'
+        'Soporte por email',
+        'Sin cartolas bancarias',
+        'Sin scraper automático'
       ],
       premium: [
-        'Hasta 1000 movimientos por cada tipo (tarjeta, efectivo y cartola)',
+        '1,000 movimientos manuales por mes',
+        'Subida de Cartolas bancarias ILIMITADAS',
         'Máximo 10 tarjetas activas',
-        'Subida de cartolas bancarias',
-        'Subida manual de movimientos',
-        'Subida manual de tarjetas',
-        '10 Palabras clave por categoría',
+        '10 palabras clave por categoría',
+        '20 movimientos proyectados',
+        'Categorización avanzada',
+        'Exportar datos',
+        'Soporte prioritario',
+        'Sin scraper automático'
       ],
       pro: [
-        'Movimientos ilimitados',
+        'Movimientos manuales ilimitados',
+        'Subida de Cartolas bancarias ilimitadas',
+        'Scraper automático de bancos',
         'Tarjetas ilimitadas',
-        'Acceso completo al scraper automático',
-        'Subida de cartolas bancarias',
-        'Categorización de empresas automatizada',
         'Palabras clave ilimitadas por categoría',
+        'Movimientos proyectados ilimitados',
+        'Categorización automatizada',
         'Soporte prioritario'
       ]
     };
@@ -247,6 +252,16 @@ export class PlansComponent implements OnInit {
     }
     
     return planType;
+  }
+
+  getPlanDescription(planType: string): string {
+    const descriptions = {
+      basic: 'Plan básico: hasta 100 movimientos manuales, 2 tarjetas, 5 palabras clave por categoría',
+      premium: 'Plan premium: hasta 1,000 movimientos manuales, 10 tarjetas, 10 palabras clave, cartolas bancarias ilimitadas',
+      pro: 'Plan pro: todo ilimitado, scraper automático, categorización automatizada con IA'
+    };
+
+    return descriptions[planType as keyof typeof descriptions] || descriptions.basic;
   }
 
   // Método para recargar datos del usuario

@@ -401,7 +401,7 @@ export class MovementService {
       if (!movementData.categoryId && movementData.description) {
         const categoryId = await this.companyService.findCategoryForDescription(movementData.description);
         if (categoryId) {
-          movementData.categoryId = parseInt(categoryId);
+          movementData.categoryId = categoryId;
         }
       }
 

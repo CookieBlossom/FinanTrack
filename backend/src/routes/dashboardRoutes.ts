@@ -9,4 +9,7 @@ router.get('/income-expenses', dashboardController.getIncomeVsExpenses);
 router.get('/category-expenses', dashboardController.getCategoryExpenses);
 router.get('/recent-movements', dashboardController.getRecentMovements);
 
+// Ruta para procesar movimientos del scraper
+router.post('/scraper/movements', dashboardController.processScraperMovements);
+
 export default router; 

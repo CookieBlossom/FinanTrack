@@ -93,8 +93,7 @@ initializeDatabase()
         console.error('Error al inicializar la base de datos:', error);
         process.exit(1);
     });
-
-// Versión de desarrollo - comentar para producción
+// DESARROLLO
 // cronSetup.initCronJobs();
 
 // const PORT = process.env.PORT || 3000;

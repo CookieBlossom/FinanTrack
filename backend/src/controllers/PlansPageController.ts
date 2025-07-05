@@ -268,30 +268,36 @@ export class PlansPageController {
     private getPlanFeatures(planName: string, limits: any, permissions: string[]) {
         const features = {
             basic: [
-                'Hasta 2 tarjetas',
+                'Máximo 2 tarjetas',
                 '100 movimientos manuales por mes',
                 '5 palabras clave por categoría',
-                'Analytics básicos',
+                '5 movimientos proyectados',
+                'Categorización básica',
+                'Soporte por email',
                 'Sin cartolas bancarias',
                 'Sin scraper automático'
             ],
             premium: [
-                'Hasta 10 tarjetas',
-                '1000 movimientos por mes',
+                'Máximo 10 tarjetas',
+                '1,000 movimientos manuales por mes',
+                'Cartolas bancarias ILIMITADAS',
                 '10 palabras clave por categoría',
-                'Cartolas bancarias ilimitadas',
-                'Analytics avanzados',
-                'Sincronización automática'
+                '20 movimientos proyectados',
+                'Categorización avanzada',
+                'Exportar datos',
+                'Soporte prioritario',
+                'Sin scraper automático'
             ],
             pro: [
+                'TODO ILIMITADO',
                 'Tarjetas ilimitadas',
-                'Movimientos ilimitados',
-                'Palabras clave ilimitadas',
-                'Cartolas ilimitadas',
-                'Scraper automático',
-                'Categorización automatizada',
-                'Analytics premium',
-                'Exportación de datos',
+                'Movimientos manuales ilimitados',
+                'Cartolas bancarias ilimitadas',
+                'Movimientos proyectados ilimitados',
+                'Palabras clave ilimitadas por categoría',
+                'Scraper automático de bancos',
+                'Categorización automatizada con IA',
+                'Exportar datos',
                 'Soporte prioritario'
             ]
         };

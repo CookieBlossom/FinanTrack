@@ -935,169 +935,320 @@ class BancoEstadoScraper:
 
     async def run(self, task_id: str, task_data: dict) -> dict:
         """
-        Método principal para ejecutar el scraper desde el manager
+        Método principal que ejecuta el scraping completo y procesa los movimientos
         """
         try:
-            # Extraer credenciales del task_data
-            rut = task_data.get('data', {}).get('rut')
-            password = task_data.get('data', {}).get('password')
-            if not rut or not password:
-                raise ValueError("Credenciales incompletas")
-            # Crear objeto de credenciales
-            credentials = Credentials(rut=rut, password=password)
-            # Actualizar estado en Redis
-            self.redis_client.hset(f"scraper:tasks:{task_id}", "status", "processing")
-            self.redis_client.hset(f"scraper:tasks:{task_id}", "progress", "25")
-            self.redis_client.hset(f"scraper:tasks:{task_id}", "message", "Iniciando navegador...")
+            print(f"[INFO] Iniciando scraping para tarea {task_id}")
             
-            # Configurar Playwright
-            print("[SCRAPER] Importando Playwright...")
-            try:
-                from playwright.async_api import async_playwright
-                print("[SCRAPER] Playwright importado exitosamente")
-            except Exception as import_error:
-                print(f"[SCRAPER] Error al importar Playwright: {import_error}")
-                raise Exception(f"Error al importar Playwright: {import_error}")
+            # Extraer credenciales
+            credentials = Credentials(
+                rut=task_data['data']['rut'],
+                password=task_data['data']['password']
+            )
             
-            print("[SCRAPER] Iniciando Playwright...")
-            try:
-                async with async_playwright() as p:
-                    print("[SCRAPER] Playwright iniciado, configurando navegador...")
-                    
-                    # Configurar el navegador
-                    print("[SCRAPER] Lanzando navegador Chromium...")
-                    try:
-                        browser = await p.chromium.launch(
-                            headless=False,  # Cambiar a True para modo headless
-                            slow_mo=50
-                        )
-                        print("[SCRAPER] Navegador lanzado exitosamente")
-                    except Exception as browser_error:
-                        print(f"[SCRAPER] Error al lanzar navegador: {browser_error}")
-                        raise Exception(f"Error al lanzar navegador: {browser_error}")
-                    
-                    # Configurar el contexto
-                    print("[SCRAPER] Configurando contexto del navegador...")
-                    try:
-                        context = await browser.new_context(
-                            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                            locale="es-CL",
-                            permissions=["geolocation"],
-                            geolocation=self.config.geolocation,
-                            timezone_id="America/Santiago",
-                            viewport={"width": 1920, "height": 1080}
-                        )
-                        print("[SCRAPER] Contexto del navegador configurado")
-                    except Exception as context_error:
-                        print(f"[SCRAPER] Error al configurar contexto: {context_error}")
-                        await browser.close()
-                        raise Exception(f"Error al configurar contexto: {context_error}")
-                    
-                    # Configurar evasión de detección
-                    print("[SCRAPER] Configurando evasión de detección...")
-                    try:
-                        await context.add_init_script("""
-                            Object.defineProperty(navigator, 'webdriver', {
-                                get: () => undefined
-                            });
-                        """)
-                        print("[SCRAPER] Evasión de detección configurada")
-                    except Exception as script_error:
-                        print(f"[SCRAPER] Error al configurar evasión: {script_error}")
-                        # No es crítico, continuar
-                    
-                    print("[SCRAPER] Creando nueva página...")
-                    try:
-                        page = await context.new_page()
-                        print("[SCRAPER] Página creada exitosamente")
-                    except Exception as page_error:
-                        print(f"[SCRAPER] Error al crear página: {page_error}")
-                        await browser.close()
-                        raise Exception(f"Error al crear página: {page_error}")
-                    
-                    # Actualizar progreso
-                    self.redis_client.hset(f"scraper:tasks:{task_id}", "progress", "50")
-                    self.redis_client.hset(f"scraper:tasks:{task_id}", "message", "Realizando login...")
-                    
-                    # Realizar login
-                    print("\n[SCRAPER] Iniciando login...")
-                    print(f"[SCRAPER] Credenciales: RUT={credentials.rut}, Password=***")
-                    import sys
-                    sys.stdout.flush()  # Forzar que se muestren los logs
-                    
-                    try:
-                        print("[SCRAPER] Llamando a login_banco_estado...")
-                        sys.stdout.flush()
-                        login_exitoso = await self.login_banco_estado(page, credentials)
-                        print(f"[SCRAPER] Resultado del login: {login_exitoso}")
-                        sys.stdout.flush()
-                        
-                        if not login_exitoso:
-                            # Obtener información adicional sobre el estado de la página
-                            current_url = page.url
-                            page_title = await page.title()
-                            print(f"[SCRAPER] URL actual después del login fallido: {current_url}")
-                            print(f"[SCRAPER] Título de la página: {page_title}")
-                            
-                            # Verificar si hay mensajes de error en la página
-                            error_messages = await page.locator("text=/error|incorrecto|bloqueado/i").all()
-                            if error_messages:
-                                for msg in error_messages:
-                                    error_text = await msg.text_content()
-                                    print(f"[SCRAPER] Mensaje de error encontrado: {error_text}")
-                            
-                            await browser.close()
-                            raise Exception("Login fallido")
-                            
-                    except Exception as login_error:
-                        print(f"[SCRAPER] Error durante el proceso de login: {str(login_error)}")
-                        await browser.close()
-                        raise Exception(f"Error en login: {str(login_error)}")
-                    
-                    # Actualizar progreso
-                    self.redis_client.hset(f"scraper:tasks:{task_id}", "progress", "75")
-                    self.redis_client.hset(f"scraper:tasks:{task_id}", "message", "Extrayendo datos...")
-                    
-                    # Extraer datos
-                    print("\n[SCRAPER] Extrayendo saldos...")
-                    cuentas = await self.extract_cuentas(page)
-                    
-                    print("\n[SCRAPER] Extrayendo movimientos por cuenta...")
-                    for cuenta in cuentas:
-                        movimientos_cuenta = await self.extract_movimientos_cuenta(page, cuenta)
-                        cuenta['movimientos'] = movimientos_cuenta
-                    
-                    # Preparar resultado
-                    resultado = {
-                        "success": True,
-                        "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "cuentas": cuentas,
-                        "task_id": task_id
-                    }
-                    
-                    # Guardar resultado localmente
-                    os.makedirs('results', exist_ok=True)
-                    self.guardar_en_json(
-                        f'results/banco_estado_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json',
-                        resultado
-                    )
-                    
-                    # Cerrar navegador
+            from playwright.async_api import async_playwright
+            
+            async with async_playwright() as p:
+                # Configurar el navegador
+                browser = await p.chromium.launch(
+                    headless=False,
+                    slow_mo=50
+                )
+                
+                # Configurar el contexto
+                context = await browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                    locale="es-CL",
+                    permissions=["geolocation"],
+                    geolocation=self.config.geolocation,
+                    timezone_id="America/Santiago",
+                    viewport={"width": 1920, "height": 1080}
+                )
+                
+                # Configurar evasión de detección
+                await context.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                    });
+                """)
+                
+                page = await context.new_page()
+                
+                # Realizar login
+                print("[INFO] Realizando login...")
+                login_exitoso = await self.login_banco_estado(page, credentials)
+                if not login_exitoso:
                     await browser.close()
-                    
-                    print(f"\n[SCRAPER] Scraping completado exitosamente. Cuentas encontradas: {len(cuentas)}")
-                    return resultado
-                    
-            except Exception as playwright_error:
-                print(f"[SCRAPER] Error general de Playwright: {playwright_error}")
-                raise Exception(f"Error de Playwright: {playwright_error}")
+                    return {
+                        "success": False,
+                        "error": "Login fallido",
+                        "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                
+                # Extraer cuentas
+                print("[INFO] Extrayendo cuentas...")
+                cuentas = await self.extract_cuentas(page)
+                
+                # Extraer movimientos por cuenta
+                print("[INFO] Extrayendo movimientos por cuenta...")
+                for cuenta in cuentas:
+                    movimientos_cuenta = await self.extract_movimientos_cuenta(page, cuenta)
+                    cuenta['movimientos'] = movimientos_cuenta
+                
+                await browser.close()
+                
+                # Procesar y categorizar movimientos
+                print("[INFO] Procesando y categorizando movimientos...")
+                processed_result = await self.process_and_categorize_movements(cuentas, task_data)
+                
+                # Preparar resultado final
+                resultado = {
+                    "success": True,
+                    "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "cuentas": cuentas,
+                    "total_cuentas": len(cuentas),
+                    "total_movimientos": sum(len(cuenta.get('movimientos', [])) for cuenta in cuentas),
+                    "processed_movements": processed_result.get('processed_movements', []),
+                    "categorization_stats": processed_result.get('categorization_stats', {})
+                }
+                
+                # Guardar resultado local
+                os.makedirs('results', exist_ok=True)
+                self.guardar_en_json(
+                    f'results/banco_estado_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json',
+                    resultado
+                )
+                
+                print(f"[OK] Scraping completado exitosamente:")
+                print(f"  - Cuentas extraídas: {len(cuentas)}")
+                print(f"  - Movimientos procesados: {sum(len(cuenta.get('movimientos', [])) for cuenta in cuentas)}")
+                print(f"  - Movimientos categorizados: {processed_result.get('categorization_stats', {}).get('categorized', 0)}")
+                
+                return resultado
                 
         except Exception as e:
-            print(f"[SCRAPER] Error durante la ejecución: {str(e)}")
-            # Actualizar estado de error en Redis
-            self.redis_client.hset(f"scraper:tasks:{task_id}", "status", "failed")
-            self.redis_client.hset(f"scraper:tasks:{task_id}", "error", str(e))
-            raise e
+            print(f"[ERROR] Error durante el scraping: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "success": False,
+                "error": str(e),
+                "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+
+    async def process_and_categorize_movements(self, cuentas: List[dict], task_data: dict) -> dict:
+        """
+        Procesa y categoriza los movimientos extraídos
+        """
+        import json
+        import os
+        
+        # Cargar companies.json para categorización
+        companies_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'backend', 'src', 'config', 'companies.json')
+        companies = []
+        
+        try:
+            with open(companies_path, 'r', encoding='utf-8') as f:
+                companies = json.load(f)
+            print(f"[INFO] Cargadas {len(companies)} empresas para categorización")
+        except Exception as e:
+            print(f"[WARNING] No se pudo cargar companies.json: {e}")
+        
+        processed_movements = []
+        categorization_stats = {
+            'total': 0,
+            'categorized': 0,
+            'uncategorized': 0
+        }
+        
+        for cuenta in cuentas:
+            for movimiento in cuenta.get('movimientos', []):
+                # Procesar movimiento
+                processed_movement = self.process_single_movement(movimiento, cuenta, companies)
+                processed_movements.append(processed_movement)
+                
+                # Actualizar estadísticas
+                categorization_stats['total'] += 1
+                if processed_movement.get('categoria_automatica'):
+                    categorization_stats['categorized'] += 1
+                else:
+                    categorization_stats['uncategorized'] += 1
+        
+        # Enviar movimientos al backend
+        if processed_movements:
+            await self.send_movements_to_backend(processed_movements, task_data)
+        
+        return {
+            'processed_movements': processed_movements,
+            'categorization_stats': categorization_stats
+        }
+    
+    def process_single_movement(self, movimiento: dict, cuenta: dict, companies: List[dict]) -> dict:
+        """
+        Procesa un movimiento individual y lo categoriza
+        """
+        # Limpiar descripción
+        descripcion = movimiento.get('descripcion', '').strip()
+        descripcion_clean = self.clean_description(descripcion)
+        
+        # Buscar categoría automática
+        categoria_automatica = self.find_automatic_category(descripcion_clean, companies)
+        
+        # Preparar movimiento procesado
+        processed_movement = {
+            'fecha': movimiento.get('fecha'),
+            'descripcion': descripcion,
+            'descripcion_clean': descripcion_clean,
+            'monto': movimiento.get('monto'),
+            'tipo': movimiento.get('tipo'),
+            'cuenta': cuenta.get('numero'),
+            'tipo_cuenta': cuenta.get('tipo'),
+            'referencia': movimiento.get('referencia'),
+            'estado': movimiento.get('estado'),
+            'categoria_automatica': categoria_automatica,
+            'movement_type': 'expense' if movimiento.get('monto', 0) < 0 else 'income'
+        }
+        
+        return processed_movement
+    
+    def clean_description(self, descripcion: str) -> str:
+        """
+        Limpia la descripción del movimiento eliminando prefijos genéricos
+        """
+        prefijos_a_ignorar = [
+            'TEF',
+            'COMPRA WEB',
+            'COMPRA NACIONAL',
+            'TRANSFERENCIA',
+            'PAGO',
+            'FACTU CL',
+            'FACTURACION',
+            'CARGO',
+            'ABONO'
+        ]
+        
+        desc = descripcion.upper().strip()
+        
+        for prefijo in prefijos_a_ignorar:
+            if desc.startswith(prefijo):
+                desc = desc[len(prefijo):].strip()
+        
+        return desc
+    
+    def find_automatic_category(self, descripcion: str, companies: List[dict]) -> str:
+        """
+        Busca automáticamente la categoría basada en la descripción
+        """
+        if not companies:
+            return "Otros"
+        
+        descripcion_normalized = descripcion.upper().replace(' ', '')
+        
+        for company in companies:
+            for keyword in company.get('keywords', []):
+                keyword_normalized = keyword.upper().replace(' ', '')
+                if keyword_normalized in descripcion_normalized:
+                    return company.get('category', 'Otros')
+        
+        return "Otros"
+    
+    async def send_movements_to_backend(self, movements: List[dict], task_data: dict) -> None:
+        """
+        Envía los movimientos procesados al backend
+        """
+        import aiohttp
+        import json
+        
+        # URL del backend (ajustar según tu configuración)
+        backend_url = "http://localhost:3000"
+        
+        # Preparar datos para el backend
+        payload = {
+            'rawMovements': movements,
+            'defaultCardId': 1,  # Ajustar según la lógica de tu aplicación
+            'scraperTaskId': task_data.get('id'),
+            'userId': task_data.get('user_id')
+        }
+        
+        try:
+            print(f"[INFO] Enviando {len(movements)} movimientos al backend...")
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{backend_url}/api/dashboard/scraper/movements",
+                    json=payload,
+                    headers={'Content-Type': 'application/json'}
+                ) as response:
+                    if response.status == 200 or response.status == 201:
+                        result = await response.json()
+                        
+                        # Mostrar estadísticas detalladas
+                        print("\n" + "="*60)
+                        print("🎉 PROCESO DE SCRAPING COMPLETADO EXITOSAMENTE")
+                        print("="*60)
+                        
+                        if 'stats' in result:
+                            stats = result['stats']
+                            print(f"📊 ESTADÍSTICAS DEL PROCESAMIENTO:")
+                            print(f"  ✅ Total procesados: {stats.get('total_procesados', 0)}")
+                            print(f"  ✅ Exitosos: {stats.get('exitosos', 0)}")
+                            print(f"  ❌ Errores: {stats.get('errores', 0)}")
+                            
+                            if 'por_categoria' in stats:
+                                print(f"  📂 Distribución por categoría:")
+                                for categoria, cantidad in stats['por_categoria'].items():
+                                    print(f"    - {categoria}: {cantidad} movimientos")
+                        
+                        print(f"\n💾 Movimientos guardados en la base de datos: {len(movements)}")
+                        print(f"📅 Fecha de procesamiento: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                        print(f"🔄 ID de tarea: {task_data.get('id')}")
+                        print("="*60)
+                        
+                        # Mostrar algunos ejemplos de movimientos procesados
+                        if len(movements) > 0:
+                            print("\n📋 EJEMPLOS DE MOVIMIENTOS PROCESADOS:")
+                            for i, mov in enumerate(movements[:5]):  # Mostrar hasta 5 ejemplos
+                                print(f"  {i+1}. {mov.get('descripcion', 'Sin descripción')}")
+                                print(f" Monto: ${mov.get('monto', 0):,.0f}")
+                                print(f" Categoría: {mov.get('categoria_automatica', 'Sin categorizar')}")
+                                print(f" Fecha: {mov.get('fecha', 'Sin fecha')}")
+                                print()
+                            
+                            if len(movements) > 5:
+                                print(f"     ... y {len(movements) - 5} movimientos más")
+                        
+                        print("\n✨ El scraper ha finalizado correctamente!")
+                        print("📱 Puedes revisar tus movimientos en la aplicación.")
+                        
+                    else:
+                        print(f"[ERROR] Error al enviar movimientos al backend: {response.status}")
+                        error_text = await response.text()
+                        print(f"[ERROR] Respuesta del servidor: {error_text}")
+                        
+                        # Mostrar información de respaldo
+                        print("\nINFORMACIÓN DE RESPALDO:")
+                        print(f" Total movimientos extraídos: {len(movements)}")
+                        print(f" Guardados localmente en: results/banco_estado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+                        print(" Los movimientos no se guardaron en la base de datos")
+                        
+        except Exception as e:
+            print(f"[ERROR] Error al conectar con el backend: {e}")
+            print("\n[INFO] INFORMACIÓN DE RESPALDO:")
+            print(f" Total movimientos extraídos: {len(movements)}")
+            print(f" Guardados localmente en: results/banco_estado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            print("  Los movimientos no se guardaron en la base de datos")
+            print("  Verifica que el backend esté ejecutándose en http://localhost:3000")
+            
+            # Mostrar resumen de categorización local
+            if movements:
+                categorias = {}
+                for mov in movements:
+                    cat = mov.get('categoria_automatica', 'Sin categorizar')
+                    categorias[cat] = categorias.get(cat, 0) + 1
+                
+                print(f"\n RESUMEN DE CATEGORIZACIÓN LOCAL:")
+                for categoria, cantidad in categorias.items():
+                    print(f"  - {categoria}: {cantidad} movimientos")
 
     async def login_banco_estado(self, page, credentials: Credentials):
         """Inicia sesión en BancoEstado"""
