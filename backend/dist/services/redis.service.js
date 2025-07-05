@@ -13,6 +13,15 @@ dotenv_1.default.config();
 // @Injectable() // No es necesario para Express
 class RedisService {
     constructor() {
+        // Debug: mostrar configuración de Redis
+        console.log('=== DEBUG REDIS CONFIG ===');
+        console.log('REDIS_URL:', process.env.REDIS_URL ? 'SET' : 'NOT SET');
+        console.log('REDIS_HOST:', process.env.REDIS_HOST || 'NOT SET');
+        console.log('REDIS_PORT:', process.env.REDIS_PORT || 'NOT SET');
+        if (process.env.REDIS_URL) {
+            console.log('REDIS_URL value:', process.env.REDIS_URL);
+        }
+        console.log('===============================');
         // Si existe REDIS_URL, úsala. Si no, usa host y puerto.
         this.client = process.env.REDIS_URL
             ? new ioredis_1.default(process.env.REDIS_URL)

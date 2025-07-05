@@ -46,6 +46,9 @@ class CompanyService {
         }
         return desc;
     }
+    getCompaniesData() {
+        return this.companies;
+    }
     async findCategoryForDescription(description) {
         try {
             // Limpiar y normalizar la descripción

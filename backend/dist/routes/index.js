@@ -20,6 +20,7 @@ const planRoutes_1 = __importDefault(require("./planRoutes"));
 const plansPageRoutes_1 = __importDefault(require("./plansPageRoutes"));
 const stripeRoutes_1 = __importDefault(require("./stripeRoutes"));
 const automationRoutes_1 = __importDefault(require("./automationRoutes"));
+const configRoutes_1 = __importDefault(require("./configRoutes"));
 const DashboardController_1 = require("../controllers/DashboardController");
 const router = (0, express_1.Router)();
 const protectedRouter = (0, express_1.Router)();
@@ -29,6 +30,7 @@ router.use('/users', userRoutes_1.default);
 router.use('/plans-page', plansPageRoutes_1.default);
 router.use('/stripe', stripeRoutes_1.default);
 router.use('/automation', automationRoutes_1.default);
+router.use('/config', configRoutes_1.default);
 // Ruta especial SOLO para el scraper Python (sin autenticación)
 router.post('/scraper/process-data', dashboardController.processScraperData);
 router.get('/', (req, res) => {

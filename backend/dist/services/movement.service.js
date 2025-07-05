@@ -573,6 +573,11 @@ class MovementService {
             const { card } = await this.cardService.findOrUpdateCardFromCartola(userId, cartola.tituloCartola, cartola.clienteNombre, cartola.saldoFinal, cardTypeId, bankId);
             // Guardar los movimientos
             await this.cartolaService.guardarMovimientos(card.id, cartola.movimientos, userId, planId, cartola.saldoFinal);
+            console.log(`[MovementService] Cartola procesada: tarjeta ${card.id}, ${cartola.movimientos.length} movimientos`);
+            return {
+                cardId: card.id,
+                movementsCount: cartola.movimientos.length
+            };
         }
         catch (error) {
             console.error('Error al procesar cartola:', error);

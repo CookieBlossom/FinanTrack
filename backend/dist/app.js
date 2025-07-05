@@ -16,7 +16,11 @@ console.log('Base de datos:', process.env.DB_NAME || 'finantrack');
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)({
-    origin: [process.env.FRONTEND_URL || 'http://localhost:4200', 'https://*.railway.app'],
+    origin: [
+        process.env.FRONTEND_URL || 'http://localhost:4200',
+        'https://*.railway.app',
+        'https://*.onrender.com'
+    ],
     methods: ['GET', 'HEAD', 'PATCH', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires', 'X-Timestamp'],
     credentials: true
