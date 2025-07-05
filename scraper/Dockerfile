@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     xdg-utils \
     libxss1 \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar Google Chrome
@@ -53,8 +54,24 @@ ENV PYTHONUNBUFFERED=1
 ENV DISPLAY=:99
 ENV RAILWAY_ENVIRONMENT=production
 
+# Crear script de inicio
+RUN echo '#!/bin/bash\n\
+# Limpiar displays existentes\n\
+rm -f /tmp/.X99-lock\n\
+pkill -f "Xvfb :99" || true\n\
+\n\
+# Iniciar Xvfb en background\n\
+Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &\n\
+\n\
+# Esperar a que Xvfb esté listo\n\
+sleep 2\n\
+\n\
+# Ejecutar el scraper\n\
+python banco_estado_integration.py\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
 # Exponer puerto
 EXPOSE 8000
 
-# Comando para iniciar con display virtual
-CMD ["sh", "-c", "Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset & python banco_estado_integration.py"]
+# Comando para iniciar
+CMD ["/app/start.sh"]

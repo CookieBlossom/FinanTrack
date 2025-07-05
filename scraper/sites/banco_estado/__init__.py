@@ -1,4 +1,3 @@
-from .banco_estado import BancoEstadoScraper, Credentials
-from scraper.utils.config import ScraperConfig
+from .banco_estado_local_v2 import BancoEstadoScraper, ScraperConfig, Credentials
 
 __all__ = ['BancoEstadoScraper', 'ScraperConfig', 'Credentials'] 

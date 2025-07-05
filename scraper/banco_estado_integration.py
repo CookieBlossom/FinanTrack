@@ -8,7 +8,7 @@ import redis
 import time
 import os
 from datetime import datetime
-from banco_estado_local_v2 import BancoEstadoScraper, ScraperConfig, Credentials
+from sites.banco_estado.banco_estado_local_v2 import BancoEstadoScraper, ScraperConfig, Credentials
 
 class ScraperIntegration:
     def __init__(self):
