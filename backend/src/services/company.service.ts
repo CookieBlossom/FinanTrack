@@ -55,6 +55,10 @@ export class CompanyService {
         return desc;
     }
 
+    public getCompaniesData(): Company[] {
+        return this.companies;
+    }
+
     public async findCategoryForDescription(description: string): Promise<number | null> {
         try {
             // Limpiar y normalizar la descripción

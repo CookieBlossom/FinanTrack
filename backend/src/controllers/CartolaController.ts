@@ -1,129 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
-import { CartolaService } from '../services/cartola.service';
+import { MovementService } from '../services/movement.service';
 import { DatabaseError } from '../utils/errors';
 import { AuthRequest } from '../interfaces/AuthRequest';
 import { Pool } from 'pg';
+import { pool } from '../config/database/connection';
 
 export class CartolaController {
-  private cartolaService: CartolaService;
+  private movementService: MovementService;
   private pool: Pool;
 
   constructor() {
-    this.cartolaService = new CartolaService();
-    this.pool = new Pool({
-      user: process.env.DB_USER,
-      host: process.env.DB_HOST,
-      database: process.env.DB_NAME,
-      password: process.env.DB_PASSWORD,
-      port: parseInt(process.env.DB_PORT || '5432'),
-    });
-  }
-
-  private async findOrCreateCard(
-    userId: number,
-    tituloCartola: string,
-    clienteNombre: string,
-    saldoAnterior: number,
-    fechaConsulta: Date
-  ): Promise<number> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // Extraer el número de cuenta del título
-      const numeroMatch = tituloCartola.match(/N°\s*(\d+)/i);
-      const numeroCuenta = numeroMatch ? numeroMatch[1] : '';
-
-      // Determinar el tipo de cuenta y banco
-      let nombreCuenta = `CuentaRUT - ${numeroCuenta}`;
-      let cardTypeName = 'CUENTA RUT';
-      const bankId = 1; // BancoEstado
-
-      // Buscar una CuentaRUT existente de BancoEstado
-      const findRutAccountQuery = `
-        SELECT c.id 
-        FROM cards c
-        JOIN card_types ct ON c.card_type_id = ct.id
-        WHERE c.user_id = $1 
-        AND ct.name = $2
-        AND c.bank_id = $3
-        AND c.status_account = 'active'
-        LIMIT 1
-      `;
-
-      const existingRutAccount = await client.query(findRutAccountQuery, [userId, cardTypeName, bankId]);
-      
-      if (existingRutAccount.rows.length > 0) {
-        // Actualizar el saldo de la cuenta existente
-        await client.query(
-          'UPDATE cards SET balance = balance + $1 WHERE id = $2',
-          [saldoAnterior, existingRutAccount.rows[0].id]
-        );
-        await client.query('COMMIT');
-        return existingRutAccount.rows[0].id;
-      }
-
-      // Si no existe la cuenta, buscar el tipo de tarjeta
-      const findTypeQuery = `
-        SELECT id FROM card_types 
-        WHERE name = $1
-        LIMIT 1
-      `;
-
-      const cardType = await client.query(findTypeQuery, [cardTypeName]);
-      let cardTypeId: number;
-
-      if (cardType.rows.length === 0) {
-        const createTypeResult = await client.query(
-          'INSERT INTO card_types (name) VALUES ($1) RETURNING id',
-          [cardTypeName]
-        );
-        cardTypeId = createTypeResult.rows[0].id;
-      } else {
-        cardTypeId = cardType.rows[0].id;
-      }
-
-      // Crear la nueva tarjeta
-      const createCardResult = await client.query(
-        `INSERT INTO cards (
-          user_id, 
-          name_account, 
-          account_holder,
-          card_type_id, 
-          bank_id,
-          balance, 
-          balance_source,
-          status_account,
-          source
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-        RETURNING id`,
-        [
-          userId,
-          nombreCuenta,
-          clienteNombre,
-          cardTypeId,
-          bankId,
-          0, // Iniciar con saldo 0, se actualizará con los movimientos
-          'cartola',
-          'active',
-          'cartola'
-        ]
-      );
-
-      await client.query('COMMIT');
-      return createCardResult.rows[0].id;
-
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+    this.movementService = new MovementService();
+    this.pool = pool; // Usar la conexión compartida
   }
 
   public uploadCartola = async (req: Request & { file?: any }, res: Response, next: NextFunction) => {
-    const crypto = await import('crypto');
-    const client = await this.pool.connect();
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No se ha proporcionado ningún archivo' });
@@ -137,57 +28,44 @@ export class CartolaController {
       if (!user) {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
+      console.log(`[CartolaController] Procesando cartola para usuario ${user.id} con plan ${user.planId}`);
 
       const fileBuffer = req.file.buffer;
+      const crypto = await import('crypto');
       const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
 
-      await client.connect();
-
-      const existing = await client.query(
+      const existing = await this.pool.query(
         'SELECT * FROM statements WHERE user_id = $1 AND file_hash = $2',
         [user.id, hash]
       );
+      
       if (existing.rows.length > 0) {
-        await client.release();
         return res.status(409).json({ error: 'Esta cartola ya ha sido subida.' });
       }
 
-      const cartola = await this.cartolaService.procesarCartolaPDF(fileBuffer);
+      // Usar el sistema correcto del MovementService
+      const result = await this.movementService.processCartolaMovements(fileBuffer, user.id, user.planId);
 
-      const cardId = await this.findOrCreateCard(
-        user.id,
-        cartola.tituloCartola,
-        cartola.clienteNombre,
-        cartola.saldoAnterior,
-        cartola.fechaHoraConsulta
-      );
-
-      await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos, user.id, user.planId, cartola.saldoFinal);
-
-      await client.query(
+      // Registrar la cartola como procesada
+      await this.pool.query(
         `INSERT INTO statements (user_id, card_id, file_hash, processed_at) 
          VALUES ($1, $2, $3, NOW())`,
-        [user.id, cardId, hash]
+        [user.id, result.cardId, hash]
       );
 
-      await client.release();
+      console.log(`[CartolaController] Cartola procesada exitosamente para usuario ${user.id}, tarjeta ${result.cardId}, ${result.movementsCount} movimientos`);
 
       res.json({
         message: 'Cartola procesada exitosamente',
-        resumen: {
-          tituloCartola: cartola.tituloCartola,
-          numeroCartola: cartola.numero,
-          fechaEmision: cartola.fechaEmision,
-          totalMovimientos: cartola.movimientos.length,
-          totalAbonos: cartola.totalAbonos,
-          totalCargos: cartola.totalCargos,
-          cardId: cardId
+        success: true,
+        data: {
+          cardId: result.cardId,
+          movementsCount: result.movementsCount
         }
       });
 
     } catch (error) {
-      client.release();
-      console.error('Error al procesar cartola:', error);
+      console.error('[CartolaController] Error al procesar cartola:', error);
 
       if (error instanceof DatabaseError) {
         if (error.message.includes('límite') || error.message.includes('no incluye')) {
@@ -196,7 +74,10 @@ export class CartolaController {
         return res.status(500).json({ error: 'Error al guardar los movimientos en la base de datos' });
       }
 
-      res.status(500).json({ error: 'Error al procesar la cartola' });
+      res.status(500).json({ 
+        error: 'Error al procesar la cartola',
+        details: error instanceof Error ? error.message : 'Error desconocido'
+      });
     }
   };
 }

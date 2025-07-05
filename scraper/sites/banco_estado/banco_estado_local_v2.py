@@ -1061,21 +1061,37 @@ class BancoEstadoScraper:
 
     async def process_and_categorize_movements(self, cuentas: List[dict], task_data: dict) -> dict:
         """
-        Procesa y categoriza los movimientos extraídos
+        Procesa y categoriza los movimientos utilizando el sistema de companies.json del backend
         """
+        import aiohttp
         import json
         import os
         
-        # Cargar companies.json para categorización
-        companies_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'backend', 'src', 'config', 'companies.json')
+        # Obtener companies.json desde el backend API
+        backend_url = os.getenv('BACKEND_URL', 'http://localhost:3000')
+        
+        # Agregar protocolo https si no está presente y es Railway
+        if 'railway.app' in backend_url and not backend_url.startswith('http'):
+            backend_url = f"https://{backend_url}"
+        
         companies = []
         
         try:
-            with open(companies_path, 'r', encoding='utf-8') as f:
-                companies = json.load(f)
-            print(f"[INFO] Cargadas {len(companies)} empresas para categorización")
+            print(f"[INFO] Obteniendo companies.json desde: {backend_url}/config/companies")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{backend_url}/config/companies") as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        if result.get('success') and result.get('data'):
+                            companies = result['data']
+                            print(f"[INFO] Cargadas {len(companies)} empresas para categorización desde API")
+                        else:
+                            print(f"[WARNING] Respuesta del backend sin datos: {result}")
+                    else:
+                        print(f"[WARNING] Error al obtener companies.json: HTTP {response.status}")
         except Exception as e:
-            print(f"[WARNING] No se pudo cargar companies.json: {e}")
+            print(f"[WARNING] No se pudo obtener companies.json desde API: {e}")
+            print(f"[WARNING] URL intentada: {backend_url}/config/companies")
         
         processed_movements = []
         categorization_stats = {
@@ -1261,6 +1277,10 @@ class BancoEstadoScraper:
         
         # URL del backend - detectar automáticamente el entorno
         backend_url = os.getenv('BACKEND_URL', 'http://localhost:3000')
+        
+        # Agregar protocolo https si no está presente y es Railway
+        if 'railway.app' in backend_url and not backend_url.startswith('http'):
+            backend_url = f"https://{backend_url}"
         
         # Preparar datos para el backend
         payload = {

@@ -613,7 +613,7 @@ export class MovementService {
     }
   }
 
-  async processCartolaMovements(buffer: Buffer, userId: number, planId: number): Promise<void> {
+  async processCartolaMovements(buffer: Buffer, userId: number, planId: number): Promise<{ cardId: number; movementsCount: number }> {
     try {
       const cartola = await this.cartolaService.procesarCartolaPDF(buffer);
       
@@ -637,6 +637,13 @@ export class MovementService {
         planId,
         cartola.saldoFinal
       );
+
+      console.log(`[MovementService] Cartola procesada: tarjeta ${card.id}, ${cartola.movimientos.length} movimientos`);
+      
+      return {
+        cardId: card.id,
+        movementsCount: cartola.movimientos.length
+      };
     } catch (error) {
       console.error('Error al procesar cartola:', error);
       throw error;

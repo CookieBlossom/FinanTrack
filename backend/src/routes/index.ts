@@ -15,6 +15,7 @@ import planRoutes from './planRoutes';
 import plansPageRoutes from './plansPageRoutes';
 import stripeRoutes from './stripeRoutes';
 import automationRoutes from './automationRoutes';
+import configRoutes from './configRoutes';
 import { DashboardController } from '../controllers/DashboardController';
 
 const router = Router();
@@ -26,6 +27,7 @@ router.use('/users', userRoutes);
 router.use('/plans-page', plansPageRoutes);
 router.use('/stripe', stripeRoutes);
 router.use('/automation', automationRoutes);
+router.use('/config', configRoutes);
 
 // Ruta especial SOLO para el scraper Python (sin autenticación)
 router.post('/scraper/process-data', dashboardController.processScraperData);
