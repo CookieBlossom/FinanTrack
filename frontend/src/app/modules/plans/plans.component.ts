@@ -82,12 +82,12 @@ export class PlansComponent implements OnInit {
     const getFrontendUrl = (): string => {
       const backendUrl = new URL(environment.apiUrl);
       const hostname = backendUrl.hostname;
-      if (hostname.includes('railway.app')) {
-        return 'https://finantrack.onrender.com';
-      }
-      if (hostname.includes('onrender.com')) {
-        return 'https://finantrack.onrender.com';
-      }
+              if (hostname.includes('railway.app')) {
+          return 'https://finantrack-frontend.onrender.com';
+        }
+        if (hostname.includes('onrender.com')) {
+          return 'https://finantrack-frontend.onrender.com';
+        }
       return 'http://localhost:4200';
     };
     
