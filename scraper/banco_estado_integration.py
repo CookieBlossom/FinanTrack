@@ -6,12 +6,30 @@ import json
 import asyncio
 import redis
 import time
+import os
 from datetime import datetime
 from banco_estado_local_v2 import BancoEstadoScraper, ScraperConfig, Credentials
 
 class ScraperIntegration:
     def __init__(self):
-        self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        # Configuración automática para Railway/local
+        redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+        
+        if redis_url.startswith('redis://'):
+            # Parse Redis URL
+            redis_info = redis_url.replace('redis://', '').split(':')
+            if len(redis_info) >= 2:
+                redis_host = redis_info[0]
+                redis_port = int(redis_info[1].split('/')[0])
+            else:
+                redis_host = 'localhost'
+                redis_port = 6379
+        else:
+            redis_host = 'localhost'
+            redis_port = 6379
+            
+        self.redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
+        print(f"[INFO] Configuración Redis: {redis_host}:{redis_port}")
         
     async def process_tasks(self):
         """Procesa tareas de la cola de Redis"""
@@ -54,75 +72,34 @@ class ScraperIntegration:
     async def execute_scraping(self, task):
         """Ejecuta el scraping usando tu scraper actual"""
         try:
-            # Configurar el scraper
+            # Configurar el scraper según el entorno
+            redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+            redis_info = redis_url.replace('redis://', '').split(':')
+            
+            if len(redis_info) >= 2:
+                redis_host = redis_info[0]
+                redis_port = int(redis_info[1].split('/')[0])
+            else:
+                redis_host = 'localhost'
+                redis_port = 6379
+            
             config = ScraperConfig(
-                redis_host='localhost',
-                redis_port=6379,
+                redis_host=redis_host,
+                redis_port=redis_port,
                 debug_mode=True
             )
             
             scraper = BancoEstadoScraper(config)
-            credentials = Credentials(
-                rut=task['data']['rut'],
-                password=task['data']['password']
-            )
             
-            # Actualizar progreso
-            await self.update_task_status(task['id'], 'processing', 'Iniciando navegador...', 20)
+            # Usar el método run del scraper que ya tiene toda la lógica
+            result = await scraper.run(task['id'], task)
             
-            # Importar Playwright aquí para evitar importar si no es necesario
-            from playwright.async_api import async_playwright
-            
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=False, slow_mo=50)
-                context = await browser.new_context(
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    locale="es-CL",
-                    permissions=["geolocation"],
-                    geolocation={"latitude": -33.4489, "longitude": -70.6693},
-                    timezone_id="America/Santiago",
-                    viewport={"width": 1920, "height": 1080}
-                )
-                
-                page = await context.new_page()
-                
-                # Actualizar progreso
-                await self.update_task_status(task['id'], 'processing', 'Haciendo login...', 30)
-                
-                # Login
-                login_exitoso = await scraper.login_banco_estado(page, credentials)
-                if not login_exitoso:
-                    await browser.close()
-                    return {'success': False, 'error': 'Login fallido'}
-                
-                # Actualizar progreso
-                await self.update_task_status(task['id'], 'processing', 'Extrayendo cuentas...', 60)
-                
-                # Extraer cuentas
-                cuentas = await scraper.extract_cuentas(page)
-                
-                # Actualizar progreso
-                await self.update_task_status(task['id'], 'processing', 'Extrayendo movimientos...', 80)
-                
-                # Extraer movimientos por cuenta
-                for cuenta in cuentas:
-                    movimientos_cuenta = await scraper.extract_movimientos_cuenta(page, cuenta)
-                    cuenta['movimientos'] = movimientos_cuenta
-                
-                await browser.close()
-                
-                # Preparar resultado
-                resultado = {
-                    "success": True,
-                    "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "cuentas": cuentas,
-                    "total_cuentas": len(cuentas),
-                    "total_movimientos": sum(len(cuenta.get('movimientos', [])) for cuenta in cuentas)
-                }
-                
-                return resultado
+            return result
                 
         except Exception as e:
+            print(f"ERROR: Error en execute_scraping: {e}")
+            import traceback
+            traceback.print_exc()
             return {'success': False, 'error': str(e)}
     
     async def update_task_status(self, task_id, status, message, progress, result=None):

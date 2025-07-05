@@ -15,6 +15,7 @@ from datetime import datetime
 from playwright.async_api import async_playwright
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List
+import aiohttp
 
 @dataclass
 class Credentials:
@@ -946,14 +947,36 @@ class BancoEstadoScraper:
                 password=task_data['data']['password']
             )
             
-            from playwright.async_api import async_playwright
-            
             async with async_playwright() as p:
-                # Configurar el navegador
-                browser = await p.chromium.launch(
-                    headless=False,
-                    slow_mo=50
-                )
+                # Configurar el navegador según el entorno
+                import os
+                
+                # Detectar si estamos en Railway
+                is_railway = os.getenv('RAILWAY_ENVIRONMENT') == 'production'
+                
+                if is_railway:
+                    # Configuración para Railway (con display virtual)
+                    browser_args = [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-web-security',
+                        '--disable-extensions',
+                        '--no-first-run',
+                        '--display=:99'
+                    ]
+                    browser = await p.chromium.launch(
+                        headless=False,  # Mantener interfaz gráfica
+                        slow_mo=50,
+                        args=browser_args
+                    )
+                else:
+                    # Configuración local (normal)
+                    browser = await p.chromium.launch(
+                        headless=False,
+                        slow_mo=50
+                    )
                 
                 # Configurar el contexto
                 context = await browser.new_context(
@@ -1158,24 +1181,25 @@ class BancoEstadoScraper:
         """
         import aiohttp
         import json
+        import os
         
-        # URL del backend (ajustar según tu configuración)
-        backend_url = "http://localhost:3000"
+        # URL del backend - detectar automáticamente el entorno
+        backend_url = os.getenv('BACKEND_URL', 'http://localhost:3000')
         
         # Preparar datos para el backend
         payload = {
             'rawMovements': movements,
-            'defaultCardId': 1,  # Ajustar según la lógica de tu aplicación
             'scraperTaskId': task_data.get('id'),
             'userId': task_data.get('user_id')
         }
         
         try:
             print(f"[INFO] Enviando {len(movements)} movimientos al backend...")
+            print(f"[INFO] Backend URL: {backend_url}")
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    f"{backend_url}/api/dashboard/scraper/movements",
+                    f"{backend_url}/scraper/process-data",
                     json=payload,
                     headers={'Content-Type': 'application/json'}
                 ) as response:
@@ -1237,7 +1261,7 @@ class BancoEstadoScraper:
             print(f" Total movimientos extraídos: {len(movements)}")
             print(f" Guardados localmente en: results/banco_estado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
             print("  Los movimientos no se guardaron en la base de datos")
-            print("  Verifica que el backend esté ejecutándose en http://localhost:3000")
+            print(f"  Verifica que el backend esté ejecutándose en {backend_url}")
             
             # Mostrar resumen de categorización local
             if movements:
@@ -1546,15 +1570,15 @@ class BancoEstadoScraper:
                 
                 print("[INFO] Click exitoso, esperando navegación...")
                 sys.stdout.flush()
-                await page.wait_for_timeout(2000)
-                await page.wait_for_load_state("networkidle", timeout=6000)
-                await page.wait_for_timeout(4000)
+                await page.wait_for_timeout(3000)
+                await page.wait_for_load_state("networkidle", timeout=15000)
+                await page.wait_for_timeout(6000)
                 print("[OK] Navegación completada")
                 sys.stdout.flush()
             except Exception as e:
                 print(f"ERROR: Error al intentar hacer click en el botón: {str(e)}")
                 raise
-            await page.wait_for_timeout(4000)
+            await page.wait_for_timeout(5000)
             modal_error = page.locator("text='ha ocurrido un error'")
             if await modal_error.count() > 0:
                 print("[WARNING] Modal de error detectado tras login")
@@ -1672,11 +1696,36 @@ async def main():
         )
         
         async with async_playwright() as p:
-            # Configurar el navegador
-            browser = await p.chromium.launch(
-                headless=False,
-                slow_mo=50
-            )
+            # Configurar el navegador según el entorno
+            import os
+            
+            # Detectar si estamos en Railway
+            is_railway = os.getenv('RAILWAY_ENVIRONMENT') == 'production'
+            
+            if is_railway:
+                # Configuración para Railway (con display virtual)
+                browser_args = [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-web-security',
+                    '--disable-extensions',
+                    '--no-first-run',
+                    '--display=:99'
+                ]
+                browser = await p.chromium.launch(
+                    headless=False,  # Mantener interfaz gráfica
+                    slow_mo=50,
+                    args=browser_args
+                )
+            else:
+                # Configuración local (normal)
+                browser = await p.chromium.launch(
+                    headless=False,
+                    slow_mo=50
+                )
+            
             # Configurar el contexto
             context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",

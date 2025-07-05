@@ -65,7 +65,7 @@ export class BancoEstadoService {
                 const transformedResult = this.transformScraperResult(scraperTask.result);
                 const task = {
                     id: taskId,
-                    userId: scraperTask.userId || 0,
+                    userId: scraperTask.user_id || 0,
                     type: scraperTask.type,
                     status: scraperTask.status,
                     message: scraperTask.message,

@@ -16,7 +16,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    origin: [process.env.FRONTEND_URL || 'http://localhost:4200', 'https://*.railway.app'],
     methods: ['GET', 'HEAD', 'PATCH' ,'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires', 'X-Timestamp'],
     credentials: true
@@ -75,29 +75,28 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Comentado para desarrollo - descomentar para producción
-initializeDatabase()
-    .then(() => {
-        console.log('Base de datos inicializada correctamente');
+// initializeDatabase()
+//     .then(() => {
+//         console.log('Base de datos inicializada correctamente');
         
-        // Inicializar cron jobs
-        cronSetup.initCronJobs();
+//         // Inicializar cron jobs
+//         cronSetup.initCronJobs();
         
-        // Iniciar el servidor solo después de confirmar la conexión a la BD
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-            console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
-            console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-        });
-    })
-    .catch(error => {
-        console.error('Error al inicializar la base de datos:', error);
-        process.exit(1);
-    });
-// DESARROLLO
-// cronSetup.initCronJobs();
+//         // Iniciar el servidor solo después de confirmar la conexión a la BD
+//         const PORT = process.env.PORT || 3000;
+//         app.listen(PORT, () => {
+//             console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
+//             console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+//         });
+//     })
+//     .catch(error => {
+//         console.error('Error al inicializar la base de datos:', error);
+//         process.exit(1);
+//     });
+cronSetup.initCronJobs();
 
-// const PORT = process.env.PORT || 3000;
-// app.listen(PORT, () => {
-//     console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
-//     console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-// }); 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+}); 

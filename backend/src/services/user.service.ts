@@ -377,9 +377,22 @@ export class UserService {
 
   async getUserById(id: number): Promise<IUser | null> {
     const query = `
-      SELECT id, email, name, password, created_at as "createdAt", updated_at as "updatedAt"
+      SELECT 
+        id, 
+        email, 
+        first_name as "firstName", 
+        last_name as "lastName", 
+        password, 
+        country_code as "countryCode", 
+        phone, 
+        role, 
+        plan_id, 
+        is_active as "isActive", 
+        created_at as "createdAt", 
+        updated_at as "updatedAt",
+        deleted_at as "deletedAt"
       FROM "user"
-      WHERE id = $1
+      WHERE id = $1 AND deleted_at IS NULL
     `;
     const result = await this.pool.query(query, [id]);
     return result.rows[0] || null;
@@ -387,9 +400,22 @@ export class UserService {
 
   async getUserByEmail(email: string): Promise<IUser | null> {
     const query = `
-      SELECT id, email, name, password, created_at as "createdAt", updated_at as "updatedAt"
+      SELECT 
+        id, 
+        email, 
+        first_name as "firstName", 
+        last_name as "lastName", 
+        password, 
+        country_code as "countryCode", 
+        phone, 
+        role, 
+        plan_id, 
+        is_active as "isActive", 
+        created_at as "createdAt", 
+        updated_at as "updatedAt",
+        deleted_at as "deletedAt"
       FROM "user"
-      WHERE email = $1
+      WHERE email = $1 AND deleted_at IS NULL
     `;
     const result = await this.pool.query(query, [email]);
     return result.rows[0] || null;

@@ -4,10 +4,6 @@ import { ScraperController } from '../controllers/ScraperController';
 
 const router = Router();
 const scraperController = new ScraperController();
-
-// Las rutas aquí ya están bajo /scraper y protegidas por authMiddleware desde routes/index.ts
-
-// Rutas principales del scraper para Banco Estado
 router.post('/task', scraperController.createTask);
 router.get('/task/:taskId', scraperController.getTaskStatus); // Corregido de getTask a getTaskStatus
 router.post('/task/:taskId/cancel', scraperController.cancelTask);

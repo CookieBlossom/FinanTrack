@@ -1,0 +1,21 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "backend"
+source = "backend"
+
+[[services]]
+name = "scraper"  
+source = "scraper"
+dockerfile = "Dockerfile"
+
+[environments.production.variables]
+NODE_ENV = "production"
+RAILWAY_ENVIRONMENT = "production" 
