@@ -79,18 +79,15 @@ export class PlansComponent implements OnInit {
       });
       return;
     }
-
-    // Derivar la URL del frontend basándose en la URL del backend
     const getFrontendUrl = (): string => {
       const backendUrl = new URL(environment.apiUrl);
       const hostname = backendUrl.hostname;
-      
-      // Si estamos en producción (Render), usar el dominio del frontend
-      if (hostname.includes('onrender.com')) {
-        return 'https://finantrack-frontend.onrender.com';
+      if (hostname.includes('railway.app')) {
+        return 'https://finantrack.onrender.com';
       }
-      
-      // En desarrollo, usar localhost:4200
+      if (hostname.includes('onrender.com')) {
+        return 'https://finantrack.onrender.com';
+      }
       return 'http://localhost:4200';
     };
     

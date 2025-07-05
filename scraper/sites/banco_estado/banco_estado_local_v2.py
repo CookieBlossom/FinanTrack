@@ -1109,27 +1109,32 @@ class BancoEstadoScraper:
     def process_single_movement(self, movimiento: dict, cuenta: dict, companies: List[dict]) -> dict:
         """
         Procesa un movimiento individual y lo categoriza
+        Estructura exacta que espera el backend según IScraperMovement
         """
         # Limpiar descripción
         descripcion = movimiento.get('descripcion', '').strip()
         descripcion_clean = self.clean_description(descripcion)
         
-        # Buscar categoría automática
-        categoria_automatica = self.find_automatic_category(descripcion_clean, companies)
+        # Extraer tipo de transacción de la descripción
+        tipo = self.extract_transaction_type(descripcion)
         
-        # Preparar movimiento procesado
+        # Extraer referencia si aplica
+        referencia = self.extract_reference(descripcion)
+        
+        # Buscar categoría automática mejorada
+        categoria_automatica = self.find_automatic_category_improved(descripcion_clean, companies)
+        
+        # Preparar movimiento procesado según interfaz IScraperMovement
         processed_movement = {
-            'fecha': movimiento.get('fecha'),
-            'descripcion': descripcion,
-            'descripcion_clean': descripcion_clean,
-            'monto': movimiento.get('monto'),
-            'tipo': movimiento.get('tipo'),
-            'cuenta': cuenta.get('numero'),
-            'tipo_cuenta': cuenta.get('tipo'),
-            'referencia': movimiento.get('referencia'),
-            'estado': movimiento.get('estado'),
-            'categoria_automatica': categoria_automatica,
-            'movement_type': 'expense' if movimiento.get('monto', 0) < 0 else 'income'
+            'fecha': movimiento.get('fecha'),                    # string - fecha ISO
+            'descripcion': descripcion,                          # string - descripción del movimiento
+            'monto': movimiento.get('monto'),                    # number - monto (+ para ingresos, - para gastos)
+            'categoria_automatica': categoria_automatica,        # string - categoría automática
+            'tipo': tipo,                                        # string - tipo de movimiento según banco
+            'cuenta': cuenta.get('numero'),                      # string - número de cuenta
+            'referencia': referencia,                            # string - referencia de transacción
+            'estado': 'completado',                              # string - estado del movimiento
+            'movement_type': 'expense' if movimiento.get('monto', 0) < 0 else 'income'  # 'income' | 'expense'
         }
         
         return processed_movement
@@ -1138,41 +1143,112 @@ class BancoEstadoScraper:
         """
         Limpia la descripción del movimiento eliminando prefijos genéricos
         """
+        import re
+        
         prefijos_a_ignorar = [
-            'TEF',
-            'COMPRA WEB',
-            'COMPRA NACIONAL',
-            'TRANSFERENCIA',
-            'PAGO',
+            'TEF A ',
+            'COMPRA WEB ',
+            'COMPRA NACIONAL ',
+            'COMPRA INTERNACIONAL ',
+            'COMPRA POS ',
+            'TRANSFERENCIA A ',
+            'TRANSFERENCIA DE ',
+            'PAGO DE ',
+            'PAGO A ',
             'FACTU CL',
-            'FACTURACION',
-            'CARGO',
-            'ABONO'
+            'FACTURACION ',
+            'CARGO POR ',
+            'ABONO DE ',
+            'GIRO EN ',
+            'DEP POR ',
+            'COMISION '
         ]
         
-        desc = descripcion.upper().strip()
+        desc = descripcion.strip()
         
+        # Eliminar prefijos comunes
         for prefijo in prefijos_a_ignorar:
-            if desc.startswith(prefijo):
+            if desc.upper().startswith(prefijo.upper()):
                 desc = desc[len(prefijo):].strip()
+        
+        # Limpiar múltiples espacios
+        desc = re.sub(r'\s+', ' ', desc)
+        
+        # Eliminar sufijos comunes
+        sufijos_a_ignorar = ['CL', 'CHILE', 'LTDA', 'S.A.']
+        for sufijo in sufijos_a_ignorar:
+            if desc.upper().endswith(' ' + sufijo.upper()):
+                desc = desc[:-len(sufijo)-1].strip()
         
         return desc
     
-    def find_automatic_category(self, descripcion: str, companies: List[dict]) -> str:
+    def extract_transaction_type(self, descripcion: str) -> str:
         """
-        Busca automáticamente la categoría basada en la descripción
+        Extrae el tipo de transacción de la descripción
         """
-        if not companies:
-            return "Otros"
+        desc_upper = descripcion.upper().strip()
         
-        descripcion_normalized = descripcion.upper().replace(' ', '')
+        # Patrones de tipos de transacción más específicos
+        tipos = {
+            'TRANSFERENCIA_ENVIADA': ['TEF A ', 'TRANSFERENCIA A '],
+            'TRANSFERENCIA_RECIBIDA': ['DEP POR TRANSFERENCIA', 'TRANSFERENCIA RECIBIDA'],
+            'COMPRA_WEB': ['COMPRA WEB'],
+            'COMPRA_PRESENCIAL': ['COMPRA NACIONAL', 'COMPRA POS'],
+            'GIRO_ATM': ['GIRO ATM', 'GIRO EN ATM'],
+            'GIRO_TRANSFERENCIA': ['GIRO POR TRANSFERENCIA'],
+            'COMISION': ['COMISION'],
+            'INTERES': ['INTERES', 'RENDIMIENTO'],
+            'AHORRO': ['AHORRO'],
+            'PAGO_SERVICIO': ['PAGO SERVICIO', 'PAGO DE SERVICIO'],
+            'ABONO': ['ABONO'],
+            'CARGO': ['CARGO']
+        }
         
-        for company in companies:
-            for keyword in company.get('keywords', []):
-                keyword_normalized = keyword.upper().replace(' ', '')
-                if keyword_normalized in descripcion_normalized:
-                    return company.get('category', 'Otros')
+        for tipo, patrones in tipos.items():
+            for patron in patrones:
+                if patron in desc_upper:
+                    return tipo
         
+        # Tipo por defecto basado en el monto
+        return 'OTROS'
+    
+    def extract_reference(self, descripcion: str) -> str:
+        """
+        Extrae número de referencia o código de la descripción cuando sea relevante
+        """
+        import re
+        
+        # Patrones para extraer referencias
+        patterns = [
+            r'REF[:\s]*(\d+)',           # REF: 123456
+            r'NRO[:\s]*(\d+)',           # NRO: 123456  
+            r'CODIGO[:\s]*(\d+)',        # CODIGO: 123456
+            r'(\d{6,})',                 # Números de 6+ dígitos
+            r'[A-Z]{2,}\s*(\d{4,})'      # Códigos alfanuméricos
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, descripcion.upper())
+            if match:
+                return match.group(1) if match.groups() else match.group(0)
+        
+        return None
+    
+    def find_automatic_category_improved(self, descripcion: str, companies: List[dict]) -> str:
+        """
+        Busca automáticamente la categoría basada en companies.json (sistema que ya funciona)
+        """
+        # Usar solo el sistema companies.json que ya funciona bien con la cartola
+        if companies:
+            descripcion_normalized = descripcion.upper().replace(' ', '')
+            
+            for company in companies:
+                for keyword in company.get('keywords', []):
+                    keyword_normalized = keyword.upper().replace(' ', '')
+                    if keyword_normalized in descripcion_normalized:
+                        return company.get('category', 'Otros')
+        
+        # Fallback a "Otros" si no encuentra coincidencia
         return "Otros"
     
     async def send_movements_to_backend(self, movements: List[dict], task_data: dict) -> None:
