@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'finantrack-production.up.railway.app' // Cambiar por tu URL real del backend en Render
+  apiUrl: 'https://finantrack-production.up.railway.app' // URL completa con https://
 };
 
 // export const environment = {

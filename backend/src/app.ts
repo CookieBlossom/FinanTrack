@@ -16,7 +16,11 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: [process.env.FRONTEND_URL || 'http://localhost:4200', 'https://*.railway.app'],
+    origin: [
+        process.env.FRONTEND_URL || 'http://localhost:4200', 
+        'https://*.railway.app',
+        'https://*.onrender.com'
+    ],
     methods: ['GET', 'HEAD', 'PATCH' ,'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires', 'X-Timestamp'],
     credentials: true
