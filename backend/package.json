@@ -7,7 +7,7 @@
     "start": "node dist/app.js",
     "dev": "nodemon --exec ts-node src/app.ts",
     "build": "tsc && npm run copy-sql",
-    "copy-sql": "cp src/config/database/schema.sql dist/config/database/",
+    "copy-sql": "shx mkdir -p dist/config/database && shx cp src/config/database/schema.sql dist/config/database/",
     "test": "jest",
     "db:reset": "psql -U postgres -d finantrack -f src/config/database/schema.sql",
     "stripe:test": "node src/test-stripe-connection.js"
@@ -61,6 +61,7 @@
     "@types/pg": "^8.6.6",
     "jest": "^29.5.0",
     "nodemon": "^2.0.22",
+    "shx": "^0.4.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0"

@@ -4,6 +4,9 @@ exports.CardTypeService = void 0;
 const errors_1 = require("../utils/errors");
 const connection_1 = require("../config/database/connection");
 class CardTypeService {
+    constructor() {
+        this.pool = connection_1.pool;
+    }
     async getAllCardTypes() {
         const query = `SELECT id, name, created_at as "createdAt", updated_at as "updatedAt" FROM card_types ORDER BY name;`;
         const result = await connection_1.pool.query(query);

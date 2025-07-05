@@ -12,7 +12,6 @@ const connection_1 = require("../config/database/connection");
 const tokenUtils_1 = require("../utils/tokenUtils");
 const mailer_1 = require("../utils/mailer");
 const templates_1 = require("../utils/templates");
-const bcrypt_1 = __importDefault(require("bcrypt"));
 class UserService {
     constructor() {
         this.SALT_ROUNDS = 10;
@@ -23,6 +22,12 @@ class UserService {
             console.log('2. Datos recibidos:', JSON.stringify(userData, null, 2));
             if (!userData.email?.trim() || !userData.password?.trim()) {
                 throw new errors_1.DatabaseError('Email y contraseña son requeridos');
+            }
+            // Verificar si el email ya existe antes de intentar insertar
+            const existingUserQuery = `SELECT id FROM "user" WHERE email = $1 AND deleted_at IS NULL`;
+            const existingUserResult = await this.pool.query(existingUserQuery, [userData.email.trim()]);
+            if (existingUserResult.rows.length > 0) {
+                throw new errors_1.UserAlreadyExistsError('El email ya está registrado en el sistema');
             }
             const hashedPassword = await (0, bcryptjs_1.hash)(userData.password, this.SALT_ROUNDS);
             const firstName = (userData.firstName || userData.first_name || '').trim();
@@ -38,10 +43,11 @@ class UserService {
           country_code,
           phone,
           role, 
+          plan_id,
           is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, email, first_name, last_name, country_code, phone, role, is_active, created_at;
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, email, first_name, last_name, country_code, phone, role, plan_id, is_active, created_at;
       `;
             const values = [
                 userData.email.trim(),
@@ -51,71 +57,80 @@ class UserService {
                 countryCode,
                 phone,
                 'user',
+                1, // Plan básico por defecto
                 true
             ];
+            let result;
             try {
-                const result = await this.pool.query(query, values);
-                const user = result.rows[0];
-                const cardTypeQuery = `SELECT id FROM card_types WHERE name = 'Efectivo' LIMIT 1;`;
-                const cardTypeResult = await this.pool.query(cardTypeQuery);
-                const efectivoCardTypeId = cardTypeResult.rows[0]?.id;
-                if (!efectivoCardTypeId) {
-                    throw new errors_1.DatabaseError('No se encontró el tipo de tarjeta Efectivo');
-                }
-                // Crear tarjeta Efectivo
-                const cardInsertQuery = `
-          INSERT INTO cards (
-            user_id, 
-            name_account, 
-            alias_account, 
-            card_type_id, 
-            balance, 
-            currency, 
-            status_account
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
-        `;
-                const cardInsertValues = [
-                    user.id,
-                    'Efectivo',
-                    'Efectivo',
-                    efectivoCardTypeId,
-                    0,
-                    'CLP',
-                    'active'
-                ];
-                await this.pool.query(cardInsertQuery, cardInsertValues);
-                return user;
+                result = await this.pool.query(query, values);
             }
             catch (dbError) {
-                console.error('Error en la ejecución de la query:', dbError);
+                // Capturar específicamente errores de PostgreSQL
                 if (dbError instanceof pg_1.DatabaseError) {
-                    console.error('Código de error PostgreSQL:', dbError.code);
-                    console.error('Detalle del error:', dbError.detail);
-                    console.error('Esquema:', dbError.schema);
-                    console.error('Tabla:', dbError.table);
-                    console.error('Columna:', dbError.column);
+                    console.error('Error PostgreSQL detectado:', {
+                        code: dbError.code,
+                        detail: dbError.detail,
+                        message: dbError.message
+                    });
+                    if (dbError.code === '23505') {
+                        // Error de clave duplicada - aunque ya verificamos, puede haber condición de carrera
+                        if (dbError.detail?.includes('user_email_key') || dbError.detail?.includes('email')) {
+                            throw new errors_1.UserAlreadyExistsError('El email ya está registrado en el sistema');
+                        }
+                        throw new errors_1.DatabaseError('Ya existe un registro con estos datos');
+                    }
+                    if (dbError.code === '23502') {
+                        throw new errors_1.DatabaseError(`Campo requerido no puede ser nulo: ${dbError.column}`);
+                    }
+                    if (dbError.code === '42P01') {
+                        throw new errors_1.DatabaseError('La tabla no existe');
+                    }
+                    // Para cualquier otro error de PostgreSQL, lanzar error genérico
+                    throw new errors_1.DatabaseError('Error al procesar la solicitud');
                 }
+                // Si no es un error de PostgreSQL, relanzarlo
                 throw dbError;
             }
+            const user = result.rows[0];
+            const cardTypeQuery = `SELECT id FROM card_types WHERE name = 'Efectivo' LIMIT 1;`;
+            const cardTypeResult = await this.pool.query(cardTypeQuery);
+            const efectivoCardTypeId = cardTypeResult.rows[0]?.id;
+            if (!efectivoCardTypeId) {
+                throw new errors_1.DatabaseError('No se encontró el tipo de tarjeta Efectivo');
+            }
+            // Crear tarjeta Efectivo
+            const cardInsertQuery = `
+        INSERT INTO cards (
+          user_id, 
+          name_account, 
+          card_type_id, 
+          balance, 
+          balance_source,
+          source,
+          status_account
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `;
+            const cardInsertValues = [
+                user.id,
+                'Efectivo',
+                efectivoCardTypeId,
+                0,
+                'manual',
+                'manual',
+                'active'
+            ];
+            await this.pool.query(cardInsertQuery, cardInsertValues);
+            return user;
         }
         catch (error) {
             console.error('Error en el registro:', error);
-            if (error instanceof pg_1.DatabaseError) {
-                if (error.code === '23505' && error.detail?.includes('user_email_key')) {
-                    throw new errors_1.UserAlreadyExistsError();
-                }
-                if (error.code === '23502') {
-                    throw new errors_1.DatabaseError(`Campo requerido no puede ser nulo: ${error.column}`);
-                }
-                if (error.code === '42P01') {
-                    throw new errors_1.DatabaseError('La tabla no existe');
-                }
-            }
-            if (error instanceof errors_1.DatabaseError) {
+            // Si ya es un error personalizado, lo relanzamos
+            if (error instanceof errors_1.UserAlreadyExistsError || error instanceof errors_1.DatabaseError) {
                 throw error;
             }
-            throw new errors_1.DatabaseError('Error al registrar el usuario: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+            // Para cualquier otro error, lanzar error genérico
+            throw new errors_1.DatabaseError('Error al registrar el usuario. Por favor, intente nuevamente.');
         }
     }
     async login(credentials) {
@@ -127,6 +142,12 @@ class UserService {
         SELECT id, email, password, first_name, last_name, role, is_active, created_at
         FROM "user"
         WHERE email = $1 AND deleted_at IS NULL;
+      `;
+            const planQuery = `
+      SELECT p.id AS plan_id, p.name AS plan_name
+      FROM "user" u
+      LEFT JOIN plans p ON u.plan_id = p.id
+      WHERE u.id = $1
       `;
             const result = await this.pool.query(query, [credentials.email.trim()]);
             const user = result.rows[0];
@@ -142,12 +163,18 @@ class UserService {
             }
             const name = (user.first_name || user.firstName || '') +
                 ((user.last_name || user.lastName) ? ' ' + (user.last_name || user.lastName) : '');
-            const token = this.generateToken({
+            const planRes = await this.pool.query(planQuery, [user.id]);
+            const planData = planRes.rows[0] || { plan_id: 1, plan_name: 'basic' };
+            const { plan_id, plan_name } = planData;
+            const payload = {
                 id: user.id,
                 email: user.email,
-                name: name.trim() || user.email, // ¡Siempre envía un 'name'!
-                role: user.role
-            });
+                name: user.email,
+                role: user.role,
+                planId: plan_id,
+                planName: plan_name
+            };
+            const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
             const { password, ...userWithoutPassword } = user;
             return {
                 user: userWithoutPassword,
@@ -164,9 +191,11 @@ class UserService {
     async getProfile(userId) {
         try {
             const query = `
-        SELECT id, email, first_name, last_name, country_code, phone, role, created_at, updated_at
-        FROM "user"
-        WHERE id = $1;
+        SELECT u.id, u.email, u.first_name, u.last_name, u.country_code, u.phone, u.role, 
+               u.created_at, u.updated_at, u.plan_id, p.name as plan_name
+        FROM "user" u
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE u.id = $1;
       `;
             const result = await this.pool.query(query, [userId]);
             if (!result.rows[0]) {
@@ -210,19 +239,26 @@ class UserService {
             if (updates.length === 0) {
                 throw new errors_1.DatabaseError('No valid fields to update');
             }
-            const query = `
+            const updateQuery = `
         UPDATE "user"
         SET ${updates.join(', ')}, updated_at = NOW()
         WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL
-        RETURNING id, email, first_name, last_name, country_code, phone, role, is_active, created_at, updated_at;
+        RETURNING id;
       `;
-            console.log('Query:', query);
-            console.log('Values:', values);
-            const result = await this.pool.query(query, values);
-            if (!result.rows[0]) {
+            const updateResult = await this.pool.query(updateQuery, values);
+            if (!updateResult.rows[0]) {
                 throw new errors_1.DatabaseError('User not found or inactive');
             }
-            return result.rows[0];
+            // Obtener los datos completos del usuario actualizado
+            const selectQuery = `
+        SELECT u.id, u.email, u.first_name, u.last_name, u.country_code, u.phone, u.role, 
+               u.is_active, u.created_at, u.updated_at, u.plan_id, p.name as plan_name
+        FROM "user" u
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE u.id = $1;
+      `;
+            const selectResult = await this.pool.query(selectQuery, [userId]);
+            return selectResult.rows[0];
         }
         catch (error) {
             console.error('Error updating profile:', error);
@@ -302,21 +338,61 @@ class UserService {
     }
     async getUserById(id) {
         const query = `
-      SELECT id, email, name, password, created_at as "createdAt", updated_at as "updatedAt"
-      FROM users
-      WHERE id = $1
+      SELECT 
+        id, 
+        email, 
+        first_name as "firstName", 
+        last_name as "lastName", 
+        password, 
+        country_code as "countryCode", 
+        phone, 
+        role, 
+        plan_id, 
+        is_active as "isActive", 
+        created_at as "createdAt", 
+        updated_at as "updatedAt",
+        deleted_at as "deletedAt"
+      FROM "user"
+      WHERE id = $1 AND deleted_at IS NULL
     `;
         const result = await this.pool.query(query, [id]);
         return result.rows[0] || null;
     }
     async getUserByEmail(email) {
         const query = `
-      SELECT id, email, name, password, created_at as "createdAt", updated_at as "updatedAt"
-      FROM users
-      WHERE email = $1
+      SELECT 
+        id, 
+        email, 
+        first_name as "firstName", 
+        last_name as "lastName", 
+        password, 
+        country_code as "countryCode", 
+        phone, 
+        role, 
+        plan_id, 
+        is_active as "isActive", 
+        created_at as "createdAt", 
+        updated_at as "updatedAt",
+        deleted_at as "deletedAt"
+      FROM "user"
+      WHERE email = $1 AND deleted_at IS NULL
     `;
         const result = await this.pool.query(query, [email]);
         return result.rows[0] || null;
+    }
+    async checkEmailExists(email) {
+        try {
+            const query = `
+        SELECT id FROM "user"
+        WHERE email = $1 AND deleted_at IS NULL;
+      `;
+            const result = await this.pool.query(query, [email.trim()]);
+            return result.rows.length > 0;
+        }
+        catch (error) {
+            console.error('Error checking email existence:', error);
+            throw new errors_1.DatabaseError('Error al verificar el email');
+        }
     }
     async findByEmail(email) {
         const query = `
@@ -358,11 +434,11 @@ class UserService {
         if (new Date(user.reset_token_expiry) < new Date()) {
             throw new errors_1.DatabaseError('El token ha expirado');
         }
-        const isSamePassword = await bcrypt_1.default.compare(newPassword, user.password);
+        const isSamePassword = await (0, bcryptjs_1.compare)(newPassword, user.password);
         if (isSamePassword) {
             throw new errors_1.DatabaseError('La nueva contraseña no puede ser igual a la anterior');
         }
-        const hashedPassword = await bcrypt_1.default.hash(newPassword, 10);
+        const hashedPassword = await (0, bcryptjs_1.hash)(newPassword, this.SALT_ROUNDS);
         await this.pool.query(`UPDATE "user"
        SET password = $1, reset_token = NULL, reset_token_expiry = NULL
        WHERE id = $2`, [hashedPassword, user.id]);

@@ -5,8 +5,12 @@ const DashboardController_1 = require("../controllers/DashboardController");
 const router = (0, express_1.Router)();
 const dashboardController = new DashboardController_1.DashboardController();
 // Rutas del dashboard
-router.get('/income-expenses', (req, res) => dashboardController.getIncomeVsExpenses(req, res));
-router.get('/category-expenses', (req, res) => dashboardController.getCategoryExpenses(req, res));
-router.get('/recent-movements', (req, res) => dashboardController.getRecentMovements(req, res));
+router.get('/income-expenses', dashboardController.getIncomeVsExpenses);
+router.get('/category-expenses', dashboardController.getCategoryExpenses);
+router.get('/recent-movements', dashboardController.getRecentMovements);
+// Ruta para procesar movimientos del scraper
+router.post('/scraper/movements', dashboardController.processScraperMovements);
+// Ruta especial para el scraper sin autenticación
+router.post('/scraper/process-data', dashboardController.processScraperData);
 exports.default = router;
 //# sourceMappingURL=dashboardRoutes.js.map

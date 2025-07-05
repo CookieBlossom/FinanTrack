@@ -10,15 +10,11 @@ function validateRut(rut) {
     try {
         // Eliminar puntos y guiones
         const cleanRut = rut.replace(/[.-]/g, '');
-        // Obtener dígito verificador
         const dv = cleanRut.slice(-1).toUpperCase();
-        // Obtener cuerpo del RUT
         const rutBody = cleanRut.slice(0, -1);
-        // Validar que el cuerpo tenga entre 7 y 8 dígitos
         if (!/^\d{7,8}$/.test(rutBody)) {
             return false;
         }
-        // Validar que el dígito verificador sea válido
         if (!/^[0-9K]$/i.test(dv)) {
             return false;
         }

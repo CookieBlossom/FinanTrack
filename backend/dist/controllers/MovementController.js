@@ -3,9 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MovementController = void 0;
 const movement_service_1 = require("../services/movement.service");
 const errors_1 = require("../utils/errors");
+const connection_1 = require("../config/database/connection");
 class MovementController {
     constructor() {
-        this.getAll = async (req, res) => {
+        this.getAll = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -23,7 +24,43 @@ class MovementController {
                 });
             }
         };
-        this.getById = async (req, res) => {
+        this.getCashMovements = async (req, res, next) => {
+            try {
+                const userId = req.user?.id;
+                if (!userId) {
+                    res.status(401).json({ message: 'Usuario no autenticado' });
+                    return;
+                }
+                const cashMovements = await this.movementService.getCashMovementsByUser(userId);
+                res.json(cashMovements);
+            }
+            catch (error) {
+                console.error('Error al obtener movimientos en efectivo:', error);
+                res.status(500).json({
+                    message: 'Error al obtener los movimientos en efectivo',
+                    error: error instanceof Error ? error.message : 'Error desconocido'
+                });
+            }
+        };
+        this.getCardMovements = async (req, res, next) => {
+            try {
+                const userId = req.user?.id;
+                if (!userId) {
+                    res.status(401).json({ message: 'Usuario no autenticado' });
+                    return;
+                }
+                const cardMovements = await this.movementService.getCardMovementsByUser(userId);
+                res.json(cardMovements);
+            }
+            catch (error) {
+                console.error('Error al obtener movimientos de tarjetas:', error);
+                res.status(500).json({
+                    message: 'Error al obtener los movimientos de tarjetas',
+                    error: error instanceof Error ? error.message : 'Error desconocido'
+                });
+            }
+        };
+        this.getById = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -31,6 +68,10 @@ class MovementController {
                     return;
                 }
                 const id = parseInt(req.params.id);
+                if (isNaN(id)) {
+                    res.status(400).json({ message: 'ID de movimiento inválido' });
+                    return;
+                }
                 const movement = await this.movementService.getMovementById(id);
                 if (!movement) {
                     res.status(404).json({ message: 'Movimiento no encontrado' });
@@ -46,27 +87,29 @@ class MovementController {
                 });
             }
         };
-        this.getByFilters = async (req, res) => {
+        this.getByFilters = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
                     res.status(401).json({ message: 'Usuario no autenticado' });
                     return;
                 }
+                // Determinar si los datos vienen del body (POST) o query params (GET)
+                const source = req.method === 'POST' ? req.body : req.query;
                 const filters = {
                     userId,
-                    cardId: req.query.cardId ? parseInt(req.query.cardId) : undefined,
-                    categoryId: req.query.categoryId ? parseInt(req.query.categoryId) : undefined,
-                    movementType: req.query.movementType,
-                    movementSource: req.query.movementSource,
-                    startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
-                    endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
-                    minAmount: req.query.minAmount ? parseFloat(req.query.minAmount) : undefined,
-                    maxAmount: req.query.maxAmount ? parseFloat(req.query.maxAmount) : undefined,
-                    limit: req.query.limit ? parseInt(req.query.limit) : undefined,
-                    offset: req.query.offset ? parseInt(req.query.offset) : undefined,
-                    orderBy: req.query.orderBy,
-                    orderDirection: req.query.orderDirection
+                    cardId: source.cardId ? parseInt(source.cardId) : undefined,
+                    categoryId: source.categoryId ? parseInt(source.categoryId) : undefined,
+                    movementType: source.movementType,
+                    movementSource: source.movementSource,
+                    startDate: source.startDate ? new Date(source.startDate) : undefined,
+                    endDate: source.endDate ? new Date(source.endDate) : undefined,
+                    minAmount: source.minAmount ? parseFloat(source.minAmount) : undefined,
+                    maxAmount: source.maxAmount ? parseFloat(source.maxAmount) : undefined,
+                    limit: source.limit ? parseInt(source.limit) : undefined,
+                    offset: source.offset ? parseInt(source.offset) : undefined,
+                    orderBy: source.orderBy,
+                    orderDirection: source.orderDirection
                 };
                 const movements = await this.movementService.getMovements(filters);
                 res.json(movements);
@@ -79,22 +122,51 @@ class MovementController {
                 });
             }
         };
-        this.create = async (req, res) => {
+        this.create = async (req, res, next) => {
             try {
-                const userId = req.user?.id;
-                if (!userId) {
+                const user = req.user;
+                if (!user) {
                     res.status(401).json({ message: 'Usuario no autenticado para crear movimiento' });
                     return;
                 }
+                console.log(`[MovementController] Datos recibidos del frontend:`, req.body);
+                console.log(`[MovementController] Monto recibido: ${req.body.amount} (tipo: ${typeof req.body.amount})`);
                 const movementData = {
                     ...req.body,
+                    amount: Number(req.body.amount), // Asegurar que sea número
                     transactionDate: new Date(req.body.transactionDate)
                 };
+                console.log(`[MovementController] Monto después de conversión: ${movementData.amount} (tipo: ${typeof movementData.amount})`);
+                // Si es un movimiento de efectivo (useCashCard = true), asignar automáticamente la tarjeta de efectivo
+                if (req.body.useCashCard) {
+                    try {
+                        const efectivoCardQuery = `
+                        SELECT c.id 
+                        FROM cards c 
+                        JOIN card_types ct ON c.card_type_id = ct.id 
+                        WHERE c.user_id = $1 AND c.status_account = 'active' 
+                        AND ct.name = 'Efectivo' 
+                        LIMIT 1
+                    `;
+                        const efectivoCardResult = await this.pool.query(efectivoCardQuery, [user.id]);
+                        const efectivoCardId = efectivoCardResult.rows[0]?.id;
+                        if (!efectivoCardId) {
+                            res.status(400).json({ message: 'No se encontró una tarjeta de efectivo configurada' });
+                            return;
+                        }
+                        movementData.cardId = efectivoCardId;
+                    }
+                    catch (error) {
+                        console.error('Error al obtener tarjeta de efectivo:', error);
+                        res.status(500).json({ message: 'Error al procesar movimiento de efectivo' });
+                        return;
+                    }
+                }
                 if (!this.validateMovementData(movementData)) {
                     res.status(400).json({ message: 'Datos del movimiento incompletos o inválidos' });
                     return;
                 }
-                const newMovement = await this.movementService.createMovement(movementData, userId);
+                const newMovement = await this.movementService.createMovement(movementData, user.id, user.planId);
                 res.status(201).json(newMovement);
             }
             catch (error) {
@@ -105,7 +177,7 @@ class MovementController {
                 });
             }
         };
-        this.update = async (req, res) => {
+        this.update = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -113,6 +185,10 @@ class MovementController {
                     return;
                 }
                 const id = parseInt(req.params.id);
+                if (isNaN(id)) {
+                    res.status(400).json({ message: 'ID de movimiento inválido' });
+                    return;
+                }
                 const movementData = {
                     ...req.body,
                     transactionDate: req.body.transactionDate ? new Date(req.body.transactionDate) : undefined
@@ -136,7 +212,7 @@ class MovementController {
                 });
             }
         };
-        this.delete = async (req, res) => {
+        this.delete = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -144,6 +220,10 @@ class MovementController {
                     return;
                 }
                 const id = parseInt(req.params.id);
+                if (isNaN(id)) {
+                    res.status(400).json({ message: 'ID de movimiento inválido' });
+                    return;
+                }
                 await this.movementService.deleteMovement(id, userId);
                 res.status(200).json({ message: 'Movimiento eliminado correctamente' });
             }
@@ -167,10 +247,10 @@ class MovementController {
                 }
             }
         };
-        this.uploadCartola = async (req, res) => {
+        this.uploadCartola = async (req, res, next) => {
             try {
-                const userId = req.user?.id;
-                if (!userId) {
+                const user = req.user;
+                if (!user) {
                     res.status(401).json({ message: 'Usuario no autenticado' });
                     return;
                 }
@@ -178,12 +258,8 @@ class MovementController {
                     res.status(400).json({ error: 'No se ha proporcionado ningún archivo' });
                     return;
                 }
-                if (req.file.mimetype !== 'application/pdf') {
-                    res.status(400).json({ error: 'El archivo debe ser un PDF' });
-                    return;
-                }
-                await this.movementService.processCartolaMovements(req.file.buffer, userId);
-                res.json({ message: 'Cartola procesada exitosamente' });
+                await this.movementService.processCartolaMovements(req.file.buffer, user.id, user.planId);
+                res.status(200).json({ message: 'Cartola procesada correctamente' });
             }
             catch (error) {
                 console.error('Error al procesar cartola:', error);
@@ -193,13 +269,29 @@ class MovementController {
                 });
             }
         };
+        this.getMonthlySummary = async (req, res, next) => {
+            try {
+                const userId = req.user?.id;
+                const { month } = req.query;
+                if (!userId || !month || typeof month !== 'string') {
+                    res.status(400).json({ message: 'Faltan parámetros' });
+                    return;
+                }
+                const summary = await this.movementService.getMonthlySummary(userId, month);
+                res.json(summary);
+            }
+            catch (error) {
+                console.error('Error al obtener resumen mensual:', error);
+                res.status(500).json({ message: 'Error al obtener el resumen mensual' });
+            }
+        };
         this.movementService = new movement_service_1.MovementService();
+        this.pool = connection_1.pool;
     }
     validateMovementData(data) {
         return !!(data.cardId &&
             data.amount &&
             data.movementType &&
-            data.movementSource &&
             data.transactionDate);
     }
 }

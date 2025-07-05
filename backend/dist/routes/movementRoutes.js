@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const authMiddleware_1 = require("../middlewares/authMiddleware");
 const MovementController_1 = require("../controllers/MovementController");
 const multer_1 = __importDefault(require("multer"));
 const router = (0, express_1.Router)();
@@ -25,21 +24,17 @@ const upload = (0, multer_1.default)({
         }
     },
 });
-// Aplicar middleware de autenticación a todas las rutas de movimientos
-router.use(authMiddleware_1.authMiddleware);
-// Obtener todos los movimientos
+// Las rutas aquí ya están protegidas por authMiddleware desde routes/index.ts
 router.get('/', movementController.getAll);
-// Obtener movimientos filtrados
+router.get('/cash', movementController.getCashMovements);
+router.get('/card-movements', movementController.getCardMovements);
 router.get('/filter', movementController.getByFilters);
-// Obtener un movimiento por ID
+router.post('/filter', movementController.getByFilters); // Agregar ruta POST para filtros
+router.get('/monthly-summary', movementController.getMonthlySummary);
 router.get('/:id', movementController.getById);
-// Crear un nuevo movimiento
 router.post('/', movementController.create);
-// Actualizar un movimiento
 router.put('/:id', movementController.update);
-// Eliminar un movimiento
 router.delete('/:id', movementController.delete);
-// Nueva ruta para procesar cartolas
 router.post('/cartola', upload.single('cartola'), movementController.uploadCartola);
 exports.default = router;
 //# sourceMappingURL=movementRoutes.js.map

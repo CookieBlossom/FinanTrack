@@ -8,19 +8,22 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const connection_1 = require("./config/database/connection");
 const index_1 = __importDefault(require("./routes/index"));
+const cron_setup_1 = require("./utils/cron-setup");
 // Cargar variables de entorno
 dotenv_1.default.config();
-console.log('Variables de entorno cargadas');
 console.log('Puerto configurado:', process.env.PORT || 3000);
 console.log('Base de datos:', process.env.DB_NAME || 'finantrack');
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: [process.env.FRONTEND_URL || 'http://localhost:4200', 'https://*.railway.app'],
+    methods: ['GET', 'HEAD', 'PATCH', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires', 'X-Timestamp'],
     credentials: true
 }));
+// Middleware para manejar el body raw de Stripe webhook
+app.use('/stripe/webhook', express_1.default.raw({ type: 'application/json' }));
+// Middleware para JSON en todas las demás rutas
 app.use(express_1.default.json());
 // Rutas de la API
 app.use('/', index_1.default);
@@ -50,20 +53,26 @@ app.get('/health', async (req, res) => {
         });
     }
 });
-// Inicializar la base de datos al arrancar
-console.log('Intentando conectar a la base de datos...');
-(0, connection_1.initializeDatabase)()
-    .then(() => {
-    console.log('Base de datos inicializada correctamente');
-    // Iniciar el servidor solo después de confirmar la conexión a la BD
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`Servidor corriendo en http://localhost:${PORT}`);
-        console.log(`Ruta de salud: http://localhost:${PORT}/health`);
+// Ruta para ejecutar procesamiento manual (solo para desarrollo)
+if (process.env.NODE_ENV === 'development') {
+    app.post('/dev/run-automation', async (req, res) => {
+        try {
+            await cron_setup_1.cronSetup.runManualProcessing();
+            res.json({ success: true, message: 'Procesamiento manual ejecutado' });
+        }
+        catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error en procesamiento manual',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
     });
-})
-    .catch(error => {
-    console.error('Error al inicializar la base de datos:', error);
-    process.exit(1);
+}
+cron_setup_1.cronSetup.initCronJobs();
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
 //# sourceMappingURL=app.js.map

@@ -39,7 +39,7 @@ const errors_1 = require("../utils/errors");
 const pg_1 = require("pg");
 class CartolaController {
     constructor() {
-        this.uploadCartola = async (req, res) => {
+        this.uploadCartola = async (req, res, next) => {
             const crypto = await Promise.resolve().then(() => __importStar(require('crypto')));
             const client = await this.pool.connect();
             try {
@@ -49,23 +49,23 @@ class CartolaController {
                 if (req.file.mimetype !== 'application/pdf') {
                     return res.status(400).json({ error: 'El archivo debe ser un PDF' });
                 }
-                const userId = req.user?.id;
-                if (!userId) {
+                const user = req.user;
+                if (!user) {
                     return res.status(401).json({ error: 'Usuario no autenticado' });
                 }
                 const fileBuffer = req.file.buffer;
                 const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
                 await client.connect();
-                const existing = await client.query('SELECT * FROM statements WHERE user_id = $1 AND file_hash = $2', [userId, hash]);
+                const existing = await client.query('SELECT * FROM statements WHERE user_id = $1 AND file_hash = $2', [user.id, hash]);
                 if (existing.rows.length > 0) {
                     await client.release();
                     return res.status(409).json({ error: 'Esta cartola ya ha sido subida.' });
                 }
                 const cartola = await this.cartolaService.procesarCartolaPDF(fileBuffer);
-                const cardId = await this.findOrCreateCard(userId, cartola.tituloCartola, cartola.clienteNombre, cartola.saldoAnterior, cartola.fechaHoraConsulta);
-                await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos);
+                const cardId = await this.findOrCreateCard(user.id, cartola.tituloCartola, cartola.clienteNombre, cartola.saldoAnterior, cartola.fechaHoraConsulta);
+                await this.cartolaService.guardarMovimientos(cardId, cartola.movimientos, user.id, user.planId, cartola.saldoFinal);
                 await client.query(`INSERT INTO statements (user_id, card_id, file_hash, processed_at) 
-         VALUES ($1, $2, $3, NOW())`, [userId, cardId, hash]);
+         VALUES ($1, $2, $3, NOW())`, [user.id, cardId, hash]);
                 await client.release();
                 res.json({
                     message: 'Cartola procesada exitosamente',
@@ -84,6 +84,9 @@ class CartolaController {
                 client.release();
                 console.error('Error al procesar cartola:', error);
                 if (error instanceof errors_1.DatabaseError) {
+                    if (error.message.includes('límite') || error.message.includes('no incluye')) {
+                        return res.status(403).json({ error: error.message });
+                    }
                     return res.status(500).json({ error: 'Error al guardar los movimientos en la base de datos' });
                 }
                 res.status(500).json({ error: 'Error al procesar la cartola' });
@@ -102,37 +105,32 @@ class CartolaController {
         const client = await this.pool.connect();
         try {
             await client.query('BEGIN');
-            const nombreCuenta = tituloCartola
-                .replace(/^CARTOLA\s+/i, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-            console.log('Nombre de cuenta procesado:', nombreCuenta);
-            const aliasAccount = `${clienteNombre} - ${fechaConsulta.toISOString().split('T')[0]}`;
-            const findCardQuery = `
-        SELECT id 
-        FROM cards 
-        WHERE user_id = $1 
-        AND name_account = $2
+            // Extraer el número de cuenta del título
+            const numeroMatch = tituloCartola.match(/N°\s*(\d+)/i);
+            const numeroCuenta = numeroMatch ? numeroMatch[1] : '';
+            // Determinar el tipo de cuenta y banco
+            let nombreCuenta = `CuentaRUT - ${numeroCuenta}`;
+            let cardTypeName = 'CUENTA RUT';
+            const bankId = 1; // BancoEstado
+            // Buscar una CuentaRUT existente de BancoEstado
+            const findRutAccountQuery = `
+        SELECT c.id 
+        FROM cards c
+        JOIN card_types ct ON c.card_type_id = ct.id
+        WHERE c.user_id = $1 
+        AND ct.name = $2
+        AND c.bank_id = $3
+        AND c.status_account = 'active'
+        LIMIT 1
       `;
-            const existingCard = await client.query(findCardQuery, [userId, nombreCuenta]);
-            if (existingCard.rows.length > 0) {
-                await client.query('UPDATE cards SET balance = $1 WHERE id = $2', [saldoAnterior, existingCard.rows[0].id]);
+            const existingRutAccount = await client.query(findRutAccountQuery, [userId, cardTypeName, bankId]);
+            if (existingRutAccount.rows.length > 0) {
+                // Actualizar el saldo de la cuenta existente
+                await client.query('UPDATE cards SET balance = balance + $1 WHERE id = $2', [saldoAnterior, existingRutAccount.rows[0].id]);
                 await client.query('COMMIT');
-                return existingCard.rows[0].id;
+                return existingRutAccount.rows[0].id;
             }
-            let cardTypeName = 'OTRO';
-            if (nombreCuenta.includes('CUENTARUT')) {
-                cardTypeName = 'CUENTA RUT';
-            }
-            else if (nombreCuenta.includes('CREDITO')) {
-                cardTypeName = 'TARJETA DE CREDITO';
-            }
-            else if (nombreCuenta.includes('DEBITO')) {
-                cardTypeName = 'TARJETA DE DEBITO';
-            }
-            else if (nombreCuenta.includes('AHORRO')) {
-                cardTypeName = 'CUENTA DE AHORRO';
-            }
+            // Si no existe la cuenta, buscar el tipo de tarjeta
             const findTypeQuery = `
         SELECT id FROM card_types 
         WHERE name = $1
@@ -147,23 +145,28 @@ class CartolaController {
             else {
                 cardTypeId = cardType.rows[0].id;
             }
+            // Crear la nueva tarjeta
             const createCardResult = await client.query(`INSERT INTO cards (
           user_id, 
           name_account, 
-          alias_account,
+          account_holder,
           card_type_id, 
+          bank_id,
           balance, 
-          currency, 
-          status_account
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7) 
+          balance_source,
+          status_account,
+          source
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
         RETURNING id`, [
                 userId,
                 nombreCuenta,
-                aliasAccount,
+                clienteNombre,
                 cardTypeId,
-                saldoAnterior,
-                'CLP',
-                'active'
+                bankId,
+                0, // Iniciar con saldo 0, se actualizará con los movimientos
+                'cartola',
+                'active',
+                'cartola'
             ]);
             await client.query('COMMIT');
             return createCardResult.rows[0].id;

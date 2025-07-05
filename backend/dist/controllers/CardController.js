@@ -5,9 +5,10 @@ const card_service_1 = require("../services/card.service");
 const errors_1 = require("../utils/errors");
 const cardSchema_1 = require("../validators/cardSchema");
 const zod_1 = require("zod");
+const plan_service_1 = require("../services/plan.service");
 class CardController {
     constructor() {
-        this.getAllCards = async (req, res) => {
+        this.getAllCards = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -26,7 +27,7 @@ class CardController {
                 }
             }
         };
-        this.getCardById = async (req, res) => {
+        this.getCardById = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -50,7 +51,7 @@ class CardController {
                 }
             }
         };
-        this.getTotalBalanceByUserId = async (req, res) => {
+        this.getTotalBalanceByUserId = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -64,10 +65,10 @@ class CardController {
                 res.status(500).json({ error: 'Error al obtener el total de saldos' });
             }
         };
-        this.createCard = async (req, res) => {
+        this.createCard = async (req, res, next) => {
             try {
-                const userId = req.user?.id;
-                if (!userId) {
+                const user = req.user;
+                if (!user) {
                     res.status(401).json({ error: 'Usuario no autenticado' });
                     return;
                 }
@@ -75,18 +76,29 @@ class CardController {
                 // Prevenir tarjetas duplicadas
                 const { nameAccount, cardTypeId, bankId } = validatedData;
                 const safeBankId = typeof bankId === 'number' ? bankId : undefined;
-                if (await this.cardService.cardExists(userId, nameAccount, cardTypeId, bankId)) {
+                if (await this.cardService.cardExists(user.id, nameAccount, cardTypeId, bankId)) {
                     res.status(409).json({
                         error: 'Ya existe una tarjeta con este nombre, banco y tipo para este usuario.'
                     });
                     return;
                 }
-                const card = await this.cardService.createCard({
-                    ...validatedData,
-                    userId,
-                    bankId: safeBankId // para asegurarte que no va null
-                });
-                res.status(201).json(card);
+                try {
+                    // 1) Límite de tarjetas
+                    const limits = await this.planService.getLimitsForPlan(user.planId);
+                    if (limits.max_cards !== -1) {
+                        const used = await this.cardService.countAllManualCards(user.id);
+                        if (used >= limits.max_cards) {
+                            res.status(403).json({
+                                error: `Has alcanzado el límite de ${limits.max_cards} tarjetas`
+                            });
+                            return;
+                        }
+                    }
+                    // 2) Crear tarjeta pasándole planId también
+                    const card = await this.cardService.createCard({ ...validatedData, userId: user.id, bankId: safeBankId }, user.id, user.planId);
+                    res.status(201).json(card);
+                }
+                catch (error) { /* … */ }
             }
             catch (error) {
                 if (error instanceof zod_1.ZodError) {
@@ -106,7 +118,7 @@ class CardController {
                 }
             }
         };
-        this.updateCard = async (req, res) => {
+        this.updateCard = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -140,7 +152,7 @@ class CardController {
                 }
             }
         };
-        this.deleteCard = async (req, res) => {
+        this.deleteCard = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -164,7 +176,7 @@ class CardController {
                 }
             }
         };
-        this.syncCardsFromUser = async (req, res) => {
+        this.syncCardsFromUser = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -179,7 +191,7 @@ class CardController {
                 res.status(500).json({ error: 'Error al sincronizar tarjetas del usuario' });
             }
         };
-        this.updateBalance = async (req, res) => {
+        this.updateBalance = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -196,8 +208,8 @@ class CardController {
                     res.status(400).json({ error: 'El monto debe ser un número' });
                     return;
                 }
-                const card = await this.cardService.updateBalance(id, userId, amount);
-                res.json(card);
+                await this.cardService.updateBalance(id, userId, amount);
+                res.json({ message: 'Saldo actualizado correctamente' });
             }
             catch (error) {
                 if (error instanceof errors_1.DatabaseError) {
@@ -209,6 +221,7 @@ class CardController {
             }
         };
         this.cardService = new card_service_1.CardService();
+        this.planService = new plan_service_1.PlanService();
     }
 }
 exports.CardController = CardController;

@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const authMiddleware = async (req, res, next) => {
+const authMiddleware = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -18,7 +18,7 @@ const authMiddleware = async (req, res, next) => {
             return;
         }
         try {
-            const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+            const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || '2004');
             // Asegurar que el token decodificado tenga un rol
             if (!decoded.role) {
                 decoded.role = 'user'; // Rol por defecto
@@ -26,6 +26,7 @@ const authMiddleware = async (req, res, next) => {
             if (!decoded.name) {
                 decoded.name = decoded.email;
             }
+            // Asignar el usuario al request
             req.user = decoded;
             next();
         }

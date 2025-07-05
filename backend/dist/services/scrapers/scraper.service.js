@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScraperService = void 0;
+const plan_service_1 = require("../plan.service");
+const errors_1 = require("../../utils/errors");
 // import { ConfigService } from '@nestjs/config'; // No se usa directamente, usamos process.env si es necesario
 const uuid_1 = require("uuid");
 // Cargar dotenv para asegurar que process.env esté poblado
@@ -13,8 +15,34 @@ dotenv_1.default.config();
 class ScraperService {
     constructor(redisService) {
         this.redisService = redisService;
+        this.planService = new plan_service_1.PlanService();
+    }
+    // Verificar límites de uso del scraper
+    async checkScraperLimits(userId, planId) {
+        const limits = await this.planService.getLimitsForPlan(planId);
+        const maxScrapes = limits.monthly_scrapes || 0; // Por defecto 0 si no está definido
+        if (maxScrapes === -1) {
+            return; // Ilimitado
+        }
+        const currentMonth = new Date();
+        const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const tasks = await this.getAllTasks(userId);
+        const monthlyTasks = tasks.filter(task => new Date(task.createdAt) >= startOfMonth);
+        if (monthlyTasks.length >= maxScrapes) {
+            throw new errors_1.DatabaseError(`Has alcanzado el límite de ${maxScrapes} sincronizaciones por mes para tu plan.`);
+        }
+    }
+    // Verificar permisos del scraper
+    async checkScraperPermission(planId) {
+        const hasPermission = await this.planService.hasPermission(planId, 'scraper_access');
+        if (!hasPermission) {
+            throw new errors_1.DatabaseError('Tu plan no incluye la funcionalidad de sincronización automática.');
+        }
     }
     async createTask(data) {
+        // Verificar permisos y límites antes de crear la tarea
+        await this.checkScraperPermission(data.planId);
+        await this.checkScraperLimits(data.userId, data.planId);
         const taskId = (0, uuid_1.v4)();
         const task = {
             id: taskId,

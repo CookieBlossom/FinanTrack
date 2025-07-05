@@ -4,7 +4,7 @@ exports.ProjectedMovementController = void 0;
 const projectedMovement_service_1 = require("../services/projectedMovement.service");
 class ProjectedMovementController {
     constructor() {
-        this.getAll = async (req, res) => {
+        this.getAll = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -22,7 +22,7 @@ class ProjectedMovementController {
                 });
             }
         };
-        this.getById = async (req, res) => {
+        this.getById = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -45,7 +45,7 @@ class ProjectedMovementController {
                 });
             }
         };
-        this.getByFilters = async (req, res) => {
+        this.getByFilters = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -77,34 +77,34 @@ class ProjectedMovementController {
                 });
             }
         };
-        this.create = async (req, res) => {
+        this.create = async (req, res, next) => {
+            const user = req.user;
+            if (!user) {
+                res.status(401).json({ message: 'Usuario no autenticado' });
+                return;
+            }
+            const body = req.body;
             try {
-                const userId = req.user?.id;
-                if (!userId) {
-                    res.status(401).json({ message: 'Usuario no autenticado' });
-                    return;
-                }
-                const movementData = {
-                    ...req.body,
-                    userId,
-                    expectedDate: new Date(req.body.expectedDate)
-                };
-                if (!this.validateProjectedMovementData(movementData)) {
-                    res.status(400).json({ message: 'Datos del movimiento proyectado incompletos o inválidos' });
-                    return;
-                }
-                const newMovement = await this.projectedMovementService.createProjectedMovement(movementData);
+                const newMovement = await this.projectedMovementService.createProjectedMovement({
+                    userId: user.id,
+                    planId: user.planId,
+                    categoryId: body.categoryId,
+                    cardId: body.cardId,
+                    amount: body.amount,
+                    description: body.description,
+                    movementType: body.movementType,
+                    expectedDate: body.expectedDate,
+                    probability: body.probability,
+                    recurrenceType: body.recurrenceType
+                });
                 res.status(201).json(newMovement);
             }
-            catch (error) {
-                console.error('Error al crear movimiento proyectado:', error);
-                res.status(500).json({
-                    message: 'Error al crear el movimiento proyectado',
-                    error: error instanceof Error ? error.message : 'Error desconocido'
-                });
+            catch (err) {
+                const message = err instanceof Error ? err.message : 'Error desconocido';
+                res.status(403).json({ message });
             }
         };
-        this.update = async (req, res) => {
+        this.update = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -135,7 +135,7 @@ class ProjectedMovementController {
                 });
             }
         };
-        this.delete = async (req, res) => {
+        this.delete = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
@@ -154,6 +154,24 @@ class ProjectedMovementController {
                 console.error('Error al eliminar movimiento proyectado:', error);
                 res.status(500).json({
                     message: 'Error al eliminar el movimiento proyectado',
+                    error: error instanceof Error ? error.message : 'Error desconocido'
+                });
+            }
+        };
+        this.getIntelligent = async (req, res, next) => {
+            try {
+                const userId = req.user?.id;
+                if (!userId) {
+                    res.status(401).json({ message: 'Usuario no autenticado' });
+                    return;
+                }
+                const movements = await this.projectedMovementService.getIntelligentProjectedMovements(userId);
+                res.json(movements);
+            }
+            catch (error) {
+                console.error('Error al obtener movimientos proyectados inteligentes:', error);
+                res.status(500).json({
+                    message: 'Error al obtener los movimientos proyectados inteligentes',
                     error: error instanceof Error ? error.message : 'Error desconocido'
                 });
             }

@@ -18,18 +18,61 @@ class UserController {
             }
             catch (error) {
                 console.error('Error en el controlador durante el registro:', error);
+                // Manejar UserAlreadyExistsError específicamente
+                if (error instanceof errors_1.UserAlreadyExistsError) {
+                    return res.status(409).json({
+                        success: false,
+                        message: error.message,
+                        error: 'EMAIL_EXISTS'
+                    });
+                }
+                // Manejar DatabaseError
                 if (error instanceof errors_1.DatabaseError) {
                     return res.status(400).json({
                         success: false,
-                        message: error.message
+                        message: error.message,
+                        error: 'VALIDATION_ERROR'
                     });
                 }
-                if (error instanceof errors_1.UserAlreadyExistsError) {
-                    return res.status(409).json({ message: error.message });
+                // Error genérico
+                console.error('Error no manejado:', error);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error interno del servidor',
+                    error: 'INTERNAL_ERROR'
+                });
+            }
+        };
+        this.checkEmailExists = async (req, res) => {
+            try {
+                const { email } = req.body;
+                if (!email || !email.trim()) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'El email es requerido',
+                        error: 'EMAIL_REQUIRED'
+                    });
+                }
+                const exists = await this.userService.checkEmailExists(email.trim());
+                return res.status(200).json({
+                    success: true,
+                    exists: exists,
+                    message: exists ? 'El email ya está registrado' : 'El email está disponible'
+                });
+            }
+            catch (error) {
+                console.error('Error al verificar email:', error);
+                if (error instanceof errors_1.DatabaseError) {
+                    return res.status(400).json({
+                        success: false,
+                        message: error.message,
+                        error: 'VALIDATION_ERROR'
+                    });
                 }
                 return res.status(500).json({
                     success: false,
-                    message: 'Error interno del servidor'
+                    message: 'Error interno del servidor',
+                    error: 'INTERNAL_ERROR'
                 });
             }
         };

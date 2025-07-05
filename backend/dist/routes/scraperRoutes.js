@@ -5,16 +5,15 @@ const ScraperController_1 = require("../controllers/ScraperController");
 // import { authMiddleware } from '../middlewares/authMiddleware'; // authMiddleware ya se aplica en index.ts para /scraper
 const router = (0, express_1.Router)();
 const scraperController = new ScraperController_1.ScraperController();
-// Las rutas aquí ya están bajo /scraper y protegidas por authMiddleware desde routes/index.ts
-// Rutas principales del scraper para Banco Estado
 router.post('/task', scraperController.createTask);
 router.get('/task/:taskId', scraperController.getTaskStatus); // Corregido de getTask a getTaskStatus
 router.post('/task/:taskId/cancel', scraperController.cancelTask);
+router.get('/tasks', scraperController.getUserTasks); // Obtener historial de tareas del usuario
 // --- Rutas Antiguas/No Implementadas en el ScraperController actual ---
 // Se comentan porque ScraperController fue simplificado para enfocarse en el flujo de Banco Estado.
 // Para reactivarlas, ScraperController necesitaría implementar los métodos correspondientes
 // y potencialmente interactuar con un GeneralScraperService más completo.
-// router.get('/tasks', scraperController.getAllTasks); // Método no implementado en ScraperController actual
+// router.get('/tasks', scraperController.getAllTasks); // Método no implementado en ScraperController actual (ahora implementado como getUserTasks)
 // router.get('/status', scraperController.getScraperStatus); // Método no implementado
 // router.post('/cleanup', scraperController.cleanupTasks); // Método no implementado
 // Las siguientes rutas modificaban req.body y llamaban a createTask.

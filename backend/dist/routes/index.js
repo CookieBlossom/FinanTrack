@@ -16,17 +16,27 @@ const authMiddleware_1 = require("../middlewares/authMiddleware");
 const bankRoutes_1 = __importDefault(require("./bankRoutes"));
 const movementRoutes_1 = __importDefault(require("./movementRoutes"));
 const categoryRoutes_1 = __importDefault(require("./categoryRoutes"));
+const planRoutes_1 = __importDefault(require("./planRoutes"));
+const plansPageRoutes_1 = __importDefault(require("./plansPageRoutes"));
+const stripeRoutes_1 = __importDefault(require("./stripeRoutes"));
+const automationRoutes_1 = __importDefault(require("./automationRoutes"));
+const DashboardController_1 = require("../controllers/DashboardController");
 const router = (0, express_1.Router)();
 const protectedRouter = (0, express_1.Router)();
-// Aplicar middleware de autenticación a todas las rutas protegidas
-protectedRouter.use(authMiddleware_1.authMiddleware);
+const dashboardController = new DashboardController_1.DashboardController();
 // Rutas públicas (no requieren autenticación)
 router.use('/users', userRoutes_1.default);
-// Ruta de prueba para verificar que el router está funcionando
+router.use('/plans-page', plansPageRoutes_1.default);
+router.use('/stripe', stripeRoutes_1.default);
+router.use('/automation', automationRoutes_1.default);
+// Ruta especial SOLO para el scraper Python (sin autenticación)
+router.post('/scraper/process-data', dashboardController.processScraperData);
 router.get('/', (req, res) => {
-    res.json({ message: 'backend funcionando correctamente' });
+    res.json({ message: 'rutas publicas funcionando correctamente' });
 });
 // Rutas protegidas (requieren autenticación)
+// Aplicar middleware de autenticación a todas las rutas protegidas
+protectedRouter.use(authMiddleware_1.authMiddleware);
 protectedRouter.use('/cards', cardRoutes_1.default);
 protectedRouter.use('/cartolas', cartola_routes_1.default);
 protectedRouter.use('/card-types', cardTypeRoutes_1.default);
@@ -37,7 +47,11 @@ protectedRouter.use('/dashboard', dashboardRoutes_1.default);
 protectedRouter.use('/analytics', analyticsRoutes_1.default);
 protectedRouter.use('/banks', bankRoutes_1.default);
 protectedRouter.use('/movements', movementRoutes_1.default);
-// Montar las rutas protegidas bajo /api
+protectedRouter.use('/plans', planRoutes_1.default);
+// (opcional) ruta de prueba protegida  
+protectedRouter.get('/', (req, res) => {
+    res.json({ message: 'rutas protegidas funcionando correctamente' });
+});
 router.use('/', protectedRouter);
 exports.default = router;
 //# sourceMappingURL=index.js.map

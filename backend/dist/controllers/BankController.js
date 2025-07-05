@@ -4,7 +4,7 @@ exports.BankController = void 0;
 const bank_service_1 = require("../services/bank.service");
 class BankController {
     constructor() {
-        this.getAllBanks = async (req, res) => {
+        this.getAllBanks = async (req, res, next) => {
             try {
                 const banks = await this.service.getAllBanks();
                 res.json(banks);

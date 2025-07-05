@@ -13,14 +13,14 @@ dotenv_1.default.config();
 // @Injectable() // No es necesario para Express
 class RedisService {
     constructor() {
-        this.client = new ioredis_1.default({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            retryStrategy: (times) => {
-                const delay = Math.min(times * 50, 2000);
-                return delay;
-            }
-        });
+        // Si existe REDIS_URL, úsala. Si no, usa host y puerto.
+        this.client = process.env.REDIS_URL
+            ? new ioredis_1.default(process.env.REDIS_URL)
+            : new ioredis_1.default({
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                retryStrategy: (times) => Math.min(times * 50, 2000),
+            });
         this.client.on('error', (err) => {
             console.error('Redis Client Error:', err);
         });

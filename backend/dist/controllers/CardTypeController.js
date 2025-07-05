@@ -7,7 +7,7 @@ const cardTypeSchema_1 = require("../validators/cardTypeSchema");
 const zod_1 = require("zod");
 class CardTypeController {
     constructor() {
-        this.getAllCardTypes = async (req, res) => {
+        this.getAllCardTypes = async (req, res, next) => {
             try {
                 const types = await this.cardTypeService.getAllCardTypes();
                 res.json(types);
@@ -16,7 +16,7 @@ class CardTypeController {
                 res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
             }
         };
-        this.getCardTypeById = async (req, res) => {
+        this.getCardTypeById = async (req, res, next) => {
             try {
                 const id = parseInt(req.params.id);
                 if (isNaN(id)) {
@@ -35,7 +35,7 @@ class CardTypeController {
                 }
             }
         };
-        this.createCardType = async (req, res) => {
+        this.createCardType = async (req, res, next) => {
             try {
                 const validatedData = cardTypeSchema_1.cardTypeSchema.parse(req.body);
                 const cardType = await this.cardTypeService.createCardType(validatedData);
@@ -59,7 +59,7 @@ class CardTypeController {
                 }
             }
         };
-        this.updateCardType = async (req, res) => {
+        this.updateCardType = async (req, res, next) => {
             try {
                 const id = parseInt(req.params.id);
                 if (isNaN(id)) {
@@ -88,7 +88,7 @@ class CardTypeController {
                 }
             }
         };
-        this.deleteCardType = async (req, res) => {
+        this.deleteCardType = async (req, res, next) => {
             try {
                 const id = parseInt(req.params.id);
                 if (isNaN(id)) {
