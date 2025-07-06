@@ -4,7 +4,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ScraperService, ScraperTask } from '../../services/scraper.service';
 import { Subscription } from 'rxjs';
-import { WebSocketService } from '../../services/web-socket.service';
+import { WebSocketService, TaskStatus } from '../../services/websocket.service';
 
 @Component({
   selector: 'app-scraper-dialog',
@@ -255,12 +255,15 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Inicialización del componente
+    console.log('Inicializando componente ScraperDialog');
+    this.wsService.connect();
   }
 
   ngOnDestroy() {
+    console.log('Destruyendo componente ScraperDialog');
     this.stopMonitoring();
     if (this.currentTask?.id) {
+      console.log('Desuscribiendo de tarea:', this.currentTask.id);
       this.wsService.unsubscribeFromTask(this.currentTask.id);
       this.wsService.disconnect();
     }
@@ -309,24 +312,30 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
   startMonitoring(taskId: string) {
     this.stopMonitoring();
     
-    this.monitoringSubscription = this.scraperService.monitorTask(taskId).subscribe({
-      next: (task) => {
-        this.currentTask = task;
-        
-        if (['completed', 'failed', 'cancelled'].includes(task.status)) {
-          this.isProcessing = false;
-          this.stopMonitoring();
+    console.log('Iniciando monitoreo de tarea:', taskId);
+    this.wsService.subscribeToTask(taskId);
+    
+    this.monitoringSubscription = this.wsService.getTaskStatus().subscribe({
+      next: (task: TaskStatus | null) => {
+        console.log('Actualización de tarea recibida:', task);
+        if (task) {
+          this.currentTask = task;
           
-          if (task.status === 'completed') {
-            this.snackBar.open('¡Scraping completado exitosamente!', 'Cerrar', { duration: 3000 });
-          } else if (task.status === 'failed') {
-            this.snackBar.open('Error en el scraping: ' + (task.error || 'Error desconocido'), 'Cerrar', { duration: 5000 });
-          } else {
-            this.snackBar.open('Scraping cancelado', 'Cerrar', { duration: 3000 });
+          if (['completed', 'failed', 'cancelled'].includes(task.status)) {
+            this.isProcessing = false;
+            this.stopMonitoring();
+            
+            if (task.status === 'completed') {
+              this.snackBar.open('¡Scraping completado exitosamente!', 'Cerrar', { duration: 3000 });
+            } else if (task.status === 'failed') {
+              this.snackBar.open('Error en el scraping: ' + (task.error || 'Error desconocido'), 'Cerrar', { duration: 5000 });
+            } else {
+              this.snackBar.open('Scraping cancelado', 'Cerrar', { duration: 3000 });
+            }
           }
         }
       },
-      error: (error) => {
+      error: (error: Error) => {
         console.error('Error monitoreando tarea:', error);
         this.snackBar.open('Error monitoreando el progreso', 'Cerrar', { duration: 5000 });
         this.isProcessing = false;
@@ -338,6 +347,9 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
     if (this.monitoringSubscription) {
       this.monitoringSubscription.unsubscribe();
       this.monitoringSubscription = undefined;
+    }
+    if (this.currentTask?.id) {
+      this.wsService.unsubscribeFromTask(this.currentTask.id);
     }
   }
 

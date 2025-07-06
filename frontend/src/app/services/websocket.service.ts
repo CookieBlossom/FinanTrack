@@ -22,36 +22,57 @@ export interface TaskStatus {
 export class WebSocketService {
   private socket: Socket;
   private taskStatus = new BehaviorSubject<TaskStatus | null>(null);
+  private isConnected = false;
 
   constructor() {
+    console.log('Inicializando WebSocket Service (Frontend)');
     this.socket = io(environment.apiUrl, {
       transports: ['websocket'],
       autoConnect: false
     });
 
+    this.setupSocketListeners();
+  }
+  private setupSocketListeners() {
+    this.socket.on('connect', () => {
+      console.log('WebSocket conectado al servidor');
+      this.isConnected = true;
+    });
+    this.socket.on('disconnect', () => {
+      console.log('WebSocket desconectado del servidor');
+      this.isConnected = false;
+    });
+    this.socket.on('connect_error', (error) => {
+      console.error('Error de conexión WebSocket:', error);
+    });
     this.socket.on('task-update', (status: TaskStatus) => {
+      console.log('Actualización de tarea recibida:', status);
       this.taskStatus.next(status);
     });
   }
 
   connect() {
-    if (!this.socket.connected) {
+    if (!this.isConnected) {
+      console.log('Intentando conectar WebSocket...');
       this.socket.connect();
     }
   }
 
   disconnect() {
-    if (this.socket.connected) {
+    if (this.isConnected) {
+      console.log('Desconectando WebSocket...');
       this.socket.disconnect();
     }
   }
 
   subscribeToTask(taskId: string) {
+    console.log(`Suscribiendo a tarea ${taskId}`);
     this.connect();
     this.socket.emit('subscribe-to-task', taskId);
   }
 
   unsubscribeFromTask(taskId: string) {
+    console.log(`Desuscribiendo de tarea ${taskId}`);
     this.socket.emit('unsubscribe-from-task', taskId);
   }
 

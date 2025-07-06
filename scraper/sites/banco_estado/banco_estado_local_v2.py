@@ -1724,8 +1724,6 @@ class BancoEstadoScraper:
                     "app-carrusel-productos-wrapper",
                     "app-card-producto",
                     "app-ultimos-movimientos-home",
-                    ".dashboard-container",
-                    "#dashboard"
                 ]
                 
                 login_success = False
@@ -1734,7 +1732,7 @@ class BancoEstadoScraper:
                 for i, selector in enumerate(success_selectors):
                     try:
                         print(f"[INFO] Buscando selector {i+1}: {selector}")
-                        await page.wait_for_selector(selector, timeout=15000)  # AUMENTADO: 10s -> 15s
+                        await page.wait_for_selector(selector, timeout=40000)  # AUMENTADO: 10s -> 15s
                         print(f"[OK] Login confirmado: Elemento {selector} encontrado")
                         login_success = True
                         break
@@ -1753,13 +1751,9 @@ class BancoEstadoScraper:
                 if not login_success:
                     print(f"[ERROR] Login fallido - URL inesperada: {current_url}")
                     sys.stdout.flush()
-                    
-                    # Obtener información adicional sobre la página final
                     page_title = await page.title()
                     print(f"[ERROR] Título de página final: {page_title}")
                     sys.stdout.flush()
-                    
-                    # Buscar mensajes de error
                     error_messages = await page.locator("text=/error|incorrecto|bloqueado|fallido/i").all()
                     if error_messages:
                         for msg in error_messages:

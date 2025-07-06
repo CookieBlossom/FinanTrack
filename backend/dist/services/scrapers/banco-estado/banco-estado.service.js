@@ -205,56 +205,72 @@ let BancoEstadoService = (() => {
             }
         }
         async runScraper(config = {}) {
-            // Encontrar la raíz del proyecto - solución robusta
-            const currentDir = process.cwd(); // C:\Proyectos\FinanTrack\backend
-            const projectRoot = (0, path_1.join)(currentDir, '..'); // C:\Proyectos\FinanTrack
-            console.log('projectRoot', projectRoot);
-            const scriptPath = (0, path_1.join)(projectRoot, 'scraper', 'sites', 'banco_estado', 'banco_estado_manager.py');
-            // Verificar que el archivo existe
-            const fs = require('fs');
-            if (!fs.existsSync(scriptPath)) {
-                console.error(`[BancoEstadoService] ERROR: El script no existe en: ${scriptPath}`);
-                return;
-            }
-            // Intentar diferentes comandos de Python comunes en Windows
-            const pythonCommands = ['py', 'python', 'python3'];
-            let pythonPath = null;
-            for (const cmd of pythonCommands) {
-                try {
-                    const { execSync } = require('child_process');
-                    execSync(`${cmd} --version`, { stdio: 'pipe' });
-                    pythonPath = cmd;
-                    break;
+            try {
+                // Encontrar la raíz del proyecto
+                const currentDir = process.cwd();
+                console.log('currentDir:', currentDir);
+                // Asumiendo que estamos en /backend, subimos un nivel
+                const projectRoot = (0, path_1.join)(currentDir, '..');
+                console.log('projectRoot:', projectRoot);
+                const scriptPath = (0, path_1.join)(projectRoot, 'scraper', 'sites', 'banco_estado', 'banco_estado_manager.py');
+                console.log('scriptPath:', scriptPath);
+                // Verificar que el archivo existe
+                const fs = require('fs');
+                if (!fs.existsSync(scriptPath)) {
+                    console.error(`[BancoEstadoService] ERROR: El script no existe en: ${scriptPath}`);
+                    throw new Error(`Script no encontrado en: ${scriptPath}`);
                 }
-                catch (error) {
-                    // Continuar con el siguiente comando
+                // Intentar diferentes comandos de Python comunes en Windows
+                const pythonCommands = ['py', 'python', 'python3'];
+                let pythonPath = null;
+                for (const cmd of pythonCommands) {
+                    try {
+                        const { execSync } = require('child_process');
+                        execSync(`${cmd} --version`, { stdio: 'pipe' });
+                        pythonPath = cmd;
+                        break;
+                    }
+                    catch (err) {
+                        console.log(`Comando ${cmd} no disponible:`, (0, errors_1.getErrorMessage)(err));
+                    }
                 }
+                if (!pythonPath) {
+                    throw new Error('No se encontró Python instalado. Instala Python o verifica el PATH.');
+                }
+                console.log('Variables de entorno para el scraper:', {
+                    REDIS_URL: process.env.REDIS_URL,
+                    REDIS_HOST: process.env.REDIS_HOST,
+                    REDIS_PORT: process.env.REDIS_PORT,
+                    BACKEND_URL: process.env.BACKEND_URL
+                });
+                const scraperProcess = (0, child_process_1.spawn)(pythonPath, [scriptPath], {
+                    env: {
+                        ...process.env,
+                        REDIS_URL: process.env.REDIS_URL,
+                        REDIS_HOST: process.env.REDIS_HOST || config.redis.url.split('@')[1]?.split(':')[0] || 'localhost',
+                        REDIS_PORT: process.env.REDIS_PORT || config.redis.url.split(':')[1]?.split('/')[0] || '6379',
+                        BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:3000',
+                        PYTHONPATH: (0, path_1.join)(projectRoot, 'scraper')
+                    },
+                    cwd: (0, path_1.join)(projectRoot, 'scraper', 'sites', 'banco_estado')
+                });
+                scraperProcess.stdout.on('data', (data) => {
+                    console.log(`[BancoEstado Scraper] ${data}`);
+                });
+                scraperProcess.stderr.on('data', (data) => {
+                    console.error(`[BancoEstado Scraper] Error: ${data}`);
+                });
+                scraperProcess.on('close', (code) => {
+                    console.log(`[BancoEstado Scraper] Proceso terminado con código: ${code}`);
+                });
+                scraperProcess.on('error', (error) => {
+                    console.error(`[BancoEstado Scraper] Error al iniciar proceso:`, error);
+                });
             }
-            if (!pythonPath) {
-                console.error(`[BancoEstadoService] ERROR: No se encontró Python instalado. Instala Python o verifica el PATH.`);
-                return;
+            catch (err) {
+                console.error('[BancoEstado Scraper] Error al ejecutar scraper:', (0, errors_1.getErrorMessage)(err));
+                throw new errors_1.ScraperError((0, errors_1.getErrorMessage)(err));
             }
-            const scraperProcess = (0, child_process_1.spawn)(pythonPath, [scriptPath], {
-                env: {
-                    ...process.env,
-                    REDIS_HOST: config.redisHost || 'localhost',
-                    REDIS_PORT: config.redisPort || '6379',
-                    PYTHONPATH: (0, path_1.join)(projectRoot, 'scraper')
-                },
-                cwd: (0, path_1.join)(projectRoot, 'scraper', 'sites', 'banco_estado')
-            });
-            scraperProcess.stdout.on('data', (data) => {
-                console.log(`[BancoEstado Scraper] ${data}`);
-            });
-            scraperProcess.stderr.on('data', (data) => {
-                console.error(`[BancoEstado Scraper] Error: ${data}`);
-            });
-            scraperProcess.on('close', (code) => {
-                console.log(`[BancoEstado Scraper] Proceso terminado con código: ${code}`);
-            });
-            scraperProcess.on('error', (error) => {
-                console.error(`[BancoEstado Scraper] Error al iniciar proceso:`, error);
-            });
         }
         async startScraping(taskId, credentials) {
             try {
