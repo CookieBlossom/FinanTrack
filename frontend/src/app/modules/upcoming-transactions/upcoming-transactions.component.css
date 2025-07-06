@@ -340,6 +340,35 @@
   transform: translateY(-1px);
 }
 
+/* Botón de cancelar compacto con ícono */
+.cancel-btn-icon {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 2px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.cancel-btn-icon:hover {
+  background: var(--color-danger-600);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.cancel-btn-icon .material-icons {
+  font-size: 16px !important;
+  line-height: 1;
+}
+
 /* Estilos para estado vacío */
 .empty-state {
   display: flex;

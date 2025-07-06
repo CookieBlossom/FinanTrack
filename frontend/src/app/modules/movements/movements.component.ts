@@ -440,10 +440,14 @@ export class MovementsComponent implements OnInit, OnDestroy {
     {
       field: 'amount',
       headerName: 'Monto',
-      valueFormatter: params => new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP'
-      }).format(params.value),
+      valueFormatter: params => {
+        // 🔢 Mostrar solo el valor absoluto (sin signo, sin símbolo)
+        const absoluteValue = Math.abs(params.value || 0);
+        return new Intl.NumberFormat('es-CL', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(absoluteValue);
+      },
       cellStyle: {
         fontSize: 'var(--font-size-sm)',
         fontFamily: 'var(--font-family-normal)',
@@ -556,10 +560,14 @@ export class MovementsComponent implements OnInit, OnDestroy {
     {
       field: 'amount',
       headerName: 'Monto',
-      valueFormatter: params => new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP'
-      }).format(params.value),
+      valueFormatter: params => {
+        // 🔢 Mostrar solo el valor absoluto (sin signo, sin símbolo)
+        const absoluteValue = Math.abs(params.value || 0);
+        return new Intl.NumberFormat('es-CL', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(absoluteValue);
+      },
       cellStyle: {
         fontSize: 'var(--font-size-sm)',
         fontFamily: 'var(--font-family-normal)',

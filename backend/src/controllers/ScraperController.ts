@@ -354,12 +354,17 @@ export class ScraperController {
   };
   private async convertScraperMovement(mov: IScraperMovement, taskId: string, defaultCardId: number): Promise<IMovementCreate> {
     const categoryId = 1;
+    const originalAmount = mov.monto;
+    const absoluteAmount = Math.abs(originalAmount);
+    const determinedType = mov.movement_type || (originalAmount > 0 ? 'income' : 'expense');
+
+    console.log(`[ScraperController] Procesando monto: ${originalAmount} → ${absoluteAmount} (${determinedType})`);
 
     return {
       description: mov.descripcion,
-      amount: mov.monto,
+      amount: absoluteAmount,
       transactionDate: this.parseScraperDate(mov.fecha),
-      movementType: mov.movement_type || (mov.monto > 0 ? 'income' : 'expense'),
+      movementType: determinedType,
       categoryId,
       cardId: defaultCardId,
       movementSource: 'scraper',

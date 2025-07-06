@@ -207,7 +207,9 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
         }
         
         if (isPending) {
-          buttons += `<button class="action-btn cancel-btn" style="font-size: var(--font-size-xs); font-family: var(--font-family-normal);" onclick="window.cancelMovement(${params.data.id})">✕ Cancelar</button>`;
+          buttons += `<button class="action-btn cancel-btn-icon" title="Cancelar" onclick="window.cancelMovement(${params.data.id})">
+            <span class="material-icons" style="font-size: 18px;">close</span>
+          </button>`;
         }
         
         return buttons || '-';
