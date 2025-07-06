@@ -7,7 +7,19 @@
           <mat-icon>upload_file</mat-icon>
           Cargar Cartola
         </button>
-        <h3>Movimientos de Cuenta</h3>
+        <div class="table-header">
+          <h3>Movimientos de Cuenta</h3>
+          <button 
+            class="btn-refresh" 
+            [disabled]="isRefreshing"
+            [class.refreshing]="isRefreshing"
+            (click)="refreshData()" 
+            matTooltip="Actualizar movimientos"
+            aria-label="Actualizar movimientos">
+            <mat-icon *ngIf="!isRefreshing">refresh</mat-icon>
+            <mat-spinner *ngIf="isRefreshing" diameter="20" strokeWidth="3"></mat-spinner>
+          </button>
+        </div>
         
         <!-- 🔄 SUSCRIPCIÓN ÚNICA a historyCard$ -->
         <div *ngIf="historyCard$ | async as cardMovements; else loadingCard">
@@ -79,7 +91,19 @@
         </div>
     </div>
     <div class="table">
-        <h3>Movimientos en Efectivo</h3>
+        <div class="table-header">
+          <h3>Movimientos en Efectivo</h3>
+          <button 
+            class="btn-refresh" 
+            [disabled]="isRefreshing"
+            [class.refreshing]="isRefreshing"
+            (click)="refreshData()" 
+            matTooltip="Actualizar movimientos"
+            aria-label="Actualizar movimientos">
+            <mat-icon *ngIf="!isRefreshing">refresh</mat-icon>
+            <mat-spinner *ngIf="isRefreshing" diameter="20" strokeWidth="3"></mat-spinner>
+          </button>
+        </div>
         
         <!-- 🔄 SUSCRIPCIÓN ÚNICA a historyCash$ -->
         <div *ngIf="historyCash$ | async as cashMovements; else loadingCash">

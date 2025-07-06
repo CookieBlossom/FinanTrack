@@ -66,6 +66,73 @@ h3 {
   font-size: var(--font-size-lg);
 }
 
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.table-header h3 {
+  text-align: left;
+  flex: 1;
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-refresh:hover {
+  background: var(--color-primary-dark);
+  transform: scale(1.05);
+}
+
+.btn-refresh:active {
+  transform: scale(0.95);
+}
+
+.btn-refresh mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.btn-refresh:hover mat-icon {
+  transform: rotate(90deg);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-refresh.refreshing {
+  background: var(--color-primary-light);
+}
+
+.btn-refresh mat-spinner {
+  margin: 0;
+}
+
+.btn-refresh mat-spinner ::ng-deep svg circle {
+  stroke: white;
+}
+
 .btn-add {
   display: flex;
   align-items: center;

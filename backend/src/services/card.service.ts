@@ -199,8 +199,23 @@ export class CardService {
     try {
       await client.query('BEGIN');
       
-      // Eliminar movimientos asociados
-      await client.query('DELETE FROM movements WHERE card_id = $1', [cardId]);
+      // Verificar que la tarjeta pertenece al usuario
+      const cardCheck = await client.query(
+        'SELECT id FROM cards WHERE id = $1 AND user_id = $2',
+        [cardId, userId]
+      );
+
+      if (cardCheck.rowCount === 0) {
+        throw new DatabaseError('No se encontró la tarjeta para eliminar');
+      }
+      const movementsResult = await client.query(
+        `DELETE FROM movements 
+         WHERE card_id = $1 
+         AND card_id IN (SELECT id FROM cards WHERE user_id = $2)`,
+        [cardId, userId]
+      );
+      
+      console.log(`[CardService] Eliminados ${movementsResult.rowCount} movimientos de la tarjeta ${cardId}`);
       
       // Eliminar la tarjeta
       const result = await client.query(
@@ -208,13 +223,12 @@ export class CardService {
         [cardId, userId]
       );
 
-      if (result.rowCount === 0) {
-        throw new DatabaseError('No se encontró la tarjeta para eliminar');
-      }
+      console.log(`[CardService] Tarjeta eliminada: ${result.rows[0]?.name_account}`);
 
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
+      console.error('[CardService] Error al eliminar tarjeta:', error);
       throw error;
     } finally {
       client.release();

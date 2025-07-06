@@ -40,6 +40,8 @@ import { EditMovementDialogComponent } from './edit-movement-dialog/edit-movemen
 import { ActionCellRendererComponent } from './action-cell-renderer/action-cell-renderer.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
 import { FeatureControlDirective } from '../../shared/directives/feature-control.directive';
 import { CardService } from '../../services/card.service';
 import { Card } from '../../models/card.model';
@@ -82,6 +84,8 @@ ModuleRegistry.registerModules([
     MatDialogModule,
     MatIconModule,
     MatSnackBarModule,
+    MatTooltipModule,
+    MatButtonModule,
     FeatureControlDirective
   ]
 })
@@ -124,6 +128,7 @@ export class MovementsComponent implements OnInit, OnDestroy {
   private gridApiCash: GridApi | null = null;
   private cardGridInitialized = false;
   private cashGridInitialized = false;
+  public isRefreshing = false;
 
   constructor(
     private movementService: MovementService,
@@ -319,25 +324,27 @@ export class MovementsComponent implements OnInit, OnDestroy {
 
   // 🔄 Método OPTIMIZADO para refrescar datos (con protección contra spam)
   refreshData(): void {
-    const now = Date.now();
+    const currentTime = Date.now();
+    console.log('🔄 [Movements] Actualizando datos...');
     
-    // 🔒 Protección contra múltiples llamadas seguidas
-    if (now - this.lastRefreshTime < this.REFRESH_DEBOUNCE_TIME) {
-      console.log('🔒 [Movements] Refresh bloqueado - muy frecuente');
+    // Evitar spam de actualizaciones
+    if (currentTime - this.lastRefreshTime < this.REFRESH_DEBOUNCE_TIME) {
+      console.log('⏰ [Movements] Actualización ignorada por debounce');
       return;
     }
     
-    this.lastRefreshTime = now;
-    console.log('🔄 [Movements] Ejecutando refresh de datos');
+    this.lastRefreshTime = currentTime;
+    this.isRefreshing = true;
     
-    // Resetear banderas para permitir nueva inicialización
-    this.cardGridInitialized = false;
-    this.cashGridInitialized = false;
+    // Emitir trigger para refrescar
     this.refreshTrigger$.next();
-    this.cdr.markForCheck();
+    
+    // Restablecer el estado de carga después de un tiempo
+    setTimeout(() => {
+      this.isRefreshing = false;
+      this.cdr.markForCheck();
+    }, 1000);
   }
-
-
 
   openAddMovementDialog() {
     const dialogRef = this.dialog.open(AddMovementComponent);
