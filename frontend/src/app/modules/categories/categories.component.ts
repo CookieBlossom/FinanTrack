@@ -80,8 +80,6 @@ ModuleRegistry.registerModules([
 })
 export class CategoriesComponent implements OnInit, OnDestroy {
   chartView: [number, number] = [window.innerWidth * 0.35, window.innerHeight * 0.4];
-  
-  // 🔄 Observables reactivos
   categories$: Observable<Category[]>;
   categoriesLoading$: Observable<boolean>;
   categories: Category[] = [];
@@ -342,16 +340,20 @@ export class CategoriesComponent implements OnInit, OnDestroy {
     // Cargar límite de keywords
     this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.KEYWORDS_PER_CATEGORY).subscribe({
       next: (limitStatus) => {
+        console.log('[Categories] Límite cargado:', limitStatus);
         // Si el límite es -1, significa ilimitado
         if (limitStatus.limit === -1) {
           this.keywordsLimit = this.UNLIMITED_KEYWORDS; // Prácticamente ilimitado
+          console.log('[Categories] Plan ilimitado detectado');
         } else {
           this.keywordsLimit = limitStatus.limit;
+          console.log('[Categories] Límite establecido en:', this.keywordsLimit);
         }
       },
       error: (error) => {
-        console.error('Error al cargar límite de keywords:', error);
-        this.keywordsLimit = 5; // Límite por defecto
+        console.error('[Categories] Error al cargar límite de keywords:', error);
+        this.keywordsLimit = 10;
+        console.log('[Categories] Límite de emergencia establecido en:', this.keywordsLimit);
       }
     });
   }
@@ -555,5 +557,11 @@ export class CategoriesComponent implements OnInit, OnDestroy {
 
   toggleCharts(): void {
     this.showCharts = !this.showCharts;
+  }
+  getFormattedKeywordsLimit(): string {
+    if (this.keywordsLimit === this.UNLIMITED_KEYWORDS || this.keywordsLimit === -1) {
+      return '∞';
+    }
+    return this.keywordsLimit.toString();
   }
 }

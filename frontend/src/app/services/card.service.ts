@@ -290,8 +290,19 @@ export class CardService {
   addCardFromCartola(formData: FormData): Observable<any> {
     return this.http.post(`${this.cartolasUrl}/upload`, formData, { headers: this.getHeaders() }).pipe(
       tap(() => {
-        // Después de subir cartola, refrescar las tarjetas
-        this.refreshCards().pipe(first()).subscribe();
+        // 🔄 Esperar un poco para que el backend termine de procesar la cartola
+        console.log('📤 [CardService] Cartola subida, esperando procesamiento...');
+        setTimeout(() => {
+          console.log('🔄 [CardService] Refrescando tarjetas después de procesar cartola...');
+          this.refreshCards().pipe(first()).subscribe({
+            next: (cards) => {
+              console.log('✅ [CardService] Tarjetas refrescadas después de cartola:', cards.length);
+            },
+            error: (error) => {
+              console.error('❌ [CardService] Error al refrescar tarjetas:', error);
+            }
+          });
+        }, 2000); // Esperar 2 segundos para que el backend termine
       }),
       catchError(this.handleError)
     );
@@ -303,8 +314,19 @@ export class CardService {
 
     return this.http.post(`${this.apiUrl}/${cardId}/process-cartola`, formData, { headers: this.getHeaders() }).pipe(
       tap(() => {
-        // Después de procesar cartola, refrescar las tarjetas
-        this.refreshCards().pipe(first()).subscribe();
+        // 🔄 Esperar un poco para que el backend termine de procesar la cartola
+        console.log('📤 [CardService] Cartola procesada, esperando actualización...');
+        setTimeout(() => {
+          console.log('🔄 [CardService] Refrescando tarjetas después de procesar cartola...');
+          this.refreshCards().pipe(first()).subscribe({
+            next: (cards) => {
+              console.log('✅ [CardService] Tarjetas refrescadas después de procesar cartola:', cards.length);
+            },
+            error: (error) => {
+              console.error('❌ [CardService] Error al refrescar tarjetas:', error);
+            }
+          });
+        }, 2000); // Esperar 2 segundos para que el backend termine
       }),
       catchError(this.handleError)
     );

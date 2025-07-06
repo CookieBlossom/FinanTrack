@@ -11,7 +11,7 @@ import { Card } from '../../models/card.model';
 import { CardService } from '../../services/card.service';
 import { AddCardDialogComponent } from './add-card-dialog/add-card-dialog.component';
 import { firstValueFrom, Subject, Observable } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, map } from 'rxjs/operators';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { DeleteCardDialogComponent } from './delete-card-dialog/delete-card-dialog.component';
@@ -51,39 +51,33 @@ interface ChartDataItem {
 })
 export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('chartContainer') chartContainer!: ElementRef;
-  cards: Card[] = [];
   error: string | null = null;
   totalBalance: number = 0;
   limitsInfo: any = null;
   loading = false;
   syncing = false;
   private destroy$ = new Subject<void>();
-
-  // Configuración de colores para el gráfico
   colorScheme: any = {
     domain: [
-      'var(--color-primary)',      // #a84f68
-      'var(--color-accent)',       // #9b2949
-      'var(--color-highlight)',    // #e69ac3
-      'var(--color-primary-dark)', // #6d2237
-      'var(--color-primary-darker)', // #4f0f20
-      'var(--color-primary-darkest)', // #311019
-      'var(--color-success)',      // #28a745
-      'var(--color-info)'          // #17a2b8
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD',
+      '#98D8C8', '#F7DC6F', '#AED6F1', '#F8C471', '#D7BDE2', '#A9DFBF',
+      '#F9E79F', '#FAD7A0', '#D5A6BD', '#85C1E9', '#F8D7DA', '#D1ECF1',
+      '#FFF3CD', '#D4EDDA', '#E2E3E5', '#F5C6CB', '#B8DAFF', '#C3E6CB',
+      '#FFEAA7', '#74B9FF', '#E17055', '#00B894', '#FDCB6E', '#6C5CE7'
     ]
   };
 
-  // Tamaño responsive del gráfico
-  chartView: [number, number] = [0, 0]; // Se calculará dinámicamente
-
-  chartData: ChartDataItem[] = [];
-  view: [number, number] = [700, 400];
-
-  // 🔄 Datos reactivos - se inicializan en el constructor
+  // 🔄 Propiedades reactivas computadas - se inicializan en el constructor
   cards$!: Observable<Card[]>;
   loading$!: Observable<boolean>;
-  
-  // Estados de carga
+  visibleCards$!: Observable<Card[]>;
+  totalBalance$!: Observable<number>;
+  chartData$!: Observable<ChartDataItem[]>;
+  hasCards$!: Observable<boolean>;
+
+  chartView: [number, number] = [0, 0]; // Se calculará dinámicamente
+  chartData: ChartDataItem[] = [];
+  view: [number, number] = [700, 400];
   isDeleting = false;
   isSyncingAll = false;
 
@@ -97,27 +91,100 @@ export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
     private changeDetectorRef: ChangeDetectorRef,
     private featureControlService: FeatureControlService
   ) {
-    // 🔄 Inicializar observables reactivos
+    // 🔄 Inicializar propiedades reactivas
     this.cards$ = this.cardService.cards$;
     this.loading$ = this.cardService.loading$;
+    
+    // 🔄 Propiedades computadas derivadas
+    this.visibleCards$ = this.cards$.pipe(
+      map(cards => cards.filter(card => card.nameAccount.toLowerCase() !== 'efectivo'))
+    );
+    
+    this.totalBalance$ = this.cards$.pipe(
+      map(cards => cards
+        .filter(card => card.statusAccount === 'active' && card.nameAccount.toLowerCase() !== 'efectivo')
+        .reduce((total, card) => total + (card.balance || 0), 0)
+      )
+    );
+    
+    this.chartData$ = this.cards$.pipe(
+      map(cards => this.computeChartData(cards))
+    );
+    
+    this.hasCards$ = this.visibleCards$.pipe(
+      map(cards => cards.length > 0)
+    );
   }
   
   chartLabels: string[] = [];
   
   async ngOnInit(): Promise<void> {
-    // 🔄 Cargar tarjetas usando el sistema reactivo
+    console.log('🔄 [CardComponent] Iniciando componente...');
+        this.initializeReactiveData();
     this.cardService.getCards().subscribe();
     
     await this.loadInitialData();
     this.calculateChartSize();
-    
-    // Escuchar cambios de tamaño de ventana con debounce
+
     let resizeTimeout: any;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         this.calculateChartSize();
       }, 250);
+    });
+  }
+  private initializeReactiveData(): void {
+    // Suscribirse a cambios en las tarjetas para actualizar el gráfico
+    this.chartData$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(data => {
+      this.chartData = data;
+      this.changeDetectorRef.markForCheck();
+    });
+    
+    // Suscribirse a cambios en el balance total
+    this.totalBalance$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(balance => {
+      this.totalBalance = balance;
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+  
+  // 🔄 Computar datos del gráfico (función pura)
+  private computeChartData(cards: Card[]): ChartDataItem[] {
+    // Filtrar tarjetas activas con saldo (positivo o negativo)
+    const activeCards = cards.filter(card => 
+      card.statusAccount === 'active' && 
+      card.nameAccount.toLowerCase() !== 'efectivo'
+    );
+    
+    // Si no hay tarjetas activas, retornar array vacío
+    if (activeCards.length === 0) {
+      console.log('📊 No hay tarjetas activas para mostrar en el gráfico');
+      return [];
+    }
+    
+    return activeCards.map(card => {
+      let balance = 0;
+      if (typeof card.balance === 'number' && !isNaN(card.balance)) {
+        balance = card.balance;
+      } else if (typeof card.balance === 'string') {
+        balance = parseFloat(card.balance) || 0;
+      }
+      
+      const displayName = card.nameAccount;
+      const absoluteBalance = Math.abs(balance);
+      
+      return {
+        name: this.truncateText(displayName, 15),
+        value: absoluteBalance,
+        originalValue: balance,
+        cardName: displayName,
+        fullName: displayName,
+        formattedBalance: this.formatCurrency(balance)
+      };
     });
   }
 
@@ -135,19 +202,14 @@ export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
     this.changeDetectorRef.detectChanges();
     
     try {
-      // 1. Primero cargar límites (no bloqueante)
+      // 1. Cargar límites (no bloqueante)
       this.loadLimitsInfo();
       
-      // 2. Luego cargar tarjetas y balance total
-      await this.loadCardsAndBalance();
       console.log('✅ Datos cargados exitosamente');
       
     } catch (error) {
       console.error('❌ Error al cargar datos iniciales:', error);
-      // Establecer error y asegurar que loading se resetee
       this.error = 'No se pudieron cargar las tarjetas';
-      this.cards = [];
-      this.totalBalance = 0;
     } finally {
       console.log('🏁 Finalizando carga, loading = false');
       this.loading = false;
@@ -173,35 +235,15 @@ export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
       console.error('Error al cargar información de límites:', error);
     }
   }
-  private async loadCardsAndBalance(): Promise<void> {
-    try {
-      await this.loadCards();
-      this.totalBalance = this.getTotalBalance();
-    } catch (error) {
-      console.error('Error al cargar tarjetas y balance:', error);
-      this.cards = [];
-      this.totalBalance = 0;
-      throw error;
-    }
-  }
-  private async loadCards(): Promise<void> {
-    try {
-      console.log('📞 Llamando al servicio de tarjetas...');
-      this.cards = await firstValueFrom(this.cardService.getCards());
-      console.log('📋 Tarjetas cargadas:', this.cards.length);
-      this.updateChartData();
-    } catch (error) {
-      console.error('❌ Error al cargar tarjetas:', error);
-      this.cards = [];
-      throw error; // Re-lanzar para manejo en loadCardsAndBalance
-    }
-  }
 
+  // 🔄 Método simplificado para actualizar datos
   private async updateData(): Promise<void> {
     try {
       this.error = null;
-      await this.loadCardsAndBalance();
+      // Refrescar datos usando sistema reactivo
+      await firstValueFrom(this.cardService.refreshCards());
       this.planLimitsService.refreshUsage();
+      
       setTimeout(() => {
         this.calculateChartSize();
       }, 100);
@@ -209,12 +251,8 @@ export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
     } catch (error) {
       console.error('Error al actualizar datos:', error);
       this.error = 'Error al actualizar los datos. Por favor, intenta nuevamente.';
-      throw error; // Re-lanzar para manejo en los métodos que llaman a updateData
+      throw error;
     }
-  }
-  
-  get visibleCards(): Card[] {
-    return this.cards.filter(card => card.nameAccount.toLowerCase() !== 'efectivo');
   }
 
   openAddCardDialog(): void {
@@ -240,78 +278,14 @@ export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
   
+  // 🔄 Método obsoleto - ahora se usa totalBalance$
   getTotalBalance(): number {
-    return this.cards
-      .filter(card => card.statusAccount === 'active' && card.nameAccount.toLowerCase() !== 'efectivo')
-      .reduce((total, card) => total + (card.balance || 0), 0);
+    return this.totalBalance;
   }
   
+  // 🔄 Método obsoleto - ahora se usa chartData$
   getPieChartData() {
-    // Filtrar tarjetas activas con saldo (positivo o negativo)
-    const activeCards = this.cards.filter(card => 
-      card.statusAccount === 'active' && 
-      card.nameAccount.toLowerCase() !== 'efectivo'
-    );
-    
-    // Si no hay tarjetas activas, retornar array vacío
-    if (activeCards.length === 0) {
-      console.log('📊 No hay tarjetas activas para mostrar en el gráfico');
-      return [];
-    }
-    
-    const chartData = activeCards.map(card => {
-      let balance = 0;
-      if (typeof card.balance === 'number' && !isNaN(card.balance)) {
-        balance = card.balance;
-        console.log('📊 Balance es número válido:', balance);
-      } else if (typeof card.balance === 'string') {
-        balance = parseFloat(card.balance) || 0;
-        console.log('📊 Balance convertido de string:', balance);
-      } else {
-        console.log('📊 Balance no válido, usando 0');
-        balance = 0;
-      }
-      
-      const displayName = card.nameAccount;
-      
-      console.log(`📊 Tarjeta: ${displayName}, Balance final: ${balance}, Tipo: ${typeof balance}`);
-      
-      // Solo formatear si el balance es un número válido
-      let formattedBalance = 'CLP 0';
-      if (!isNaN(balance) && isFinite(balance)) {
-        try {
-          formattedBalance = new Intl.NumberFormat('es-CL', {
-            style: 'currency',
-            currency: 'CLP',
-            minimumFractionDigits: 0
-          }).format(balance);
-          console.log('📊 Formato exitoso:', formattedBalance);
-        } catch (error) {
-          console.error('📊 Error al formatear:', error);
-          formattedBalance = 'CLP 0';
-        }
-      } else {
-        console.log('📊 Balance no válido para formateo, usando CLP 0');
-      }
-      
-      // Usar nombre corto para la leyenda (sin el balance)
-      const legendName = displayName.length > 15 ? displayName.substring(0, 15) + '...' : displayName;
-      
-      const result = {
-        name: legendName, // Nombre corto para la leyenda
-        value: Math.abs(balance), // Usar valor absoluto para el gráfico
-        originalValue: balance, // Guardar el valor original para referencias
-        cardName: displayName, // Nombre completo para tooltip
-        fullName: `${displayName} (${formattedBalance})`, // Nombre completo con balance
-        formattedBalance: formattedBalance // Balance formateado para tooltip
-      };
-      
-      console.log(`📊 Resultado final para gráfico:`, result);
-      return result;
-    }).filter(item => item.value > 0); // Solo incluir tarjetas con saldo positivo para el gráfico
-    
-    console.log('📊 Datos finales del gráfico:', chartData);
-    return chartData;
+    return this.chartData;
   }
 
   hasChartData(): boolean {
@@ -431,11 +405,6 @@ export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
   getCardBalance(card: Card): number {
     return card.balance || 0;
   }
-
-  hasCards(): boolean {
-    return this.visibleCards.length > 0;
-  }
-
   // Método para forzar recarga manual de datos
   async forceRefresh(): Promise<void> {
     try {
@@ -474,39 +443,6 @@ export class CardComponent implements OnInit, OnDestroy, AfterViewInit {
         this.changeDetectorRef.detectChanges();
       }
     }, 300); // Aumentar el timeout para asegurar que los elementos estén completamente renderizados
-  }
-
-  updateChartData() {
-    if (!this.cards || this.cards.length === 0) {
-      this.chartData = [];
-      return;
-    }
-
-    this.chartData = this.cards
-      .filter(card => card.statusAccount === 'active')
-      .map(card => {
-        const balance = card.balance;
-        if (typeof balance !== 'number') {
-          console.error(`Balance inválido para tarjeta ${card.nameAccount}:`, balance);
-          return null;
-        }
-
-        const formattedBalance = this.formatCurrency(Math.abs(balance));
-        const name = this.truncateText(card.nameAccount || '', 15);
-        const fullName = `${card.nameAccount} (${formattedBalance})`;
-
-        return {
-          name,
-          value: Math.abs(balance),
-          originalValue: balance,
-          cardName: card.nameAccount,
-          fullName,
-          formattedBalance
-        };
-      })
-      .filter((item): item is ChartDataItem => item !== null);
-
-    console.log('📊 Datos del gráfico:', this.chartData);
   }
 
   onResize() {

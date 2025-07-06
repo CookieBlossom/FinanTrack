@@ -693,10 +693,22 @@ class CartolaService {
     }
     async guardarMovimientos(cardId, movimientos, userId, planId, saldoFinal) {
         try {
+            console.log(`[CartolaService] guardarMovimientos - Parámetros:`);
+            console.log(`  cardId: ${cardId}`);
+            console.log(`  movimientos: ${movimientos.length}`);
+            console.log(`  userId: ${userId}`);
+            console.log(`  planId: ${planId}`);
+            console.log(`  saldoFinal: ${saldoFinal}`);
+            // Validar que cardId no sea null o undefined
+            if (!cardId) {
+                console.error('[CartolaService] ERROR CRÍTICO: cardId es null o undefined');
+                throw new Error('cardId es requerido para guardar movimientos');
+            }
             // Verificar límites y permisos
             await this.checkCartolaLimits(userId, planId);
             await this.checkCartolaPermission(planId);
             // Actualizar el saldo de la tarjeta con los nuevos campos
+            console.log(`[CartolaService] Actualizando saldo de tarjeta ${cardId} a ${saldoFinal}`);
             const updateCardQuery = `
         UPDATE cards 
         SET balance = $1, 
@@ -706,9 +718,17 @@ class CartolaService {
         WHERE id = $2 AND user_id = $3
         RETURNING *
       `;
-            await this.pool.query(updateCardQuery, [saldoFinal, cardId, userId]);
+            const cardUpdateResult = await this.pool.query(updateCardQuery, [saldoFinal, cardId, userId]);
+            if (cardUpdateResult.rows.length === 0) {
+                console.error(`[CartolaService] ERROR: No se pudo actualizar la tarjeta ${cardId} para usuario ${userId}`);
+                throw new Error('No se pudo actualizar la tarjeta especificada');
+            }
+            console.log(`[CartolaService] Tarjeta ${cardId} actualizada exitosamente`);
             // Procesar cada movimiento
-            for (const movimiento of movimientos) {
+            console.log(`[CartolaService] Procesando ${movimientos.length} movimientos para tarjeta ${cardId}`);
+            for (let i = 0; i < movimientos.length; i++) {
+                const movimiento = movimientos[i];
+                console.log(`[CartolaService] Procesando movimiento ${i + 1}/${movimientos.length}: "${movimiento.descripcion}"`);
                 const movementType = this.determinarMovementType(movimiento.descripcion, movimiento.cargos !== null ? 'expense' : 'income');
                 const amount = movimiento.cargos || movimiento.abonos || 0;
                 // Determinar categoría automáticamente
@@ -753,6 +773,20 @@ class CartolaService {
                     transactionDate: movimiento.fecha,
                     categoryId
                 };
+                console.log(`[CartolaService] Datos del movimiento ${i + 1}:`, {
+                    cardId: movementData.cardId,
+                    amount: movementData.amount,
+                    description: movementData.description,
+                    movementType: movementData.movementType,
+                    movementSource: movementData.movementSource,
+                    transactionDate: movementData.transactionDate,
+                    categoryId: movementData.categoryId
+                });
+                // Validar que cardId no sea null antes de insertar
+                if (!movementData.cardId) {
+                    console.error(`[CartolaService] ERROR CRÍTICO: cardId es null para movimiento ${i + 1}`);
+                    throw new Error(`cardId es null para el movimiento: ${movimiento.descripcion}`);
+                }
                 // Crear el movimiento con categoría automática
                 const query = `
           INSERT INTO movements (
@@ -761,7 +795,7 @@ class CartolaService {
             category_id, created_at, updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
         `;
-                await this.pool.query(query, [
+                const insertResult = await this.pool.query(query, [
                     movementData.cardId,
                     movementData.amount,
                     movementData.description,
@@ -770,7 +804,9 @@ class CartolaService {
                     movementData.transactionDate,
                     movementData.categoryId
                 ]);
+                console.log(`[CartolaService] Movimiento ${i + 1} creado exitosamente`);
             }
+            console.log(`[CartolaService] Todos los ${movimientos.length} movimientos creados exitosamente para tarjeta ${cardId}`);
         }
         catch (error) {
             console.error('Error al guardar movimientos:', error);

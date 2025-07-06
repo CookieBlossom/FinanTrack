@@ -155,7 +155,7 @@ h3 {
 
 .no-cards-message {
   text-align: center;
-  padding: 2rem;
+  padding: 0.2rem;
   background: var(--clr-surface-a20);
   border-radius: 4px;
 }

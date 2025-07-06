@@ -329,7 +329,7 @@ class ScraperController {
         return {
             description: mov.descripcion,
             amount: mov.monto,
-            transactionDate: new Date(mov.fecha),
+            transactionDate: this.parseScraperDate(mov.fecha),
             movementType: mov.movement_type || (mov.monto > 0 ? 'income' : 'expense'),
             categoryId,
             cardId: defaultCardId,
@@ -342,6 +342,35 @@ class ScraperController {
                 tipo: mov.tipo
             }
         };
+    }
+    parseScraperDate(fechaStr) {
+        try {
+            // Formato esperado: DD/MM/YYYY
+            const parts = fechaStr.split('/');
+            if (parts.length !== 3) {
+                console.error(`[ScraperController] Formato de fecha inválido: ${fechaStr}`);
+                return new Date(); // Fecha actual como fallback
+            }
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // Los meses en JavaScript van de 0-11
+            const year = parseInt(parts[2], 10);
+            // Validar que los componentes sean números válidos
+            if (isNaN(day) || isNaN(month) || isNaN(year)) {
+                console.error(`[ScraperController] Componentes de fecha inválidos: ${fechaStr}`);
+                return new Date(); // Fecha actual como fallback
+            }
+            const parsedDate = new Date(year, month, day);
+            if (isNaN(parsedDate.getTime())) {
+                console.error(`[ScraperController] Fecha parsing resultó en fecha inválida: ${fechaStr}`);
+                return new Date(); // Fecha actual como fallback
+            }
+            console.log(`[ScraperController] Fecha parseada correctamente: ${fechaStr} -> ${parsedDate.toISOString()}`);
+            return parsedDate;
+        }
+        catch (error) {
+            console.error(`[ScraperController] Error parseando fecha ${fechaStr}:`, error);
+            return new Date(); // Fecha actual como fallback
+        }
     }
     getMovementsByCategory(movements) {
         return movements.reduce((acc, mov) => {
@@ -363,14 +392,40 @@ class ScraperController {
                     updated_at: new Date().toISOString()
                 };
                 await redisService.hSet(`scraper:tasks:${taskId}`, 'data', JSON.stringify(updatedTask));
-                console.log(`[ScraperController] Tarea ${taskId} actualizada exitosamente`);
+                console.log(`[ScraperController] Tarea ${taskId} actualizada exitosamente. Nuevo estado:`, updatedTask.status);
+                // Verificar que la actualización se guardó correctamente
+                const verifyData = await redisService.hGet(`scraper:tasks:${taskId}`, 'data');
+                if (verifyData) {
+                    const verifyTask = JSON.parse(verifyData);
+                    console.log(`[ScraperController] Verificación - Tarea ${taskId} estado: ${verifyTask.status}, progreso: ${verifyTask.progress}%`);
+                }
             }
             else {
                 console.warn(`[ScraperController] No se encontró la tarea ${taskId} en Redis`);
+                // Intentar crear la tarea con la información disponible
+                const newTask = {
+                    id: taskId,
+                    status: update.status || 'processing',
+                    message: update.message || 'Procesando...',
+                    progress: update.progress || 0,
+                    result: update.result || null,
+                    error: update.error || null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                await redisService.hSet(`scraper:tasks:${taskId}`, 'data', JSON.stringify(newTask));
+                console.log(`[ScraperController] Tarea ${taskId} creada en Redis con estado: ${newTask.status}`);
             }
         }
         catch (error) {
-            console.error(`[ScraperController] Error actualizando tarea ${taskId}:`, error);
+            console.error(`[ScraperController] Error crítico actualizando tarea ${taskId}:`, error);
+            if (error instanceof Error) {
+                console.error(`[ScraperController] Error stack:`, error.stack);
+            }
+            // Si hay un error crítico de Redis, intentar reconectarse
+            if (error instanceof Error && (error.message?.includes('Connection') || error.message?.includes('ECONNREFUSED'))) {
+                console.error(`[ScraperController] Error de conexión Redis detectado. Tarea ${taskId} no se pudo actualizar.`);
+            }
         }
     }
 }

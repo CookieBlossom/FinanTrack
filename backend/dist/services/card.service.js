@@ -372,6 +372,12 @@ class CardService {
     }
     async findOrCreateCuentaRUT(userId, accountHolder, balance, source = 'imported', rutForName) {
         try {
+            console.log(`[CardService] findOrCreateCuentaRUT - Parámetros:`);
+            console.log(`  userId: ${userId}`);
+            console.log(`  accountHolder: "${accountHolder}"`);
+            console.log(`  balance: ${balance}`);
+            console.log(`  source: "${source}"`);
+            console.log(`  rutForName: "${rutForName}"`);
             // Buscar si ya existe una tarjeta Cuenta RUT de BancoEstado
             const findQuery = `
         SELECT ${this.getCardSelectFields()}
@@ -384,9 +390,16 @@ class CardService {
       `;
             const CUENTA_RUT_TYPE_ID = 9; // Según schema
             const BANCO_ESTADO_ID = 1; // Según schema
+            console.log(`[CardService] Buscando Cuenta RUT existente con query:`, {
+                userId,
+                cardTypeId: CUENTA_RUT_TYPE_ID,
+                bankId: BANCO_ESTADO_ID
+            });
             const existingCard = await this.pool.query(findQuery, [userId, CUENTA_RUT_TYPE_ID, BANCO_ESTADO_ID]);
+            console.log(`[CardService] Resultado de búsqueda: ${existingCard.rows.length} tarjetas encontradas`);
             if (existingCard.rows.length > 0) {
                 // Actualizar tarjeta existente
+                console.log(`[CardService] Actualizando tarjeta existente ID: ${existingCard.rows[0].id}`);
                 const updateQuery = `
           UPDATE cards 
           SET balance = $1,
@@ -405,11 +418,16 @@ class CardService {
                     existingCard.rows[0].id
                 ]);
                 console.log(`[CardService] Cuenta RUT existente actualizada: ${existingCard.rows[0].nameAccount}`);
+                if (result.rows.length === 0) {
+                    console.error('[CardService] ERROR: La actualización no retornó filas');
+                    throw new Error('Error al actualizar la tarjeta existente');
+                }
                 return { card: result.rows[0], wasCreated: false };
             }
             else {
                 // Crear nueva tarjeta Cuenta RUT
                 const nameAccount = rutForName || 'CuentaRUT';
+                console.log(`[CardService] Creando nueva Cuenta RUT con nombre: "${nameAccount}"`);
                 const insertQuery = `
           INSERT INTO cards (
             user_id, name_account, account_holder, balance, 
@@ -424,11 +442,16 @@ class CardService {
                     CUENTA_RUT_TYPE_ID, BANCO_ESTADO_ID, source
                 ]);
                 console.log(`[CardService] Nueva Cuenta RUT creada: ${nameAccount}`);
+                if (result.rows.length === 0) {
+                    console.error('[CardService] ERROR: La inserción no retornó filas');
+                    throw new Error('Error al crear la nueva tarjeta');
+                }
                 return { card: result.rows[0], wasCreated: true };
             }
         }
         catch (error) {
-            console.error('Error en findOrCreateCuentaRUT:', error);
+            console.error('[CardService] Error en findOrCreateCuentaRUT:', error);
+            console.error('[CardService] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
             throw new errors_1.DatabaseError('Error al procesar la Cuenta RUT');
         }
     }
@@ -437,17 +460,37 @@ class CardService {
      */
     async findOrUpdateCardFromCartolaV2(userId, nameAccount, accountHolder, balance, cardTypeId, bankId) {
         try {
+            console.log(`[CardService] findOrUpdateCardFromCartolaV2 - Parámetros recibidos:`);
+            console.log(`  userId: ${userId}`);
+            console.log(`  nameAccount: "${nameAccount}"`);
+            console.log(`  accountHolder: "${accountHolder}"`);
+            console.log(`  balance: ${balance}`);
+            console.log(`  cardTypeId: ${cardTypeId}`);
+            console.log(`  bankId: ${bankId}`);
             // Si es Cuenta RUT de BancoEstado, usar lógica especializada
             if (cardTypeId === 9 && bankId === 1) {
                 console.log(`[CardService] Procesando Cuenta RUT con lógica especializada`);
                 const result = await this.findOrCreateCuentaRUT(userId, accountHolder, balance, 'imported', nameAccount);
+                console.log(`[CardService] Resultado de findOrCreateCuentaRUT:`, {
+                    cardId: result.card.id,
+                    cardName: result.card.nameAccount,
+                    wasCreated: result.wasCreated
+                });
                 return { card: result.card, wasUpdated: !result.wasCreated };
             }
             // Para otras tarjetas, usar lógica original
-            return this.findOrUpdateCardFromCartola(userId, nameAccount, accountHolder, balance, cardTypeId, bankId);
+            console.log(`[CardService] Procesando tarjeta NO CuentaRUT con lógica original`);
+            const result = await this.findOrUpdateCardFromCartola(userId, nameAccount, accountHolder, balance, cardTypeId, bankId);
+            console.log(`[CardService] Resultado de findOrUpdateCardFromCartola:`, {
+                cardId: result.card.id,
+                cardName: result.card.nameAccount,
+                wasUpdated: result.wasUpdated
+            });
+            return result;
         }
         catch (error) {
-            console.error('Error en findOrUpdateCardFromCartolaV2:', error);
+            console.error('[CardService] Error en findOrUpdateCardFromCartolaV2:', error);
+            console.error('[CardService] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
             throw new errors_1.DatabaseError('Error al procesar la tarjeta desde la cartola');
         }
     }

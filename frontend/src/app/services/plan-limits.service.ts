@@ -247,21 +247,27 @@ export class PlanLimitsService {
       this.currentUsage$
     ]).pipe(
       map(([limits, usage]) => {
+        const planLimit = limits[limitKey];
+        if (planLimit === -1 || planLimit === undefined) {
+          return {
+            limit: -1,
+            currentUsage: 0,
+            remaining: -1
+          };
+        }
         const usageData = this.getUsageData(usage, limitKey);
         if (!usageData) {
           return {
-            limit: 0,
+            limit: planLimit,
             currentUsage: 0,
-            remaining: 0
+            remaining: planLimit
           };
         }
-
-        const limit = limits[limitKey] || 0;
         const currentUsage = usageData.used || 0;
         const remaining = usageData.remaining || 0;
 
         return {
-          limit,
+          limit: planLimit,
           currentUsage,
           remaining
         };

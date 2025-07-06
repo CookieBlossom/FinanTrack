@@ -566,22 +566,34 @@ class MovementService {
     }
     async processCartolaMovements(buffer, userId, planId) {
         try {
+            console.log(`[MovementService] Iniciando procesamiento de cartola para usuario ${userId}`);
             const cartola = await this.cartolaService.procesarCartolaPDF(buffer);
-            // Determinar el tipo de tarjeta basándose en el título
+            console.log(`[MovementService] Cartola procesada: título="${cartola.tituloCartola}", cliente="${cartola.clienteNombre}", saldo=${cartola.saldoFinal}, movimientos=${cartola.movimientos.length}`);
             const cardTypeId = this.cartolaService.detectCardTypeFromTitle(cartola.tituloCartola);
             const bankId = 1; // ID de BancoEstado
+            console.log(`[MovementService] Tipo de tarjeta detectado: cardTypeId=${cardTypeId}, bankId=${bankId}`);
             // Usar el método mejorado con lógica específica para Cuenta RUT
+            console.log(`[MovementService] Llamando a findOrUpdateCardFromCartolaV2 con userId=${userId}, título="${cartola.tituloCartola}"`);
             const { card } = await this.cardService.findOrUpdateCardFromCartolaV2(userId, cartola.tituloCartola, cartola.clienteNombre, cartola.saldoFinal, cardTypeId, bankId);
+            // Validar que la tarjeta fue creada/encontrada correctamente
+            if (!card || !card.id) {
+                console.error('[MovementService] ERROR CRÍTICO: No se pudo crear/encontrar la tarjeta');
+                console.error('[MovementService] Resultado de findOrUpdateCardFromCartolaV2:', card);
+                throw new Error('No se pudo crear o encontrar la tarjeta para la cartola');
+            }
+            console.log(`[MovementService] Tarjeta procesada exitosamente: ID=${card.id}, nombre="${card.nameAccount}"`);
             // Guardar los movimientos
+            console.log(`[MovementService] Guardando ${cartola.movimientos.length} movimientos para tarjeta ${card.id}`);
             await this.cartolaService.guardarMovimientos(card.id, cartola.movimientos, userId, planId, cartola.saldoFinal);
-            console.log(`[MovementService] Cartola procesada: tarjeta ${card.id}, ${cartola.movimientos.length} movimientos`);
+            console.log(`[MovementService] Cartola procesada exitosamente: tarjeta ${card.id}, ${cartola.movimientos.length} movimientos`);
             return {
                 cardId: card.id,
                 movementsCount: cartola.movimientos.length
             };
         }
         catch (error) {
-            console.error('Error al procesar cartola:', error);
+            console.error('[MovementService] Error al procesar cartola:', error);
+            console.error('[MovementService] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
             throw error;
         }
     }

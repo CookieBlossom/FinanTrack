@@ -28,13 +28,13 @@ import { PLAN_LIMITS } from '../../models/plan.model';
       <!-- Mensaje de límite alcanzado -->
       <div *ngIf="showLimitMessage" class="limit-message">
         <mat-icon>warning</mat-icon>
-        <span>Límite de {{ maxKeywords === UNLIMITED_KEYWORDS ? 'ilimitadas' : maxKeywords }} keywords alcanzado</span>
+        <span>Límite de {{ getFormattedMaxKeywords() }} keywords alcanzado</span>
         <button mat-button color="primary" (click)="upgradePlan()">Actualizar Plan</button>
       </div>
       
           <!-- Contador de keywords -->
     <div class="keyword-counter">
-      {{ tags.length }}/{{ maxKeywords === UNLIMITED_KEYWORDS ? '∞' : maxKeywords }} keywords
+      {{ tags.length }}/{{ getFormattedMaxKeywords() }} keywords
     </div>
     </div>
   `,
@@ -241,16 +241,20 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   private loadKeywordLimit(): void {
     this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.KEYWORDS_PER_CATEGORY).subscribe({
       next: (limitStatus) => {
+        console.log('[TagInputEditor] Límite cargado:', limitStatus);
         if (limitStatus.limit === -1) {
           this.maxKeywords = this.UNLIMITED_KEYWORDS; // Prácticamente ilimitado
+          console.log('[TagInputEditor] Plan ilimitado detectado');
         } else {
           this.maxKeywords = limitStatus.limit;
+          console.log('[TagInputEditor] Límite establecido en:', this.maxKeywords);
         }
         this.updateLimitMessage();
       },
       error: (error) => {
-        console.error('Error al cargar límite de keywords:', error);
-        this.maxKeywords = 5; // Límite por defecto (plan básico)
+        console.error('[TagInputEditor] Error al cargar límite de keywords:', error);
+        this.maxKeywords = Math.max(this.tags.length + 5, 10);
+        console.log('[TagInputEditor] Límite de emergencia establecido en:', this.maxKeywords);
       }
     });
   }
@@ -268,6 +272,16 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   }
 
   upgradePlan(): void {
+  }
+
+  /**
+   * Formatea el límite máximo de keywords para mostrar texto amigable
+   */
+  getFormattedMaxKeywords(): string {
+    if (this.maxKeywords === this.UNLIMITED_KEYWORDS || this.maxKeywords === -1) {
+      return '∞';
+    }
+    return this.maxKeywords.toString();
   }
 
   getValue(): any {
