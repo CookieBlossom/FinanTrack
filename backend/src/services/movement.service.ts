@@ -620,7 +620,9 @@ export class MovementService {
       // Determinar el tipo de tarjeta basándose en el título
       const cardTypeId = this.cartolaService.detectCardTypeFromTitle(cartola.tituloCartola);
       const bankId = 1; // ID de BancoEstado
-      const { card } = await this.cardService.findOrUpdateCardFromCartola(
+      
+      // Usar el método mejorado con lógica específica para Cuenta RUT
+      const { card } = await this.cardService.findOrUpdateCardFromCartolaV2(
         userId,
         cartola.tituloCartola,
         cartola.clienteNombre,

@@ -1115,7 +1115,7 @@ class BancoEstadoScraper:
         
         # Enviar movimientos al backend
         if processed_movements:
-            await self.send_movements_to_backend(processed_movements, task_data)
+            await self.send_movements_to_backend(processed_movements, task_data, cuentas)
         
         return {
             'processed_movements': processed_movements,
@@ -1127,20 +1127,11 @@ class BancoEstadoScraper:
         Procesa un movimiento individual y lo categoriza
         Estructura exacta que espera el backend según IScraperMovement
         """
-        # Limpiar descripción
         descripcion = movimiento.get('descripcion', '').strip()
         descripcion_clean = self.clean_description(descripcion)
-        
-        # Extraer tipo de transacción de la descripción
         tipo = self.extract_transaction_type(descripcion)
-        
-        # Extraer referencia si aplica
         referencia = self.extract_reference(descripcion)
-        
-        # Buscar categoría automática mejorada
         categoria_automatica = self.find_automatic_category_improved(descripcion_clean, companies)
-        
-        # Preparar movimiento procesado según interfaz IScraperMovement
         processed_movement = {
             'fecha': movimiento.get('fecha'),                    # string - fecha ISO
             'descripcion': descripcion,                          # string - descripción del movimiento
@@ -1267,7 +1258,7 @@ class BancoEstadoScraper:
         # Fallback a "Otros" si no encuentra coincidencia
         return "Otros"
     
-    async def send_movements_to_backend(self, movements: List[dict], task_data: dict) -> None:
+    async def send_movements_to_backend(self, movements: List[dict], task_data: dict, cuentas: List[dict]) -> None:
         """
         Envía los movimientos procesados al backend
         """
@@ -1286,7 +1277,8 @@ class BancoEstadoScraper:
         payload = {
             'rawMovements': movements,
             'scraperTaskId': task_data.get('id'),
-            'userId': task_data.get('user_id')
+            'userId': task_data.get('user_id'),
+            'cuentas': cuentas
         }
         
         try:
