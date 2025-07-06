@@ -40,6 +40,8 @@
     "pg-hstore": "^2.3.4",
     "redis": "^4.7.1",
     "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.7.2",
+    "@types/socket.io": "^3.0.2",
     "stripe": "^18.2.1",
     "typeorm": "^0.3.24",
     "typescript": "^5.0.3",

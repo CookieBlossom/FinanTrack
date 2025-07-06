@@ -92,6 +92,14 @@ class RedisService {
         await this.client.quit();
         console.log('Redis Client Disconnected');
     }
+    async subscribe(channel, listener) {
+        const subscriber = new ioredis_1.default(process.env.REDIS_URL || 'redis://localhost:6379');
+        await subscriber.subscribe(channel);
+        subscriber.on('message', listener);
+    }
+    async publish(channel, message) {
+        return this.client.publish(channel, message);
+    }
 }
 exports.RedisService = RedisService;
 //# sourceMappingURL=redis.service.js.map

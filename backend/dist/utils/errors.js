@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BusinessError = exports.NotFoundError = exports.AuthenticationError = exports.ValidationError = exports.UserAlreadyExistsError = exports.DatabaseError = void 0;
+exports.ScraperError = exports.BusinessError = exports.NotFoundError = exports.AuthenticationError = exports.ValidationError = exports.UserAlreadyExistsError = exports.DatabaseError = void 0;
+exports.getErrorMessage = getErrorMessage;
 class DatabaseError extends Error {
     constructor(message) {
         super(message);
@@ -43,4 +44,17 @@ class BusinessError extends Error {
     }
 }
 exports.BusinessError = BusinessError;
+function getErrorMessage(error) {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return String(error);
+}
+class ScraperError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'ScraperError';
+    }
+}
+exports.ScraperError = ScraperError;
 //# sourceMappingURL=errors.js.map

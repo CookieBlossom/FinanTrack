@@ -6,14 +6,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const http_1 = require("http");
 const connection_1 = require("./config/database/connection");
 const index_1 = __importDefault(require("./routes/index"));
 const cron_setup_1 = require("./utils/cron-setup");
+const websocket_service_1 = require("./services/websocket.service");
 // Cargar variables de entorno
 dotenv_1.default.config();
 console.log('Puerto configurado:', process.env.PORT || 3000);
 console.log('Base de datos:', process.env.DB_NAME || 'finantrack');
 const app = (0, express_1.default)();
+const server = (0, http_1.createServer)(app);
+const wsService = websocket_service_1.WebSocketService.getInstance();
+wsService.initialize(server);
 // Middleware
 app.use((0, cors_1.default)({
     origin: [
@@ -75,7 +80,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 cron_setup_1.cronSetup.initCronJobs();
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Servidor FinanTrack ejecutándose en el puerto ${PORT}`);
     console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });

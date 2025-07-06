@@ -4,6 +4,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ScraperService, ScraperTask } from '../../services/scraper.service';
 import { Subscription } from 'rxjs';
+import { WebSocketService } from '../../services/web-socket.service';
 
 @Component({
   selector: 'app-scraper-dialog',
@@ -243,7 +244,8 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<ScraperDialogComponent>,
     private scraperService: ScraperService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private wsService: WebSocketService
   ) {
     this.scraperForm = this.fb.group({
       rut: ['', [Validators.required, this.rutValidator.bind(this)]],
@@ -258,6 +260,10 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopMonitoring();
+    if (this.currentTask?.id) {
+      this.wsService.unsubscribeFromTask(this.currentTask.id);
+      this.wsService.disconnect();
+    }
   }
 
   rutValidator(control: any) {
@@ -369,6 +375,10 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
 
   closeDialog() {
     this.stopMonitoring();
+    if (this.currentTask?.id) {
+      this.wsService.unsubscribeFromTask(this.currentTask.id);
+      this.wsService.disconnect();
+    }
     this.dialogRef.close();
   }
 } 

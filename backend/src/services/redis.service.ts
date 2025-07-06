@@ -107,4 +107,14 @@ export class RedisService { // quitamos OnModuleDestroy por ahora, manejar desco
     await this.client.quit();
     console.log('Redis Client Disconnected');
   }
+
+  async subscribe(channel: string, listener: (channel: string, message: string) => void): Promise<void> {
+    const subscriber = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    await subscriber.subscribe(channel);
+    subscriber.on('message', listener);
+  }
+
+  async publish(channel: string, message: string): Promise<number> {
+    return this.client.publish(channel, message);
+  }
 } 

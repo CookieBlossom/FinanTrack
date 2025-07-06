@@ -42,6 +42,8 @@ exports.BancoEstadoService = void 0;
 const common_1 = require("@nestjs/common");
 const child_process_1 = require("child_process");
 const path_1 = require("path");
+const websocket_service_1 = require("../../websocket.service");
+const errors_1 = require("../../../utils/errors");
 let BancoEstadoService = (() => {
     let _classDecorators = [(0, common_1.Injectable)()];
     let _classDescriptor;
@@ -51,23 +53,45 @@ let BancoEstadoService = (() => {
         constructor(redisService, scraperService) {
             this.redisService = redisService;
             this.scraperService = scraperService;
+            this.wsService = websocket_service_1.WebSocketService.getInstance();
+        }
+        async emitEvent(taskId, event) {
+            try {
+                const status = {
+                    id: taskId,
+                    status: event.type,
+                    progress: event.progress,
+                    message: event.message,
+                    error: event.error,
+                    result: event.result,
+                    updatedAt: new Date().toISOString()
+                };
+                await this.wsService.updateTaskStatus(taskId, status);
+            }
+            catch (err) {
+                console.error(`Error al emitir evento para tarea ${taskId}:`, (0, errors_1.getErrorMessage)(err));
+            }
         }
         async executeScraperTask(userId, credentials) {
             try {
-                // Crear la tarea usando el ScraperService
                 const task = await this.scraperService.createTask({
                     userId,
                     type: 'banco-estado',
                     data: credentials,
                     planId: credentials.planId
                 });
+                await this.emitEvent(task.id, {
+                    type: 'processing',
+                    progress: 0,
+                    message: 'Iniciando proceso de scraping...'
+                });
                 const taskData = {
                     id: task.id,
-                    user_id: Number(userId), // Asegurar que sea número
+                    user_id: Number(userId),
                     type: 'banco-estado',
-                    status: 'pending',
-                    message: 'Tarea creada',
-                    progress: 0.0, // Float en Python
+                    status: 'processing',
+                    message: 'Iniciando proceso de scraping...',
+                    progress: 0.0,
                     result: null,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
@@ -77,26 +101,38 @@ let BancoEstadoService = (() => {
                         password: credentials.password
                     }
                 };
-                // Guardar la tarea en Redis con el formato que espera el scraper
                 await this.redisService.hSet(`scraper:tasks:${task.id}`, 'data', JSON.stringify(taskData));
-                // Agregar la tarea a la cola de procesamiento
+                const taskKey = `scraper:tasks:${task.id}`;
+                const listener = async (channel, message) => {
+                    try {
+                        const updatedTask = JSON.parse(message);
+                        await this.emitEvent(task.id, {
+                            type: updatedTask.status,
+                            progress: updatedTask.progress * 100,
+                            message: updatedTask.message,
+                            error: updatedTask.error,
+                            result: updatedTask.result
+                        });
+                    }
+                    catch (err) {
+                        console.error('Error procesando actualización de tarea:', (0, errors_1.getErrorMessage)(err));
+                    }
+                };
+                await this.redisService.subscribe(`${taskKey}:updates`, listener);
                 await this.redisService.rpush('scraper:queue', JSON.stringify(taskData));
-                // Ejecutar el scraper
                 this.runScraper();
                 return { taskId: task.id };
             }
-            catch (error) {
-                console.error('[BancoEstadoService] Error al crear tarea de scraping:', error);
-                throw new Error('Error al iniciar el proceso de scraping para Banco Estado');
+            catch (err) {
+                console.error('[BancoEstadoService] Error al crear tarea de scraping:', err);
+                throw new errors_1.ScraperError((0, errors_1.getErrorMessage)(err));
             }
         }
         async getTaskStatus(taskId) {
             try {
-                // Intentar obtener el estado del formato del scraper primero
                 const scraperTaskData = await this.redisService.hGet(`scraper:tasks:${taskId}`, 'data');
                 if (scraperTaskData) {
                     const scraperTask = JSON.parse(scraperTaskData);
-                    // Convertir el formato del scraper al formato del servicio
                     const transformedResult = this.transformScraperResult(scraperTask.result);
                     const task = {
                         id: taskId,
@@ -112,11 +148,10 @@ let BancoEstadoService = (() => {
                     };
                     return task;
                 }
-                // Si no se encuentra en el formato del scraper, intentar el formato del servicio
                 return this.scraperService.getTask(taskId);
             }
-            catch (error) {
-                console.error('[BancoEstadoService] Error al obtener estado de tarea:', error);
+            catch (err) {
+                console.error('[BancoEstadoService] Error al obtener estado de tarea:', (0, errors_1.getErrorMessage)(err));
                 return null;
             }
         }
@@ -154,18 +189,17 @@ let BancoEstadoService = (() => {
                         taskId
                     };
                 }
-                // Enviar señal de cancelación al scraper
                 await this.redisService.rpush('scraper:control', JSON.stringify({
                     action: 'cancel',
                     id: taskId
                 }));
                 return { success: true, message: 'Tarea cancelada exitosamente', taskId };
             }
-            catch (error) {
-                console.error('[BancoEstadoService] Error al cancelar tarea:', error);
+            catch (err) {
+                console.error('[BancoEstadoService] Error al cancelar tarea:', (0, errors_1.getErrorMessage)(err));
                 return {
                     success: false,
-                    message: error instanceof Error ? error.message : 'Error interno al cancelar la tarea',
+                    message: (0, errors_1.getErrorMessage)(err),
                     taskId
                 };
             }
@@ -221,6 +255,57 @@ let BancoEstadoService = (() => {
             scraperProcess.on('error', (error) => {
                 console.error(`[BancoEstado Scraper] Error al iniciar proceso:`, error);
             });
+        }
+        async startScraping(taskId, credentials) {
+            try {
+                await this.emitEvent(taskId, {
+                    type: 'processing',
+                    progress: 0,
+                    message: 'Iniciando proceso de scraping...'
+                });
+                // Proceso de login
+                await this.emitEvent(taskId, {
+                    type: 'processing',
+                    progress: 20,
+                    message: 'Iniciando sesión en Banco Estado...'
+                });
+                // Navegación y extracción
+                await this.emitEvent(taskId, {
+                    type: 'processing',
+                    progress: 40,
+                    message: 'Navegando a la sección de movimientos...'
+                });
+                // Descarga de datos
+                await this.emitEvent(taskId, {
+                    type: 'processing',
+                    progress: 60,
+                    message: 'Descargando movimientos...'
+                });
+                // Procesamiento de datos
+                await this.emitEvent(taskId, {
+                    type: 'processing',
+                    progress: 80,
+                    message: 'Procesando movimientos...'
+                });
+                // Finalización exitosa
+                await this.emitEvent(taskId, {
+                    type: 'completed',
+                    progress: 100,
+                    message: 'Proceso completado exitosamente',
+                    result: {
+                    // Aquí van los resultados del scraping
+                    }
+                });
+            }
+            catch (err) {
+                await this.emitEvent(taskId, {
+                    type: 'failed',
+                    progress: 0,
+                    message: 'Error durante el scraping',
+                    error: (0, errors_1.getErrorMessage)(err)
+                });
+                throw new errors_1.ScraperError((0, errors_1.getErrorMessage)(err));
+            }
         }
     };
     __setFunctionName(_classThis, "BancoEstadoService");

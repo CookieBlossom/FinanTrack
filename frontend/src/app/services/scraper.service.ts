@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, interval, timer, of } from 'rxjs';
-import { map, catchError, switchMap, takeWhile, tap, filter, startWith, finalize } from 'rxjs/operators';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { map, catchError, tap, filter } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
+import { WebSocketService } from './websocket.service';
 
 export interface ScraperTask {
   id: string;
@@ -35,10 +36,12 @@ export interface ScraperResponse<T> {
 })
 export class ScraperService {
   private apiUrl = `${environment.apiUrl}/scraper`;
+  private currentTask = new BehaviorSubject<ScraperTask | null>(null);
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private wsService: WebSocketService
   ) {}
 
   private getHeaders(): HttpHeaders {
@@ -76,7 +79,6 @@ export class ScraperService {
       return throwError(() => new Error('Se requieren credenciales válidas (RUT y contraseña)'));
     }
 
-    // Validar RUT antes de enviar
     if (!this.validateRut(credentials.rut)) {
       return throwError(() => new Error('El formato del RUT no es válido'));
     }
@@ -92,6 +94,11 @@ export class ScraperService {
       formattedCredentials,
       { headers: this.getHeaders() }
     ).pipe(
+      tap(response => {
+        if (response.success && response.data?.taskId) {
+          this.wsService.subscribeToTask(response.data.taskId);
+        }
+      }),
       map(response => {
         if (!response.success) {
           throw new Error(response.message || 'Error al crear la tarea');
@@ -127,41 +134,18 @@ export class ScraperService {
       {},
       { headers: this.getHeaders() }
     ).pipe(
+      tap(() => {
+        this.wsService.unsubscribeFromTask(taskId);
+      }),
       catchError(this.handleError)
     );
   }
 
-  // Monitorear progreso de una tarea (polling)
+  // Monitorear progreso de una tarea (usando WebSocket)
   monitorTask(taskId: string): Observable<ScraperTask> {
-    console.log(' INICIANDO POLLING PARA TAREA:', taskId);
-    return interval(2000).pipe(
-      startWith(0), // Emit immediatamente
-      switchMap(() => {
-        console.log(' POLLING - Consultando estado de tarea:', taskId);
-        return this.getTaskStatus(taskId);
-      }),
-      tap(response => {
-        console.log(' POLLING - Respuesta completa recibida:', response);
-      }),
-      filter(response => response.success && response.data !== null),
-      map(response => response.data!),
-      tap(task => {
-        console.log(' POLLING - Tarea mapeada:', task);
-        console.log(' POLLING - Estado:', task.status, 'Progreso:', task.progress, 'Mensaje:', task.message);
-      }),
-      takeWhile((task: ScraperTask) => {
-        const isFinished = ['completed', 'failed', 'cancelled'].includes(task.status);
-        const shouldContinue = !isFinished;
-        console.log(' POLLING - ¿Está terminada?', isFinished, '¿Continuar?', shouldContinue);
-        return shouldContinue;
-      }, true), // Incluir la última emisión cuando esté terminada
-      finalize(() => {
-        console.log(' POLLING - Terminando polling para tarea:', taskId);
-      }),
-      catchError(error => {
-        console.error(' POLLING - Error en el polling:', error);
-        return throwError(() => error);
-      })
+    this.wsService.subscribeToTask(taskId);
+    return this.wsService.getTaskStatus().pipe(
+      filter((task): task is ScraperTask => task !== null)
     );
   }
 

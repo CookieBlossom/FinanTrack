@@ -4,6 +4,7 @@ import { PlanService } from '../plan.service';
 import { DatabaseError } from '../../utils/errors';
 // import { ConfigService } from '@nestjs/config'; // No se usa directamente, usamos process.env si es necesario
 import { v4 as uuidv4 } from 'uuid';
+import { WebSocketService } from '../websocket.service';
 
 // Cargar dotenv para asegurar que process.env esté poblado
 import dotenv from 'dotenv';
@@ -26,12 +27,14 @@ export interface ScraperTask {
 // @Injectable() // No es necesario para Express
 export class ScraperService {
   private planService: PlanService;
+  private wsService: WebSocketService;
 
   constructor(
     private readonly redisService: RedisService,
     // private readonly configService: ConfigService // Quitar si no se usa directamente aquí
   ) {
     this.planService = new PlanService();
+    this.wsService = WebSocketService.getInstance();
   }
 
   // Verificar límites de uso del scraper
@@ -190,5 +193,30 @@ export class ScraperService {
       lastSync,
       errors: errors.slice(-10) // Mantener solo los últimos 10 errores
     };
+  }
+
+  async updateTaskStatus(taskId: string, status: any) {
+    try {
+      // Actualizar el estado en Redis y emitir el evento por WebSocket
+      await this.wsService.updateTaskStatus(taskId, status);
+    } catch (error) {
+      console.error('Error al actualizar estado de tarea:', error);
+      throw error;
+    }
+  }
+
+  // Método para manejar eventos del scraper
+  async handleScraperEvent(taskId: string, event: any) {
+    const status = {
+      id: taskId,
+      status: event.type,
+      progress: event.progress || 0,
+      message: event.message,
+      error: event.error,
+      result: event.result,
+      updatedAt: new Date().toISOString()
+    };
+
+    await this.updateTaskStatus(taskId, status);
   }
 } 

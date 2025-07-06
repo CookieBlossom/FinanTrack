@@ -8,6 +8,7 @@ const plan_service_1 = require("../plan.service");
 const errors_1 = require("../../utils/errors");
 // import { ConfigService } from '@nestjs/config'; // No se usa directamente, usamos process.env si es necesario
 const uuid_1 = require("uuid");
+const websocket_service_1 = require("../websocket.service");
 // Cargar dotenv para asegurar que process.env esté poblado
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -16,6 +17,7 @@ class ScraperService {
     constructor(redisService) {
         this.redisService = redisService;
         this.planService = new plan_service_1.PlanService();
+        this.wsService = websocket_service_1.WebSocketService.getInstance();
     }
     // Verificar límites de uso del scraper
     async checkScraperLimits(userId, planId) {
@@ -138,6 +140,29 @@ class ScraperService {
             lastSync,
             errors: errors.slice(-10) // Mantener solo los últimos 10 errores
         };
+    }
+    async updateTaskStatus(taskId, status) {
+        try {
+            // Actualizar el estado en Redis y emitir el evento por WebSocket
+            await this.wsService.updateTaskStatus(taskId, status);
+        }
+        catch (error) {
+            console.error('Error al actualizar estado de tarea:', error);
+            throw error;
+        }
+    }
+    // Método para manejar eventos del scraper
+    async handleScraperEvent(taskId, event) {
+        const status = {
+            id: taskId,
+            status: event.type,
+            progress: event.progress || 0,
+            message: event.message,
+            error: event.error,
+            result: event.result,
+            updatedAt: new Date().toISOString()
+        };
+        await this.updateTaskStatus(taskId, status);
     }
 }
 exports.ScraperService = ScraperService;
