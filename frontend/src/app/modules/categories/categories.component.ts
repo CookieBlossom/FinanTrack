@@ -332,12 +332,10 @@ export class CategoriesComponent implements OnInit, OnDestroy {
   }
 
   loadPlanInfo(): void {
-    this.featureControlService.getCurrentPlan().subscribe({
-      next: (plan) => {
-        this.currentPlanName = plan.planName;
-      },
-      error: (error) => {
-        console.error('Error al cargar plan:', error);
+    // Cargar información del plan actual
+    this.featureControlService.featureControl$.subscribe(control => {
+      if (control) {
+        this.currentPlanName = control.planName;
       }
     });
 

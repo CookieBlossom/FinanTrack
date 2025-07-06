@@ -209,7 +209,7 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   tags: string[] = [];
   maxKeywords: number = 10;
   showLimitMessage: boolean = false;
-  private readonly UNLIMITED_KEYWORDS = Number.MAX_SAFE_INTEGER;
+  readonly UNLIMITED_KEYWORDS = Number.MAX_SAFE_INTEGER;
   
   constructor(private planLimitsService: PlanLimitsService) {}
 
@@ -235,8 +235,6 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
     } else {
       this.tags = [];
     }
-
-    // Obtener límite de keywords del plan actual
     this.loadKeywordLimit();
   }
 
@@ -270,12 +268,9 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   }
 
   upgradePlan(): void {
-    // La redirección se manejará desde el componente padre
-    // Este método se mantiene por compatibilidad con el template
   }
 
   getValue(): any {
-    // Devuelve array de strings, usando value o display si es objeto
     return this.tags
       .map(tag => {
         if (typeof tag === 'string') return tag.trim();

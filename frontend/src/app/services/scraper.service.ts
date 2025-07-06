@@ -133,35 +133,34 @@ export class ScraperService {
 
   // Monitorear progreso de una tarea (polling)
   monitorTask(taskId: string): Observable<ScraperTask> {
-    console.log('🔍 INICIANDO POLLING PARA TAREA:', taskId);
+    console.log(' INICIANDO POLLING PARA TAREA:', taskId);
     return interval(2000).pipe(
       startWith(0), // Emit immediatamente
       switchMap(() => {
-        console.log('🔍 POLLING - Consultando estado de tarea:', taskId);
-        return this.getTaskStatus(taskId).pipe(
-          catchError(error => {
-            console.error('🔍 POLLING - Error al consultar estado:', error);
-            return of({ success: false, message: 'Error al consultar estado', data: null });
-          })
-        );
+        console.log(' POLLING - Consultando estado de tarea:', taskId);
+        return this.getTaskStatus(taskId);
       }),
       tap(response => {
-        console.log('🔍 POLLING - Respuesta completa recibida:', response);
+        console.log(' POLLING - Respuesta completa recibida:', response);
       }),
       filter(response => response.success && response.data !== null),
       map(response => response.data!),
       tap(task => {
-        console.log('🔍 POLLING - Tarea mapeada:', task);
-        console.log('🔍 POLLING - Estado:', task.status, 'Progreso:', task.progress, 'Mensaje:', task.message);
+        console.log(' POLLING - Tarea mapeada:', task);
+        console.log(' POLLING - Estado:', task.status, 'Progreso:', task.progress, 'Mensaje:', task.message);
       }),
-      takeWhile(task => {
+      takeWhile((task: ScraperTask) => {
         const isFinished = ['completed', 'failed', 'cancelled'].includes(task.status);
         const shouldContinue = !isFinished;
-        console.log('🔍 POLLING - ¿Está terminada?', isFinished, '¿Continuar?', shouldContinue);
+        console.log(' POLLING - ¿Está terminada?', isFinished, '¿Continuar?', shouldContinue);
         return shouldContinue;
       }, true), // Incluir la última emisión cuando esté terminada
       finalize(() => {
-        console.log('🔍 POLLING - Terminando polling para tarea:', taskId);
+        console.log(' POLLING - Terminando polling para tarea:', taskId);
+      }),
+      catchError(error => {
+        console.error(' POLLING - Error en el polling:', error);
+        return throwError(() => error);
       })
     );
   }
@@ -185,18 +184,10 @@ export class ScraperService {
   // Validar RUT chileno
   validateRut(rut: string): boolean {
     if (!rut || typeof rut !== 'string') return false;
-    
-    // Limpiar el RUT
     const cleanRut = rut.replace(/\./g, '').replace(/-/g, '');
-    
-    // Validar formato
     if (!/^[0-9]{7,8}[0-9Kk]$/.test(cleanRut)) return false;
-    
-    // Extraer dígitos y verificador
     const digits = cleanRut.slice(0, -1);
     const verifier = cleanRut.slice(-1).toUpperCase();
-    
-    // Calcular dígito verificador
     let sum = 0;
     let multiplier = 2;
     
@@ -219,8 +210,6 @@ export class ScraperService {
     
     return verifier === calculatedVerifier;
   }
-
-  // Formatear RUT
   formatRut(rut: string): string {
     if (!rut) return '';
     
