@@ -215,15 +215,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
       filter(event => event instanceof NavigationEnd),
       takeUntil(this.destroy$)
     ).subscribe((event: NavigationEnd) => {
-      // Solo limpiar si estamos saliendo del dashboard
-      if (!event.url.includes('/dashboard')) {
-        // Dashboard cleanup
-        this.clearData();
-        this.cdr.detectChanges();
+      // Recargar datos cuando navegamos al dashboard
+      if (event.url.includes('/dashboard')) {
+        console.log('Navegación al dashboard detectada, recargando datos...');
+        this.loadDashboardData();
       }
     });
   }
+
   ngOnInit() {
+    console.log('Inicializando componente Dashboard');
     this.calculateChartSizes();
     this.loadDashboardData();
     
@@ -238,25 +239,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.clearData();
+    console.log('Destruyendo componente Dashboard');
+    window.removeEventListener('resize', () => {});
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   private clearData() {
+    console.log('Limpiando datos del dashboard');
     this.ingresosVsCostos = [];
     this.gastosPorCategoria = [];
     this.rowData = [];
+    this.topExpenses = [];
+    this.financialSummary = null;
     this.showIngresosVsCostos = false;
     this.showGastosPorCategoria = false;
     this.showMovimientos = false;
     this.showTopExpenses = false;
     this.showFinancialSummary = false;
+    this.cdr.detectChanges();
   }
 
   loadDashboardData() {
     console.log('Iniciando carga de datos del dashboard');
-    // Limpiar datos existentes
     this.clearData();
 
     forkJoin({
@@ -290,7 +295,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
           return of(null);
         })
       )
-    }).subscribe({
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (data) => {
         console.log('Datos recibidos del dashboard:', data);
         
