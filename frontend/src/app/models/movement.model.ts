@@ -40,6 +40,7 @@ export interface MovementCreate {
   movementSource: 'manual' | 'scraper' | 'subscription' | 'projected' | 'cartola';
   transactionDate: Date;
   metadata?: Record<string, any>;
+  useCashCard?: boolean;
 }
 
 export interface MovementUpdate {

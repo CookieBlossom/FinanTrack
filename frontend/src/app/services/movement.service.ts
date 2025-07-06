@@ -160,6 +160,11 @@ export class MovementService {
         // También actualizar el cache de movimientos de tarjetas si corresponde
         this.refreshCardMovementsCache();
         
+        // Si el movimiento fue creado con useCashCard o es de efectivo, actualizar cache de efectivo
+        if (movement.useCashCard || this.isEffectivoMovement(newMovement)) {
+          this.refreshCashMovementsCache();
+        }
+        
         console.log('➕ [MovementService] Nuevo movimiento agregado al cache:', newMovement.id);
       }),
       catchError(this.handleError)
@@ -306,7 +311,15 @@ export class MovementService {
     }
   }
 
-  // 📝 Normalizar movimiento
+  private refreshCashMovementsCache(): void {
+    if (this.cashLoaded) {
+      this.refreshCashMovements().pipe(first()).subscribe();
+    }
+  }
+  private isEffectivoMovement(movement: Movement): boolean {
+    const cardName = movement.card?.nameAccount?.toLowerCase();
+    return cardName === 'efectivo' || (cardName?.includes('efectivo') ?? false);
+  }
   private normalizeMovement = (movement: any): Movement => {
     return {
       ...movement,

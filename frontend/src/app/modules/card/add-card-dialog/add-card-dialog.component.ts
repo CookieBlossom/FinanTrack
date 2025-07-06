@@ -309,34 +309,48 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   }
 
   private monitorScrapingProgress(taskId: string): void {
+    console.log(`🔍 [ADD-CARD] Iniciando monitoreo de tarea: ${taskId}`);
     this.scraperService.monitorTask(taskId).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
       next: (status) => {
+        console.log(`🔍 [ADD-CARD] Estado recibido:`, status);
         this.progress = status.progress;
         this.statusMessage = this.getStatusMessage(status.status);
         
         if (status.status === 'completed') {
+          console.log(`✅ [ADD-CARD] Tarea completada exitosamente: ${taskId}`);
           this.currentTaskId = null; // Limpiar tarea activa
+          this.loading = false;
           this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { duration: 3000 });
           this.dialogRef.close(true);
         } else if (status.status === 'failed') {
+          console.log(`❌ [ADD-CARD] Tarea falló: ${taskId}`, status);
           this.currentTaskId = null; // Limpiar tarea activa
-          this.error = status.error || 'Error durante la sincronización';
+          this.error = status.error || status.message || 'Error durante la sincronización';
           this.canRetry = true;
           this.loading = false;
+          this.snackBar.open(this.error, 'Cerrar', { duration: 7000 });
         } else if (status.status === 'cancelled') {
+          console.log(`🚫 [ADD-CARD] Tarea cancelada: ${taskId}`);
           this.currentTaskId = null; // Limpiar tarea activa
           this.loading = false;
+          this.snackBar.open('Sincronización cancelada', 'Cerrar', { duration: 3000 });
+        } else {
+          console.log(`🔄 [ADD-CARD] Tarea en progreso: ${taskId} - ${status.status} (${status.progress}%)`);
         }
       },
       error: (err) => {
+        console.error(`❌ [ADD-CARD] Error en monitoreo de tarea ${taskId}:`, err);
         this.currentTaskId = null; // Limpiar tarea activa en caso de error
         const errorMessage = this.getErrorMessageFromError(err) || 'Error al monitorear el progreso.';
         this.error = errorMessage;
         this.canRetry = true;
         this.loading = false;
         this.snackBar.open(errorMessage, 'Cerrar', { duration: 7000 });
+      },
+      complete: () => {
+        console.log(`🏁 [ADD-CARD] Monitoreo completado para tarea: ${taskId}`);
       }
     });
   }

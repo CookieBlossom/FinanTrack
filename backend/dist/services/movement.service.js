@@ -570,7 +570,8 @@ class MovementService {
             // Determinar el tipo de tarjeta basándose en el título
             const cardTypeId = this.cartolaService.detectCardTypeFromTitle(cartola.tituloCartola);
             const bankId = 1; // ID de BancoEstado
-            const { card } = await this.cardService.findOrUpdateCardFromCartola(userId, cartola.tituloCartola, cartola.clienteNombre, cartola.saldoFinal, cardTypeId, bankId);
+            // Usar el método mejorado con lógica específica para Cuenta RUT
+            const { card } = await this.cardService.findOrUpdateCardFromCartolaV2(userId, cartola.tituloCartola, cartola.clienteNombre, cartola.saldoFinal, cardTypeId, bankId);
             // Guardar los movimientos
             await this.cartolaService.guardarMovimientos(card.id, cartola.movimientos, userId, planId, cartola.saldoFinal);
             console.log(`[MovementService] Cartola procesada: tarjeta ${card.id}, ${cartola.movimientos.length} movimientos`);

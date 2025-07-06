@@ -45,8 +45,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { FeatureControlDirective } from '../../shared/directives/feature-control.directive';
 import { CardService } from '../../services/card.service';
 import { Card } from '../../models/card.model';
-import { BehaviorSubject, Observable, combineLatest, of, Subject } from 'rxjs';
-import { map, switchMap, tap, catchError, take, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, of, Subject, lastValueFrom } from 'rxjs';
+import { map, takeUntil, first } from 'rxjs/operators';
 import { PlanLimitsService } from '../../services/plan-limits.service';
 
 ModuleRegistry.registerModules([
@@ -92,9 +92,6 @@ ModuleRegistry.registerModules([
 export class MovementsComponent implements OnInit, OnDestroy {
   // 🔒 Subject para manejar suscripciones
   private destroy$ = new Subject<void>();
-  
-  // 🔄 Triggers optimizados con debounce
-  private refreshTrigger$ = new BehaviorSubject<void>(undefined);
   private lastRefreshTime = 0;
   private readonly REFRESH_DEBOUNCE_TIME = 500; // ms
   
@@ -138,51 +135,10 @@ export class MovementsComponent implements OnInit, OnDestroy {
     private snackBar: MatSnackBar,
     private planLimitsService: PlanLimitsService
   ) {
-    // 🔄 Configurar observables reactivos OPTIMIZADOS con debounce y takeUntil
-    const debouncedRefresh$ = this.refreshTrigger$.pipe(
-      debounceTime(100), // Evitar múltiples llamadas seguidas
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    );
-
-    this.historyCard$ = debouncedRefresh$.pipe(
-      switchMap(() => {
-        console.log('🔄 [Movements] Cargando movimientos de tarjetas...');
-        return this.movementService.getCardMovements().pipe(
-          catchError(error => {
-            console.error('❌ [Movements] Error al cargar movimientos de tarjetas:', error);
-            return of([]);
-          })
-        );
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    this.historyCash$ = debouncedRefresh$.pipe(
-      switchMap(() => {
-        console.log('🔄 [Movements] Cargando movimientos en efectivo...');
-        return this.movementService.getCashMovements().pipe(
-          catchError(error => {
-            console.error('❌ [Movements] Error al cargar movimientos en efectivo:', error);
-            return of([]);
-          })
-        );
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    this.cards$ = debouncedRefresh$.pipe(
-      switchMap(() => {
-        console.log('🔄 [Movements] Cargando tarjetas...');
-        return this.cardService.getCards().pipe(
-          catchError(error => {
-            console.error('❌ [Movements] Error al cargar tarjetas:', error);
-            return of([]);
-          })
-        );
-      }),
-      takeUntil(this.destroy$)
-    );
+    // 🔄 Usar observables directos de los servicios (como en cards)
+    this.historyCard$ = this.movementService.cardMovements$;
+    this.historyCash$ = this.movementService.cashMovements$;
+    this.cards$ = this.cardService.cards$;
 
     // Computar propiedades reactivas
     this.hasOnlyCashCards$ = this.cards$.pipe(
@@ -211,7 +167,11 @@ export class MovementsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // El trigger inicial ya está configurado en el constructor
+    // 🔄 Cargar datos iniciales usando el sistema reactivo
+    this.movementService.getCardMovements().subscribe();
+    this.movementService.getCashMovements().subscribe();
+    this.cardService.getCards().subscribe();
+    
     // Agregar listener para el resize
     window.addEventListener('resize', this.onWindowResize.bind(this));
   }
@@ -322,7 +282,7 @@ export class MovementsComponent implements OnInit, OnDestroy {
     }
   }
 
-  // 🔄 Método OPTIMIZADO para refrescar datos (con protección contra spam)
+  // 🔄 Método para refrescar datos (usando la misma lógica que cards)
   refreshData(): void {
     const currentTime = Date.now();
     console.log('🔄 [Movements] Actualizando datos...');
@@ -336,14 +296,34 @@ export class MovementsComponent implements OnInit, OnDestroy {
     this.lastRefreshTime = currentTime;
     this.isRefreshing = true;
     
-    // Emitir trigger para refrescar
-    this.refreshTrigger$.next();
+    // Mostrar feedback al usuario
+    this.snackBar.open('Actualizando movimientos...', 'Cerrar', { duration: 2000 });
     
-    // Restablecer el estado de carga después de un tiempo
-    setTimeout(() => {
+    this.forceRefreshData();
+  }
+
+  // 🔄 Método para forzar actualización de datos (similar a cards)
+  private async forceRefreshData(): Promise<void> {
+    try {
+      console.log('🔄 [Movements] Forzando actualización de datos...');
+      
+      // Forzar actualización de datos directamente
+      await Promise.all([
+        lastValueFrom(this.movementService.refreshCardMovements()),
+        lastValueFrom(this.movementService.refreshCashMovements()),
+        lastValueFrom(this.cardService.getCards())
+      ]);
+      
+      console.log('✅ [Movements] Todos los datos actualizados exitosamente');
+      this.snackBar.open('Movimientos actualizados', 'Cerrar', { duration: 2000 });
+      
+    } catch (error) {
+      console.error('❌ [Movements] Error al forzar actualización:', error);
+      this.snackBar.open('Error al actualizar movimientos', 'Cerrar', { duration: 3000 });
+    } finally {
       this.isRefreshing = false;
       this.cdr.markForCheck();
-    }, 1000);
+    }
   }
 
   openAddMovementDialog() {
@@ -354,7 +334,6 @@ export class MovementsComponent implements OnInit, OnDestroy {
       if (result) {
         console.log('🔄 [Movements] Movimiento agregado - refrescando datos');
         this.refreshData();
-        // Refrescar límites después de agregar un movimiento
         this.planLimitsService.refreshUsage();
       }
     });

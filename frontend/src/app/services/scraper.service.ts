@@ -144,10 +144,15 @@ export class ScraperService {
         if (!response.success) return false;
         const task = response.data;
         if (!task) return false;
-        const shouldContinue = !['completed', 'failed', 'cancelled'].includes(task.status);
-        console.log('🔍 POLLING - Estado actual:', task.status, 'Continuar:', shouldContinue);
+        
+        // Si la tarea está en estado final, devolver esta emisión y luego terminar
+        const isFinished = ['completed', 'failed', 'cancelled'].includes(task.status);
+        const shouldContinue = !isFinished;
+        console.log('🔍 POLLING - Estado actual:', task.status, 'Terminado:', isFinished, 'Continuar:', shouldContinue);
+        
+        // Si está terminada, emitir este estado y luego parar
         return shouldContinue;
-      }, true),
+      }, true), // El segundo parámetro `true` hace que incluya la última emisión
       map(response => {
         if (response.success && response.data) {
           console.log('🔍 POLLING - Devolviendo tarea:', response.data);

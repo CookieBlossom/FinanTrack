@@ -294,6 +294,7 @@ export class AddCashComponent implements OnDestroy {
         console.log('✅ [AddCash] Movimiento en efectivo creado exitosamente');
         this.snackBar.open('Movimiento en efectivo agregado exitosamente', 'Cerrar', { duration: 3000 });
         this.resetProcessingState();
+        this.isLoading = false;
         
         if (!this.componentDestroyed) {
           this.dialogRef.close(true); // Cerrar con true para indicar que se agregó exitosamente

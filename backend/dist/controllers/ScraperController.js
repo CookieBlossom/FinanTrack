@@ -157,7 +157,7 @@ class ScraperController {
         this.processScraperData = async (req, res, next) => {
             let scraperTaskId;
             try {
-                const { rawMovements, userId, scraperTaskId: taskId } = req.body;
+                const { rawMovements, userId, scraperTaskId: taskId, cuentas } = req.body;
                 scraperTaskId = taskId;
                 if (!Array.isArray(rawMovements) || typeof userId !== 'number' || typeof scraperTaskId !== 'string') {
                     return res.status(400).json({ message: 'Datos inválidos en el payload del scraper' });
@@ -166,6 +166,9 @@ class ScraperController {
                     return res.status(400).json({ message: 'userId no puede ser 0' });
                 }
                 console.log(`[ScraperController] Procesando ${rawMovements.length} movimientos del scraper para usuario ${userId}`);
+                if (cuentas && Array.isArray(cuentas)) {
+                    console.log(`[ScraperController] Procesando ${cuentas.length} cuentas detectadas por el scraper`);
+                }
                 await this.updateScraperTaskStatus(scraperTaskId, {
                     status: 'processing',
                     message: `Procesando ${rawMovements.length} movimientos...`,
@@ -184,21 +187,41 @@ class ScraperController {
                 const planId = user.plan_id;
                 console.log(`[ScraperController] Usuario ${userId} tiene plan ID ${planId}`);
                 let defaultCardId;
-                if (defaultCard.length === 0) {
-                    const newCard = await cardService.createCard({
-                        nameAccount: 'Efectivo - BancoEstado',
-                        accountHolder: 'Usuario Scraper',
-                        cardTypeId: 1,
-                        balance: 0,
-                        balanceSource: 'manual',
-                        source: 'scraper'
-                    }, userId, planId);
-                    defaultCardId = newCard.id;
-                    console.log(`[ScraperController] Tarjeta "Efectivo" creada automáticamente con ID ${defaultCardId}`);
+                let cuentaRUTCard = null;
+                // Procesar cuentas específicas del scraper (especialmente Cuenta RUT)
+                if (cuentas && Array.isArray(cuentas)) {
+                    for (const cuenta of cuentas) {
+                        if (cuenta.tipo && (cuenta.tipo.toUpperCase().includes('CUENTARUT') || cuenta.tipo.toUpperCase().includes('CUENTA RUT'))) {
+                            console.log(`[ScraperController] Procesando Cuenta RUT: ${cuenta.tipo}`);
+                            const result = await cardService.findOrCreateCardFromScraper(userId, cuenta.tipo, cuenta.titular || 'Usuario Scraper', cuenta.saldo || 0, 'scraper');
+                            cuentaRUTCard = { id: result.cardId, wasCreated: result.wasCreated };
+                            console.log(`[ScraperController] Cuenta RUT ${result.wasCreated ? 'creada' : 'encontrada'} con ID ${result.cardId}`);
+                            break; // Solo procesar la primera Cuenta RUT encontrada
+                        }
+                    }
+                }
+                // Si no se encontró tarjeta, crear tarjeta fallback
+                if (!cuentaRUTCard) {
+                    if (defaultCard.length === 0) {
+                        const newCard = await cardService.createCard({
+                            nameAccount: 'Efectivo - BancoEstado',
+                            accountHolder: 'Usuario Scraper',
+                            cardTypeId: 1,
+                            balance: 0,
+                            balanceSource: 'manual',
+                            source: 'scraper'
+                        }, userId, planId);
+                        defaultCardId = newCard.id;
+                        console.log(`[ScraperController] Tarjeta "Efectivo" creada automáticamente con ID ${defaultCardId}`);
+                    }
+                    else {
+                        defaultCardId = defaultCard[0].id;
+                        console.log(`[ScraperController] Usando tarjeta existente ID ${defaultCardId}: ${defaultCard[0].nameAccount}`);
+                    }
                 }
                 else {
-                    defaultCardId = defaultCard[0].id;
-                    console.log(`[ScraperController] Usando tarjeta existente ID ${defaultCardId}: ${defaultCard[0].nameAccount}`);
+                    defaultCardId = cuentaRUTCard.id;
+                    console.log(`[ScraperController] Usando Cuenta RUT ID ${defaultCardId} para movimientos`);
                 }
                 const createdMovements = [];
                 const errors = [];
@@ -232,7 +255,8 @@ class ScraperController {
                     total_procesados: rawMovements.length,
                     exitosos: createdMovements.length,
                     errores: errors.length,
-                    por_categoria: this.getMovementsByCategory(createdMovements)
+                    por_categoria: this.getMovementsByCategory(createdMovements),
+                    cuenta_rut_procesada: cuentaRUTCard ? true : false
                 };
                 console.log(`[ScraperController] Estadísticas del procesamiento del scraper:`, stats);
                 if (errors.length > 0 && createdMovements.length > 0) {

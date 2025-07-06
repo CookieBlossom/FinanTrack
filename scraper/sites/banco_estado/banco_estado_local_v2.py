@@ -999,30 +999,62 @@ class BancoEstadoScraper:
                 
                 # Realizar login
                 print("[INFO] Realizando login...")
-                login_exitoso = await self.login_banco_estado(page, credentials)
-                if not login_exitoso:
+                try:
+                    login_exitoso = await self.login_banco_estado(page, credentials)
+                    if not login_exitoso:
+                        await browser.close()
+                        error_result = {
+                            "success": False,
+                            "error": "Login fallido",
+                            "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        }
+                        print(f"[ERROR] Login fallido para tarea {task_id}")
+                        return error_result
+                except Exception as login_error:
                     await browser.close()
-                    return {
+                    error_result = {
                         "success": False,
-                        "error": "Login fallido",
+                        "error": f"Error durante login: {str(login_error)}",
                         "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     }
+                    print(f"[ERROR] Error de login para tarea {task_id}: {login_error}")
+                    return error_result
                 
                 # Extraer cuentas
                 print("[INFO] Extrayendo cuentas...")
-                cuentas = await self.extract_cuentas(page)
-                
-                # Extraer movimientos por cuenta
-                print("[INFO] Extrayendo movimientos por cuenta...")
-                for cuenta in cuentas:
-                    movimientos_cuenta = await self.extract_movimientos_cuenta(page, cuenta)
-                    cuenta['movimientos'] = movimientos_cuenta
+                try:
+                    cuentas = await self.extract_cuentas(page)
+                    
+                    # Extraer movimientos por cuenta
+                    print("[INFO] Extrayendo movimientos por cuenta...")
+                    for cuenta in cuentas:
+                        movimientos_cuenta = await self.extract_movimientos_cuenta(page, cuenta)
+                        cuenta['movimientos'] = movimientos_cuenta
+                        
+                except Exception as extract_error:
+                    await browser.close()
+                    error_result = {
+                        "success": False,
+                        "error": f"Error extrayendo datos: {str(extract_error)}",
+                        "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    print(f"[ERROR] Error extrayendo datos para tarea {task_id}: {extract_error}")
+                    return error_result
                 
                 await browser.close()
                 
                 # Procesar y categorizar movimientos
                 print("[INFO] Procesando y categorizando movimientos...")
-                processed_result = await self.process_and_categorize_movements(cuentas, task_data)
+                try:
+                    processed_result = await self.process_and_categorize_movements(cuentas, task_data)
+                except Exception as process_error:
+                    error_result = {
+                        "success": False,
+                        "error": f"Error procesando movimientos: {str(process_error)}",
+                        "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    print(f"[ERROR] Error procesando movimientos para tarea {task_id}: {process_error}")
+                    return error_result
                 
                 # Preparar resultado final
                 resultado = {
@@ -1050,14 +1082,15 @@ class BancoEstadoScraper:
                 return resultado
                 
         except Exception as e:
-            print(f"[ERROR] Error durante el scraping: {str(e)}")
+            print(f"[ERROR] Error crítico durante el scraping para tarea {task_id}: {str(e)}")
             import traceback
             traceback.print_exc()
-            return {
+            error_result = {
                 "success": False,
                 "error": str(e),
                 "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
+            return error_result
 
     async def process_and_categorize_movements(self, cuentas: List[dict], task_data: dict) -> dict:
         """
@@ -1366,15 +1399,15 @@ class BancoEstadoScraper:
             print("Navegando a la página principal...")
             sys.stdout.flush()
             
-            # Navegar a la página principal
+            # Navegar a la página principal (AUMENTADO: 30s -> 45s)
             try:
                 print("Navegando a bancoestado.cl...")
                 sys.stdout.flush()
-                await page.goto('https://www.bancoestado.cl/', timeout=30000)
+                await page.goto('https://www.bancoestado.cl/', timeout=45000)
                 print("Esperando carga de página...")
                 sys.stdout.flush()
-                await page.wait_for_load_state("networkidle", timeout=10000)
-                await page.wait_for_timeout(1000)
+                await page.wait_for_load_state("networkidle", timeout=20000)  # AUMENTADO: 10s -> 20s
+                await page.wait_for_timeout(2000)  # AUMENTADO: 1s -> 2s
                 print("[OK] Navegación a página principal exitosa")
                 sys.stdout.flush()
             except Exception as nav_error:
@@ -1391,7 +1424,7 @@ class BancoEstadoScraper:
                     behavior: 'smooth'
                 });
             """)
-            await page.wait_for_timeout(1120)
+            await page.wait_for_timeout(2000)  # AUMENTADO: 1120ms -> 2000ms
             
             # Mover el mouse a algunos elementos aleatorios
             await page.evaluate("""
@@ -1404,7 +1437,7 @@ class BancoEstadoScraper:
                 }
             """)
             await self.simular_scroll_natural(page)
-            await page.wait_for_timeout(1100)
+            await page.wait_for_timeout(1500)  # AUMENTADO: 1100ms -> 1500ms
             # Volver arriba suavemente
             await page.evaluate("""
                 window.scrollTo({
@@ -1412,15 +1445,15 @@ class BancoEstadoScraper:
                     behavior: 'smooth'
                 });
             """)
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(1000)  # AUMENTADO: 500ms -> 1000ms
             await self.cerrar_modal_infobar(page) 
             await self.cerrar_sidebar(page)
-            await page.wait_for_timeout(1000)
+            await page.wait_for_timeout(2000)  # AUMENTADO: 1000ms -> 2000ms
             print(" Buscando botón 'Banca en Línea'...")
             sys.stdout.flush()
             try:
                 await self.simular_movimiento_mouse_natural(page)
-                await page.wait_for_timeout(random.randint(500, 1100))
+                await page.wait_for_timeout(random.randint(1000, 2000))  # AUMENTADO: 500-1100ms -> 1000-2000ms
                 banca_button = None
                 banca_selectors = [
                     "a[href*='login'] span:text('Banca en Línea')",
@@ -1433,7 +1466,7 @@ class BancoEstadoScraper:
                 for i, selector in enumerate(banca_selectors):
                     try:
                         print(f"[INFO] Probando selector {i+1}: {selector}")
-                        button = await page.wait_for_selector(selector, timeout=5000, state="visible")
+                        button = await page.wait_for_selector(selector, timeout=10000, state="visible")  # AUMENTADO: 5s -> 10s
                         if button:
                             banca_button = button
                             print(f"[OK] Botón 'Banca en Línea' encontrado con selector: {selector}")
@@ -1465,38 +1498,38 @@ class BancoEstadoScraper:
                 
                 print("[INFO] Haciendo hover y click en 'Banca en Línea'")
                 await banca_button.hover()
-                await page.wait_for_timeout(random.randint(400, 800))
+                await page.wait_for_timeout(random.randint(800, 1500))  # AUMENTADO: 400-800ms -> 800-1500ms
                 await self.simular_movimiento_mouse_natural(page)
                 await banca_button.click()
                 print("[OK] Click en 'Banca en Línea' realizado")
-                await page.wait_for_timeout(1200)
+                await page.wait_for_timeout(2500)  # AUMENTADO: 1200ms -> 2500ms
                 
             except Exception as e:
                 print(f"ERROR: Error al hacer click en 'Banca en Línea': {str(e)}")
                 return False
-            await page.wait_for_load_state("networkidle", timeout=5000)
-            await page.wait_for_timeout(1000)
+            await page.wait_for_load_state("networkidle", timeout=10000)  # AUMENTADO: 5s -> 10s
+            await page.wait_for_timeout(2000)  # AUMENTADO: 1000ms -> 2000ms
             print(" Explorando página de login...")
             await self.simular_scroll_natural(page)
-            await page.wait_for_timeout(random.randint(710, 950))
+            await page.wait_for_timeout(random.randint(1200, 1800))  # AUMENTADO: 710-950ms -> 1200-1800ms
             await page.evaluate("""
                 window.scrollTo({
                     top: 0,
                     behavior: 'smooth'
                 });
             """)
-            await page.wait_for_timeout(1210)
+            await page.wait_for_timeout(2000)  # AUMENTADO: 1210ms -> 2000ms
             # Buscar y llenar el campo RUT
             print(" Buscando campo RUT...")
             sys.stdout.flush()
             try:
-                await page.wait_for_selector("#rut", timeout=5000)
+                await page.wait_for_selector("#rut", timeout=10000)  # AUMENTADO: 5s -> 10s
                 print("[OK] Campo RUT encontrado")
                 sys.stdout.flush()
-                await page.wait_for_timeout(200)
+                await page.wait_for_timeout(500)  # AUMENTADO: 200ms -> 500ms
                 await page.click("#rut")
                 await page.evaluate("document.getElementById('rut').removeAttribute('readonly')")
-                await page.wait_for_timeout(210)
+                await page.wait_for_timeout(500)  # AUMENTADO: 210ms -> 500ms
                 
                 # Ingresar RUT simulando escritura humana
                 print(" Ingresando RUT...")
@@ -1504,8 +1537,8 @@ class BancoEstadoScraper:
                 rut = credentials.rut.replace(".", "").replace("-", "").strip().lower()
                 print(f"[INFO] RUT procesado: {rut}")
                 sys.stdout.flush()
-                await self.type_like_human(page, "#rut", rut, delay=200)
-                await page.wait_for_timeout(random.randint(500, 600))
+                await self.type_like_human(page, "#rut", rut, delay=300)  # AUMENTADO: 200ms -> 300ms
+                await page.wait_for_timeout(random.randint(800, 1200))  # AUMENTADO: 500-600ms -> 800-1200ms
                 print("[OK] RUT ingresado exitosamente")
                 sys.stdout.flush()
                 
@@ -1521,7 +1554,7 @@ class BancoEstadoScraper:
                     setTimeout(() => input.setSelectionRange(start, start), 200);
                 }
             """, rut)
-            await page.wait_for_timeout(random.randint(500, 600))
+            await page.wait_for_timeout(random.randint(800, 1200))  # AUMENTADO: 500-600ms -> 800-1200ms
             
             # Buscar y llenar el campo de contraseña
             print(" Buscando campo de contraseña...")
@@ -1529,11 +1562,11 @@ class BancoEstadoScraper:
                 await page.click("#pass")
                 print("[OK] Campo de contraseña encontrado")
                 await page.evaluate("document.getElementById('pass').removeAttribute('readonly')")
-                await page.wait_for_timeout(1000)
+                await page.wait_for_timeout(1500)  # AUMENTADO: 1000ms -> 1500ms
                 
                 print(" Ingresando contraseña...")
-                await self.type_like_human(page, "#pass", credentials.password, delay=200)
-                await page.wait_for_timeout(random.randint(500, 950))
+                await self.type_like_human(page, "#pass", credentials.password, delay=300)  # AUMENTADO: 200ms -> 300ms
+                await page.wait_for_timeout(random.randint(1000, 1500))  # AUMENTADO: 500-950ms -> 1000-1500ms
                 print("[OK] Contraseña ingresada exitosamente")
                 
             except Exception as pass_error:
@@ -1547,10 +1580,10 @@ class BancoEstadoScraper:
                     setTimeout(() => input.setSelectionRange(length, length), 200);
                 }
             """)
-            await page.wait_for_timeout(random.randint(600, 1100))
+            await page.wait_for_timeout(random.randint(1000, 1800))  # AUMENTADO: 600-1100ms -> 1000-1800ms
             await self.simular_comportamiento_humano(page)
             await self.espera_aleatoria(page)
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(1000)  # AUMENTADO: 500ms -> 1000ms
             print(" Iniciando proceso de login...")
             sys.stdout.flush()
             try:
@@ -1570,7 +1603,7 @@ class BancoEstadoScraper:
                 for i, selector in enumerate(ingresar_selectors):
                     try:
                         print(f"[INFO] Probando selector {i+1}: {selector}")
-                        button = await page.wait_for_selector(selector, timeout=10000, state="visible")
+                        button = await page.wait_for_selector(selector, timeout=15000, state="visible")  # AUMENTADO: 10s -> 15s
                         if button:
                             login_button = button
                             print(f"[OK] Botón 'Ingresar' encontrado con selector: {selector}")
@@ -1598,20 +1631,20 @@ class BancoEstadoScraper:
                     
                     raise Exception("No se pudo encontrar el botón 'Ingresar'")
                 await login_button.wait_for_element_state("enabled")
-                await page.wait_for_timeout(1250)
+                await page.wait_for_timeout(2000)  # AUMENTADO: 1250ms -> 2000ms
                 await self.simular_movimiento_mouse_natural(page)
-                await page.wait_for_timeout(random.randint(600, 900))
+                await page.wait_for_timeout(random.randint(1000, 1500))  # AUMENTADO: 600-900ms -> 1000-1500ms
                 await login_button.hover()
-                await page.wait_for_timeout(random.randint(600, 900))
+                await page.wait_for_timeout(random.randint(1000, 1500))  # AUMENTADO: 600-900ms -> 1000-1500ms
                 success = False
                 try:
-                    await login_button.click(delay=random.randint(200, 400))
+                    await login_button.click(delay=random.randint(300, 600))  # AUMENTADO: 200-400ms -> 300-600ms
                     success = True
                 except Exception as e:
                     print(f"Intento 1 fallido: {e}")
                 if not success:
                     try:
-                        await page.wait_for_timeout(1100)
+                        await page.wait_for_timeout(2000)  # AUMENTADO: 1100ms -> 2000ms
                         await page.evaluate("""
                             (button) => {
                                 button.click();
@@ -1623,7 +1656,7 @@ class BancoEstadoScraper:
                         print(f"Intento 2 fallido: {e}")
                 if not success:
                     try:
-                        await page.wait_for_timeout(700)
+                        await page.wait_for_timeout(1500)  # AUMENTADO: 700ms -> 1500ms
                         await page.evaluate("""
                             (button) => {
                                 const clickEvent = new MouseEvent('click', {
@@ -1653,20 +1686,20 @@ class BancoEstadoScraper:
                 
                 print("[INFO] Click exitoso, esperando navegación...")
                 sys.stdout.flush()
-                await page.wait_for_timeout(3000)
-                await page.wait_for_load_state("networkidle", timeout=15000)
-                await page.wait_for_timeout(6000)
+                await page.wait_for_timeout(5000)  # AUMENTADO: 3s -> 5s
+                await page.wait_for_load_state("networkidle", timeout=25000)  # AUMENTADO: 15s -> 25s
+                await page.wait_for_timeout(8000)  # AUMENTADO: 6s -> 8s
                 print("[OK] Navegación completada")
                 sys.stdout.flush()
             except Exception as e:
                 print(f"ERROR: Error al intentar hacer click en el botón: {str(e)}")
                 raise
-            await page.wait_for_timeout(5000)
+            await page.wait_for_timeout(7000)  # AUMENTADO: 5s -> 7s
             modal_error = page.locator("text='ha ocurrido un error'")
             if await modal_error.count() > 0:
                 print("[WARNING] Modal de error detectado tras login")
                 raise Exception("ERROR: Error visible en pantalla después de iniciar sesión")
-            await page.wait_for_timeout(7020)
+            await page.wait_for_timeout(9000)  # AUMENTADO: 7020ms -> 9000ms
             content = await page.content()
             errores = [
                 "clave incorrecta",
@@ -1683,7 +1716,7 @@ class BancoEstadoScraper:
             print(f"URL actual: {current_url}")
             print("Explorando dashboard...")
             await self.simular_scroll_natural(page)
-            await page.wait_for_timeout(random.randint(1500, 2200))
+            await page.wait_for_timeout(random.randint(2000, 3000))  # AUMENTADO: 1500-2200ms -> 2000-3000ms
             print(" Verificando si el login fue exitoso...")
             sys.stdout.flush()
             try:
@@ -1701,7 +1734,7 @@ class BancoEstadoScraper:
                 for i, selector in enumerate(success_selectors):
                     try:
                         print(f"[INFO] Buscando selector {i+1}: {selector}")
-                        await page.wait_for_selector(selector, timeout=10000)
+                        await page.wait_for_selector(selector, timeout=15000)  # AUMENTADO: 10s -> 15s
                         print(f"[OK] Login confirmado: Elemento {selector} encontrado")
                         login_success = True
                         break
@@ -1743,14 +1776,14 @@ class BancoEstadoScraper:
                     
                 print("[OK] Login exitoso verificado")
                 await self.simular_scroll_natural(page)
-                await page.wait_for_timeout(random.randint(500, 1000))
+                await page.wait_for_timeout(random.randint(1000, 2000))  # AUMENTADO: 500-1000ms -> 1000-2000ms
                 await page.evaluate("""
                     window.scrollTo({
                         top: 0,
                         behavior: 'smooth'
                     });
                 """)
-                await page.wait_for_timeout(4000)
+                await page.wait_for_timeout(6000)  # AUMENTADO: 4s -> 6s
                 return True
                 
             except Exception as e:
