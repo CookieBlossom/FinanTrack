@@ -1,42 +1,96 @@
 <div class="container-dashboard">
     <div class="dashboard-content">
-        <div class="ingresosVsCostos">
-            <h2 class="title-section">Ingresos vs Costos ({{ currentYear }})</h2>
+        <!-- Top 5 Gastos Históricos -->
+        <div class="top-expenses">
+            <h2 class="title-section">Top 5 Gastos (Últimos 30 días)</h2>
             <div class="chart-wrapper">
-                <ng-container *ngIf="showIngresosVsCostos; else noIngresosVsCostos">
-                    <ngx-charts-line-chart
-                        [view]="chartView"
-                        [results]="ingresosVsCostos"
-                        [scheme]="colorScheme2"
-                        [legend]="true"
-                        [legendTitle]="'Leyenda'"
-                        [legendPosition]="legendPosition"
-                        [xAxis]="true"
-                        [yAxis]="true"
-                        [animations]="true"
-                        [autoScale]="true"
-                        [curve]="curve"
-                        [yAxisTickFormatting]="formatCurrency"
-                        [showGridLines]="false"
-                        [gradient]="false"
-                        [showXAxisLabel]="true"
-                        [showYAxisLabel]="true"
-                        xAxisLabel="Mes"
-                        yAxisLabel="Monto ($)">
-                    </ngx-charts-line-chart>
+                <ng-container *ngIf="showTopExpenses; else noTopExpenses">
+                    <div class="expenses-list">
+                        <div class="expense-item" *ngFor="let expense of topExpenses">
+                            <div class="expense-info">
+                                <span class="expense-description">{{ expense.description }}</span>
+                                <span class="expense-category">{{ expense.category }}</span>
+                            </div>
+                            <div class="expense-details">
+                                <span class="expense-amount">{{ formatAmount(expense.amount) }}</span>
+                                <span class="expense-date">{{ expense.transactionDate | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </ng-container>
-                <ng-template #noIngresosVsCostos>
+                <ng-template #noTopExpenses>
                     <div class="empty-state">
-                        <i class="fas fa-chart-line"></i>
-                        <p>No hay datos de ingresos y costos para mostrar en el gráfico</p>
+                        <i class="fas fa-receipt"></i>
+                        <p>No hay gastos registrados en los últimos 30 días</p>
                         <button class="action-button" routerLink="/movements">
                             <i class="fas fa-plus-circle"></i>
-                            Agregar Movimientos
+                            Agregar Gastos
                         </button>
                     </div>
                 </ng-template>
             </div>
         </div>
+
+        <!-- Situación Financiera -->
+        <div class="financial-summary">
+            <h2 class="title-section">Situación Financiera</h2>
+            <div class="chart-wrapper">
+                <ng-container *ngIf="showFinancialSummary && financialSummary; else noFinancialSummary">
+                    <div class="financial-overview-horizontal">
+                        <div class="total-balance-left" 
+                             [class.positive]="totalBalanceState === 'positive'" 
+                             [class.negative]="totalBalanceState === 'negative'"
+                             [class.neutral]="totalBalanceState === 'neutral'">
+                            <div class="balance-label">Balance Total</div>
+                            <div class="balance-amount">{{ formatAmount(financialSummary.totalBalance) }}</div>
+                            <div class="balance-status">
+                                <i [class]="totalBalanceState === 'positive' ? 'fas fa-arrow-up' : totalBalanceState === 'negative' ? 'fas fa-arrow-down' : 'fas fa-minus'"></i>
+                                {{ totalBalanceState === 'positive' ? 'Positivo' : totalBalanceState === 'negative' ? 'Déficit' : 'Neutro' }}
+                            </div>
+                        </div>
+                        <div class="cards-summary-right">
+                            <div class="cards-header">
+                                <span>Tarjetas Disponibles</span>
+                            </div>
+                            <div class="clickable-cards-list">
+                                <div class="clickable-card-item" 
+                                     *ngFor="let card of filteredCards"
+                                     (click)="onCardClick(card)"
+                                     [class.positive]="getBalanceState(card.balance) === 'positive'" 
+                                     [class.negative]="getBalanceState(card.balance) === 'negative'"
+                                     [class.neutral]="getBalanceState(card.balance) === 'neutral'">
+                                    <div class="card-info">
+                                        <span class="card-name">{{ card.name }}</span>
+                                        <span class="card-holder">{{ card.accountHolder }}</span>
+                                    </div>
+                                    <div class="card-balance">
+                                        {{ formatAmount(card.balance) }}
+                                    </div>
+                                    <div class="card-action">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </div>
+                                </div>
+                                <div class="no-cards-message" *ngIf="!hasClickableCards">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>No hay tarjetas disponibles</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+                <ng-template #noFinancialSummary>
+                    <div class="empty-state">
+                        <i class="fas fa-credit-card"></i>
+                        <p>No hay información financiera disponible</p>
+                        <button class="action-button" routerLink="/cards">
+                            <i class="fas fa-plus-circle"></i>
+                            Agregar Tarjetas
+                        </button>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+
         <div class="bottom-row">
             <div class="gastosPorCategoria">
                 <h2 class="title-section">Gastos por Categoría</h2>

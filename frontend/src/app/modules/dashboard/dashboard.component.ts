@@ -19,7 +19,7 @@ import {
   RowSelectionModule,
 } from 'ag-grid-community';
 import { curveLinear } from 'd3-shape';
-import { DashboardService, IncomeVsExpenses, CategoryExpense, RecentMovement } from '../../services/dashboard.service';
+import { DashboardService, IncomeVsExpenses, CategoryExpense, RecentMovement, TopExpense, FinancialSummary, FinancialCard } from '../../services/dashboard.service';
 import { forkJoin, catchError, of, Subject } from 'rxjs';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { takeUntil, filter } from 'rxjs/operators';
@@ -56,12 +56,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ingresosVsCostos: IncomeVsExpenses[] = [];
   gastosPorCategoria: CategoryExpense[] = [];
   rowData: ProjectedMovement[] = [];
+  topExpenses: TopExpense[] = [];
+  financialSummary: FinancialSummary | null = null;
   currentYear: number = new Date().getFullYear();
 
   // Flags para controlar la visibilidad
   showIngresosVsCostos = false;
   showGastosPorCategoria = false;
   showMovimientos = false;
+  showTopExpenses = false;
+  showFinancialSummary = false;
 
   // Configuración de la vista del gráfico
   chartView: [number, number] = [0, 0]; // Se calculará dinámicamente
@@ -246,6 +250,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.showIngresosVsCostos = false;
     this.showGastosPorCategoria = false;
     this.showMovimientos = false;
+    this.showTopExpenses = false;
+    this.showFinancialSummary = false;
   }
 
   loadDashboardData() {
@@ -270,6 +276,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
           console.error('Error al obtener movimientos proyectados:', error);
           return of([]);
         })
+      ),
+      topExpenses: this.dashboardService.getTopExpenses().pipe(
+        catchError((error) => {
+          console.error('Error al obtener top expenses:', error);
+          return of([]);
+        })
+      ),
+      financialSummary: this.dashboardService.getFinancialSummary().pipe(
+        catchError((error) => {
+          console.error('Error al obtener resumen financiero:', error);
+          return of(null);
+        })
       )
     }).subscribe({
       next: (data) => {
@@ -291,6 +309,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
           movement.status === 'pending' && movement.amount > 0
         );
         this.showMovimientos = this.rowData.length > 0;
+        
+        // Procesar top expenses
+        this.topExpenses = data.topExpenses;
+        this.showTopExpenses = this.topExpenses.length > 0;
+        
+        // Procesar resumen financiero
+        this.financialSummary = data.financialSummary;
+        this.showFinancialSummary = this.financialSummary !== null;
         
         this.onDataChanged();
       },
@@ -368,11 +394,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.showIngresosVsCostos) count++;
     if (this.showGastosPorCategoria) count++;
     if (this.showMovimientos) count++;
+    if (this.showTopExpenses) count++;
+    if (this.showFinancialSummary) count++;
     return count;
   }
 
   formatCurrency(params: any) {
     const value = Number(params.value);
+    if (isNaN(value) || value === null || value === undefined) {
+      return '$0';
+    }
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+
+  formatAmount(value: number): string {
     if (isNaN(value) || value === null || value === undefined) {
       return '$0';
     }
@@ -450,26 +490,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
     let categoryValue = 0;
     
     if (event && event.data) {
-      // Formato: { data: { name: 'Alimentación', value: 20000 } }
       categoryName = event.data.name || 'Sin nombre';
       categoryValue = Number(event.data.value) || 0;
     } else if (event && event.name) {
-      // Formato: { name: 'Alimentación', value: 20000 }
       categoryName = event.name;
       categoryValue = Number(event.value) || 0;
     } else {
       return;
     }
     if (categoryName && categoryName !== 'Sin nombre') {
-      // Opcional: Mostrar un mensaje o navegar a detalles de la categoría
-      // Aquí se podría agregar navegación a una vista de detalle
     }
   }
 
   private calculateChartSizes() {
-    // Usar setTimeout para asegurar que los elementos estén renderizados
     setTimeout(() => {
-      // Calcular tamaño para el gráfico de líneas (arriba, más espacio)
       const lineChartContainer = document.querySelector('.ingresosVsCostos .chart-wrapper');
       if (lineChartContainer) {
         const rect = lineChartContainer.getBoundingClientRect();
@@ -480,13 +514,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.chartView = [width, height];
       }
 
-      // Calcular tamaño para el gráfico de pastel (abajo, menos espacio)
       const pieChartContainer = document.querySelector('.gastosPorCategoria .chart-container');
       if (pieChartContainer) {
         const rect = pieChartContainer.getBoundingClientRect();
         const containerWidth = rect.width;
         const containerHeight = rect.height;
-        // Usar un tamaño más pequeño para dejar espacio para las etiquetas
         const width = Math.max(containerWidth - 60, 200); // 30px de margen a cada lado
         const height = Math.max(containerHeight - 60, 200); // 30px de margen arriba y abajo
         this.pieChartView = [width, height];
@@ -495,17 +527,56 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     }, 300); // Aumentar el timeout para asegurar que los elementos estén completamente renderizados
   }
-
-  // Método para recalcular tamaños después de que los datos se carguen
   private recalculateAfterDataLoad() {
     setTimeout(() => {
       this.calculateChartSizes();
     }, 200);
   }
-
-  // Método para manejar el cambio de datos y recalcular tamaños
   private onDataChanged() {
     this.cdr.detectChanges();
     this.recalculateAfterDataLoad();
+  }
+  get filteredCards(): FinancialCard[] {
+    if (!this.financialSummary || !this.financialSummary.cards) {
+      return [];
+    }
+    
+    const allCards = this.financialSummary.cards;
+    const nonCashCards = allCards.filter(card => 
+      !card.name.toLowerCase().includes('efectivo')
+    );
+    
+    if (nonCashCards.length > 0) {
+      return nonCashCards
+        .sort((a, b) => b.balance - a.balance)
+        .slice(0, 1);
+    }
+    const cashCardsWithBalance = allCards.filter(card => 
+      card.name.toLowerCase().includes('efectivo') && card.balance !== 0
+    );
+    
+    if (cashCardsWithBalance.length > 0) {
+      return cashCardsWithBalance
+        .sort((a, b) => b.balance - a.balance)
+        .slice(0, 1);
+    }
+    return [];
+  }
+
+  get hasClickableCards(): boolean {
+    return this.filteredCards.length > 0;
+  }
+  getBalanceState(balance: number): 'positive' | 'negative' | 'neutral' {
+    if (balance > 0) return 'positive';
+    if (balance < 0) return 'negative';
+    return 'neutral';
+  }
+  get totalBalanceState(): 'positive' | 'negative' | 'neutral' {
+    if (!this.financialSummary) return 'neutral';
+    return this.getBalanceState(this.financialSummary.totalBalance);
+  }
+
+  onCardClick(card: FinancialCard): void {
+    this.router.navigate(['/cards'], { queryParams: { selectedCard: card.id } });
   }
 }

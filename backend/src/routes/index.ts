@@ -16,31 +16,22 @@ import plansPageRoutes from './plansPageRoutes';
 import stripeRoutes from './stripeRoutes';
 import automationRoutes from './automationRoutes';
 import configRoutes from './configRoutes';
-import { DashboardController } from '../controllers/DashboardController';
+import { ScraperController } from '../controllers/ScraperController';
 
 const router = Router();
 const protectedRouter = Router();
-const dashboardController = new DashboardController();
-
-// Rutas públicas (no requieren autenticación)
+const scraperController = new ScraperController();
 router.use('/users', userRoutes);
 router.use('/plans-page', plansPageRoutes);
 router.use('/stripe', stripeRoutes);
 router.use('/automation', automationRoutes);
 router.use('/config', configRoutes);
-
-// Ruta especial SOLO para el scraper Python (sin autenticación)
-router.post('/scraper/process-data', dashboardController.processScraperData);
+router.post('/scraper/process-data', scraperController.processScraperData);
 
 router.get('/', (req, res) => {
     res.json({ message: 'rutas publicas funcionando correctamente' });
 });
-
-// Rutas protegidas (requieren autenticación)
-
-// Aplicar middleware de autenticación a todas las rutas protegidas
 protectedRouter.use(authMiddleware);
-
 protectedRouter.use('/cards', cardRoutes);
 protectedRouter.use('/cartolas', cartolaRoutes);
 protectedRouter.use('/card-types', cardTypeRoutes);

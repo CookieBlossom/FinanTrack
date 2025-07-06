@@ -4,19 +4,29 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Titular</mat-label>
       <input matInput formControlName="accountHolder" maxlength="255">
+      <mat-error *ngIf="editCardForm.get('accountHolder')?.errors?.['maxlength']">
+        El titular no puede exceder 255 caracteres
+      </mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Saldo</mat-label>
-      <input matInput type="number" formControlName="balance">
+      <input matInput type="number" formControlName="balance" required>
+      <span matPrefix>$&nbsp;</span>
+      <mat-error *ngIf="editCardForm.get('balance')?.errors?.['required']">
+        El saldo es requerido
+      </mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Estado</mat-label>
-      <mat-select formControlName="statusAccount">
+      <mat-select formControlName="statusAccount" required>
         <mat-option value="active">Activa</mat-option>
         <mat-option value="inactive">Inactiva</mat-option>
       </mat-select>
+      <mat-error *ngIf="editCardForm.get('statusAccount')?.errors?.['required']">
+        El estado es requerido
+      </mat-error>
     </mat-form-field>
 
     <div *ngIf="error" class="error-message">

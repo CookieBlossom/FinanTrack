@@ -35,6 +35,34 @@ export interface RecentMovement {
   };
 }
 
+export interface TopExpense {
+  id: number;
+  description: string;
+  amount: number;
+  transactionDate: Date;
+  category: string;
+  card: string;
+}
+
+export interface FinancialCard {
+  id: number;
+  name: string;
+  accountHolder: string;
+  balance: number;
+  cardTypeId: number;
+  statusAccount: 'active' | 'inactive';
+  isPositive: boolean;
+}
+
+export interface FinancialSummary {
+  totalBalance: number;
+  isPositive: boolean;
+  cardCount: number;
+  cards: FinancialCard[];
+  userPlanId: number;
+  lastUpdated: string;
+}
+
 export interface DashboardSummary {
   totalIngresos: number;
   totalGastos: number;
@@ -114,6 +142,34 @@ export class DashboardService {
     }).pipe(
       catchError(error => {
         console.error('Error en getDashboardSummary:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getTopExpenses(days: number = 30, limit: number = 5): Observable<TopExpense[]> {
+    console.log('Obteniendo top gastos, días:', days, 'límite:', limit);
+    const params = new HttpParams()
+      .set('days', days.toString())
+      .set('limit', limit.toString());
+    return this.http.get<TopExpense[]>(`${this.apiUrl}/dashboard/top-expenses`, {
+      params,
+      responseType: 'json' as const
+    }).pipe(
+      catchError(error => {
+        console.error('Error en getTopExpenses:', error);
+        return of([]);
+      })
+    );
+  }
+
+  getFinancialSummary(): Observable<FinancialSummary> {
+    console.log('Obteniendo resumen financiero');
+    return this.http.get<FinancialSummary>(`${this.apiUrl}/dashboard/financial-summary`, {
+      responseType: 'json' as const
+    }).pipe(
+      catchError(error => {
+        console.error('Error en getFinancialSummary:', error);
         return throwError(() => error);
       })
     );

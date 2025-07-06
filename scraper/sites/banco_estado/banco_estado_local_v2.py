@@ -1304,29 +1304,27 @@ class BancoEstadoScraper:
                         
                         # Mostrar estadísticas detalladas
                         print("\n" + "="*60)
-                        print("🎉 PROCESO DE SCRAPING COMPLETADO EXITOSAMENTE")
+                        print(" PROCESO DE SCRAPING COMPLETADO EXITOSAMENTE")
                         print("="*60)
                         
                         if 'stats' in result:
                             stats = result['stats']
-                            print(f"📊 ESTADÍSTICAS DEL PROCESAMIENTO:")
-                            print(f"  ✅ Total procesados: {stats.get('total_procesados', 0)}")
-                            print(f"  ✅ Exitosos: {stats.get('exitosos', 0)}")
-                            print(f"  ❌ Errores: {stats.get('errores', 0)}")
+                            print(f" ESTADÍSTICAS DEL PROCESAMIENTO:")
+                            print(f" Total procesados: {stats.get('total_procesados', 0)}")
+                            print(f" Exitosos: {stats.get('exitosos', 0)}")
+                            print(f" Errores: {stats.get('errores', 0)}")
                             
                             if 'por_categoria' in stats:
-                                print(f"  📂 Distribución por categoría:")
+                                print(f" Distribución por categoría:")
                                 for categoria, cantidad in stats['por_categoria'].items():
                                     print(f"    - {categoria}: {cantidad} movimientos")
                         
-                        print(f"\n💾 Movimientos guardados en la base de datos: {len(movements)}")
-                        print(f"📅 Fecha de procesamiento: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-                        print(f"🔄 ID de tarea: {task_data.get('id')}")
+                        print(f"\n Movimientos guardados en la base de datos: {len(movements)}")
+                        print(f" Fecha de procesamiento: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                        print(f" ID de tarea: {task_data.get('id')}")
                         print("="*60)
-                        
-                        # Mostrar algunos ejemplos de movimientos procesados
                         if len(movements) > 0:
-                            print("\n📋 EJEMPLOS DE MOVIMIENTOS PROCESADOS:")
+                            print("\n EJEMPLOS DE MOVIMIENTOS PROCESADOS:")
                             for i, mov in enumerate(movements[:5]):  # Mostrar hasta 5 ejemplos
                                 print(f"  {i+1}. {mov.get('descripcion', 'Sin descripción')}")
                                 print(f" Monto: ${mov.get('monto', 0):,.0f}")
@@ -1337,15 +1335,12 @@ class BancoEstadoScraper:
                             if len(movements) > 5:
                                 print(f"     ... y {len(movements) - 5} movimientos más")
                         
-                        print("\n✨ El scraper ha finalizado correctamente!")
-                        print("📱 Puedes revisar tus movimientos en la aplicación.")
-                        
+                        print("\n El scraper ha finalizado correctamente!")
+                        print(" Puedes revisar tus movimientos en la aplicación.")
                     else:
                         print(f"[ERROR] Error al enviar movimientos al backend: {response.status}")
                         error_text = await response.text()
                         print(f"[ERROR] Respuesta del servidor: {error_text}")
-                        
-                        # Mostrar información de respaldo
                         print("\nINFORMACIÓN DE RESPALDO:")
                         print(f" Total movimientos extraídos: {len(movements)}")
                         print(f" Guardados localmente en: results/banco_estado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
@@ -1355,9 +1350,9 @@ class BancoEstadoScraper:
             print(f"[ERROR] Error al conectar con el backend: {e}")
             print("\n[INFO] INFORMACIÓN DE RESPALDO:")
             print(f" Total movimientos extraídos: {len(movements)}")
-            print(f" Guardados localmente en: results/banco_estado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
-            print("  Los movimientos no se guardaron en la base de datos")
-            print(f"  Verifica que el backend esté ejecutándose en {backend_url}")
+            print(f"Guardados localmente en: results/banco_estado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            print(" Los movimientos no se guardaron en la base de datos")
+            print(f"Verifica que el backend esté ejecutándose en {backend_url}")
             
             # Mostrar resumen de categorización local
             if movements:
