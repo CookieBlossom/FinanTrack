@@ -97,6 +97,7 @@ export class CategoriesComponent implements OnInit, OnDestroy {
   // Variables para límites del plan
   keywordsLimit: number = 5;
   currentPlanName: string = 'free';
+  private readonly UNLIMITED_KEYWORDS = Number.MAX_SAFE_INTEGER;
 
   // Variables para notificaciones
   showLimitNotification = false;
@@ -331,17 +332,24 @@ export class CategoriesComponent implements OnInit, OnDestroy {
   }
 
   loadPlanInfo(): void {
-    // Cargar información del plan actual
-    this.featureControlService.featureControl$.subscribe(control => {
-      if (control) {
-        this.currentPlanName = control.planName;
+    this.featureControlService.getCurrentPlan().subscribe({
+      next: (plan) => {
+        this.currentPlanName = plan.planName;
+      },
+      error: (error) => {
+        console.error('Error al cargar plan:', error);
       }
     });
 
     // Cargar límite de keywords
     this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.KEYWORDS_PER_CATEGORY).subscribe({
       next: (limitStatus) => {
-        this.keywordsLimit = limitStatus.limit;
+        // Si el límite es -1, significa ilimitado
+        if (limitStatus.limit === -1) {
+          this.keywordsLimit = this.UNLIMITED_KEYWORDS; // Prácticamente ilimitado
+        } else {
+          this.keywordsLimit = limitStatus.limit;
+        }
       },
       error: (error) => {
         console.error('Error al cargar límite de keywords:', error);
@@ -423,8 +431,8 @@ export class CategoriesComponent implements OnInit, OnDestroy {
       const categoryId = event.data.id;
       const newKeywords = event.newValue || [];
       
-      // Verificar límites antes de actualizar
-      if (Array.isArray(newKeywords) && newKeywords.length > this.keywordsLimit) {
+      // Verificar límites antes de actualizar (solo si no es ilimitado)
+      if (Array.isArray(newKeywords) && this.keywordsLimit !== this.UNLIMITED_KEYWORDS && newKeywords.length > this.keywordsLimit) {
         this.planLimitAlertService.showKeywordLimitAlert(
           newKeywords.length,
           this.keywordsLimit

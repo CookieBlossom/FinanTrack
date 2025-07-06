@@ -28,14 +28,14 @@ import { PLAN_LIMITS } from '../../models/plan.model';
       <!-- Mensaje de límite alcanzado -->
       <div *ngIf="showLimitMessage" class="limit-message">
         <mat-icon>warning</mat-icon>
-        <span>Límite de {{ maxKeywords }} keywords alcanzado</span>
+        <span>Límite de {{ maxKeywords === UNLIMITED_KEYWORDS ? 'ilimitadas' : maxKeywords }} keywords alcanzado</span>
         <button mat-button color="primary" (click)="upgradePlan()">Actualizar Plan</button>
       </div>
       
-      <!-- Contador de keywords -->
-      <div class="keyword-counter">
-        {{ tags.length }}/{{ maxKeywords }} keywords
-      </div>
+          <!-- Contador de keywords -->
+    <div class="keyword-counter">
+      {{ tags.length }}/{{ maxKeywords === UNLIMITED_KEYWORDS ? '∞' : maxKeywords }} keywords
+    </div>
     </div>
   `,
   styles: [`
@@ -209,6 +209,7 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   tags: string[] = [];
   maxKeywords: number = 10;
   showLimitMessage: boolean = false;
+  private readonly UNLIMITED_KEYWORDS = Number.MAX_SAFE_INTEGER;
   
   constructor(private planLimitsService: PlanLimitsService) {}
 
@@ -242,7 +243,11 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   private loadKeywordLimit(): void {
     this.planLimitsService.getLimitStatusInfo(PLAN_LIMITS.KEYWORDS_PER_CATEGORY).subscribe({
       next: (limitStatus) => {
-        this.maxKeywords = limitStatus.limit;
+        if (limitStatus.limit === -1) {
+          this.maxKeywords = this.UNLIMITED_KEYWORDS; // Prácticamente ilimitado
+        } else {
+          this.maxKeywords = limitStatus.limit;
+        }
         this.updateLimitMessage();
       },
       error: (error) => {
@@ -253,7 +258,7 @@ export class TagInputCellEditorComponent implements ICellEditorAngularComp {
   }
 
   private updateLimitMessage(): void {
-    this.showLimitMessage = this.tags.length >= this.maxKeywords;
+    this.showLimitMessage = this.maxKeywords !== this.UNLIMITED_KEYWORDS && this.tags.length >= this.maxKeywords;
   }
 
   onTagAdded(event: any): void {

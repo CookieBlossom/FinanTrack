@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, interval, timer } from 'rxjs';
-import { map, catchError, switchMap, takeWhile } from 'rxjs/operators';
+import { Observable, throwError, interval, timer, of } from 'rxjs';
+import { map, catchError, switchMap, takeWhile, tap, filter, startWith, finalize } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
@@ -135,30 +135,33 @@ export class ScraperService {
   monitorTask(taskId: string): Observable<ScraperTask> {
     console.log('🔍 INICIANDO POLLING PARA TAREA:', taskId);
     return interval(2000).pipe(
+      startWith(0), // Emit immediatamente
       switchMap(() => {
         console.log('🔍 POLLING - Consultando estado de tarea:', taskId);
-        return this.getTaskStatus(taskId);
+        return this.getTaskStatus(taskId).pipe(
+          catchError(error => {
+            console.error('🔍 POLLING - Error al consultar estado:', error);
+            return of({ success: false, message: 'Error al consultar estado', data: null });
+          })
+        );
       }),
-      takeWhile(response => {
-        console.log('🔍 POLLING - Respuesta recibida:', response);
-        if (!response.success) return false;
-        const task = response.data;
-        if (!task) return false;
-        
-        // Si la tarea está en estado final, devolver esta emisión y luego terminar
+      tap(response => {
+        console.log('🔍 POLLING - Respuesta completa recibida:', response);
+      }),
+      filter(response => response.success && response.data !== null),
+      map(response => response.data!),
+      tap(task => {
+        console.log('🔍 POLLING - Tarea mapeada:', task);
+        console.log('🔍 POLLING - Estado:', task.status, 'Progreso:', task.progress, 'Mensaje:', task.message);
+      }),
+      takeWhile(task => {
         const isFinished = ['completed', 'failed', 'cancelled'].includes(task.status);
         const shouldContinue = !isFinished;
-        console.log('🔍 POLLING - Estado actual:', task.status, 'Terminado:', isFinished, 'Continuar:', shouldContinue);
-        
-        // Si está terminada, emitir este estado y luego parar
+        console.log('🔍 POLLING - ¿Está terminada?', isFinished, '¿Continuar?', shouldContinue);
         return shouldContinue;
-      }, true), // El segundo parámetro `true` hace que incluya la última emisión
-      map(response => {
-        if (response.success && response.data) {
-          console.log('🔍 POLLING - Devolviendo tarea:', response.data);
-          return response.data;
-        }
-        throw new Error('Error al obtener estado de la tarea');
+      }, true), // Incluir la última emisión cuando esté terminada
+      finalize(() => {
+        console.log('🔍 POLLING - Terminando polling para tarea:', taskId);
       })
     );
   }
