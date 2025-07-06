@@ -125,94 +125,89 @@ class DashboardController {
                 return res.status(500).json({ message: 'Error al obtener los movimientos recientes' });
             }
         };
-        this.processScraperData = async (req, res, next) => {
+        this.getTopExpenses = async (req, res, next) => {
             try {
-                const { rawMovements, userId, scraperTaskId } = req.body;
-                if (!Array.isArray(rawMovements) || typeof userId !== 'number' || typeof scraperTaskId !== 'string') {
-                    return res.status(400).json({ message: 'Datos inválidos en el payload del scraper' });
+                const userId = req.user?.id;
+                if (!userId) {
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
                 }
-                if (userId === 0) {
-                    return res.status(400).json({ message: 'userId no puede ser 0' });
-                }
-                console.log(`[DashboardController] Procesando ${rawMovements.length} movimientos del scraper para usuario ${userId}`);
-                // Obtener o crear tarjeta "Efectivo" para el usuario
-                const cardService = new card_service_1.CardService();
-                let defaultCard = await cardService.getCardsByUserId(userId);
-                // Obtener el plan real del usuario desde la base de datos
-                const userService = new user_service_1.UserService();
-                const user = await userService.getUserById(userId);
-                if (!user) {
-                    return res.status(404).json({ message: 'Usuario no encontrado' });
-                }
-                const planId = user.plan_id;
-                console.log(`[DashboardController] DEBUG - Usuario completo:`, JSON.stringify(user, null, 2));
-                console.log(`[DashboardController] Usuario ${userId} tiene plan ID ${planId}`);
-                let defaultCardId;
-                if (defaultCard.length === 0) {
-                    // Crear tarjeta "Efectivo" automáticamente
-                    const newCard = await cardService.createCard({
-                        nameAccount: 'Efectivo - BancoEstado',
-                        accountHolder: 'Usuario Scraper',
-                        cardTypeId: 1, // Asumimos que existe un tipo de tarjeta con ID 1
-                        balance: 0,
-                        balanceSource: 'manual',
-                        source: 'scraper'
-                    }, userId, planId);
-                    defaultCardId = newCard.id;
-                    console.log(`[DashboardController] Tarjeta "Efectivo" creada automáticamente con ID ${defaultCardId}`);
-                }
-                else {
-                    defaultCardId = defaultCard[0].id;
-                    console.log(`[DashboardController] Usando tarjeta existente ID ${defaultCardId}: ${defaultCard[0].nameAccount}`);
-                }
-                const createdMovements = [];
-                const errors = [];
-                for (const rawMov of rawMovements) {
-                    try {
-                        const movementToCreate = await this.convertScraperMovement(rawMov, scraperTaskId, defaultCardId);
-                        const newMovement = await this.movementService.createMovement(movementToCreate, userId, planId);
-                        createdMovements.push(newMovement);
-                        console.log(`[DashboardController] Movimiento creado: ${newMovement.description} - ${newMovement.amount}`);
-                    }
-                    catch (error) {
-                        console.error(`[DashboardController] Error procesando movimiento:`, error);
-                        errors.push({ rawMovement: rawMov, error: error instanceof Error ? error.message : 'Error desconocido' });
-                    }
-                }
-                // Estadísticas del procesamiento
-                const stats = {
-                    total_procesados: rawMovements.length,
-                    exitosos: createdMovements.length,
-                    errores: errors.length,
-                    por_categoria: this.getMovementsByCategory(createdMovements)
+                const days = parseInt(req.query.days) || 30;
+                const limit = parseInt(req.query.limit) || 5;
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(endDate.getDate() - days);
+                const filters = {
+                    startDate,
+                    endDate,
+                    movementType: 'expense',
+                    userId
                 };
-                console.log(`[DashboardController] Estadísticas del procesamiento del scraper:`, stats);
-                if (errors.length > 0 && createdMovements.length > 0) {
-                    return res.status(207).json({
-                        message: 'Procesamiento del scraper completado con algunos errores.',
-                        createdMovements,
-                        errors,
-                        stats
-                    });
-                }
-                else if (errors.length > 0) {
-                    return res.status(400).json({
-                        message: 'Error al procesar todos los movimientos del scraper.',
-                        errors,
-                        stats
-                    });
-                }
-                else {
-                    return res.status(201).json({
-                        message: 'Movimientos del scraper procesados exitosamente.',
-                        movements: createdMovements,
-                        stats
-                    });
-                }
+                const movements = await this.movementService.getMovements(filters);
+                // Ordenar por monto (mayor a menor) y tomar los primeros 'limit'
+                const topExpenses = movements
+                    .filter(mov => mov.amount && !isNaN(Number(mov.amount)))
+                    .sort((a, b) => Math.abs(Number(b.amount)) - Math.abs(Number(a.amount)))
+                    .slice(0, limit)
+                    .map(mov => ({
+                    id: mov.id,
+                    description: mov.description,
+                    amount: Math.abs(Number(mov.amount)),
+                    transactionDate: mov.transactionDate,
+                    category: mov.category?.nameCategory || 'Otros',
+                    card: mov.card?.nameAccount || 'N/A'
+                }));
+                console.log(`[DashboardController] Top ${limit} gastos encontrados para usuario ${userId}`);
+                return res.json(topExpenses);
             }
             catch (error) {
-                console.error('Error general en processScraperData:', error);
-                return res.status(500).json({ message: 'Error al procesar los datos del scraper' });
+                console.error('Error en getTopExpenses:', error);
+                return res.status(500).json({ message: 'Error al obtener los gastos principales' });
+            }
+        };
+        /**
+         * Obtiene un resumen de la situación financiera del usuario
+         */
+        this.getFinancialSummary = async (req, res, next) => {
+            try {
+                const userId = req.user?.id;
+                if (!userId) {
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                const cardService = new card_service_1.CardService();
+                const userService = new user_service_1.UserService();
+                // Obtener todas las tarjetas del usuario
+                const cards = await cardService.getCardsByUserId(userId);
+                // Calcular balance total y detalles por tarjeta
+                let totalBalance = 0;
+                const cardDetails = cards.map(card => {
+                    const balance = Number(card.balance) || 0;
+                    totalBalance += balance;
+                    return {
+                        id: card.id,
+                        name: card.nameAccount,
+                        accountHolder: card.accountHolder || 'N/A',
+                        balance: balance,
+                        cardTypeId: card.cardTypeId,
+                        statusAccount: card.statusAccount,
+                        isPositive: balance >= 0
+                    };
+                });
+                // Obtener información del plan del usuario para límites
+                const user = await userService.getUserById(userId);
+                const summary = {
+                    totalBalance,
+                    isPositive: totalBalance >= 0,
+                    cardCount: cards.length,
+                    cards: cardDetails,
+                    userPlanId: user?.plan_id || 1,
+                    lastUpdated: new Date().toISOString()
+                };
+                console.log(`[DashboardController] Resumen financiero generado para usuario ${userId}: Balance total $${totalBalance}`);
+                return res.json(summary);
+            }
+            catch (error) {
+                console.error('Error en getFinancialSummary:', error);
+                return res.status(500).json({ message: 'Error al obtener el resumen financiero' });
             }
         };
         const cardService = new card_service_1.CardService();

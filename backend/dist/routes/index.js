@@ -21,23 +21,19 @@ const plansPageRoutes_1 = __importDefault(require("./plansPageRoutes"));
 const stripeRoutes_1 = __importDefault(require("./stripeRoutes"));
 const automationRoutes_1 = __importDefault(require("./automationRoutes"));
 const configRoutes_1 = __importDefault(require("./configRoutes"));
-const DashboardController_1 = require("../controllers/DashboardController");
+const ScraperController_1 = require("../controllers/ScraperController");
 const router = (0, express_1.Router)();
 const protectedRouter = (0, express_1.Router)();
-const dashboardController = new DashboardController_1.DashboardController();
-// Rutas públicas (no requieren autenticación)
+const scraperController = new ScraperController_1.ScraperController();
 router.use('/users', userRoutes_1.default);
 router.use('/plans-page', plansPageRoutes_1.default);
 router.use('/stripe', stripeRoutes_1.default);
 router.use('/automation', automationRoutes_1.default);
 router.use('/config', configRoutes_1.default);
-// Ruta especial SOLO para el scraper Python (sin autenticación)
-router.post('/scraper/process-data', dashboardController.processScraperData);
+router.post('/scraper/process-data', scraperController.processScraperData);
 router.get('/', (req, res) => {
     res.json({ message: 'rutas publicas funcionando correctamente' });
 });
-// Rutas protegidas (requieren autenticación)
-// Aplicar middleware de autenticación a todas las rutas protegidas
 protectedRouter.use(authMiddleware_1.authMiddleware);
 protectedRouter.use('/cards', cardRoutes_1.default);
 protectedRouter.use('/cartolas', cartola_routes_1.default);
