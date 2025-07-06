@@ -255,6 +255,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboardData() {
+    console.log('Iniciando carga de datos del dashboard');
     // Limpiar datos existentes
     this.clearData();
 
@@ -291,34 +292,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
       )
     }).subscribe({
       next: (data) => {
-        // Procesar ingresos vs costos - validar y limpiar datos
-        this.ingresosVsCostos = this.validateAndCleanIncomeData(data.ingresos);
-        // Verificar que hay datos válidos en las series
-        this.showIngresosVsCostos = this.ingresosVsCostos.length > 0 && 
-          this.ingresosVsCostos.some(item => item.series && item.series.length > 0 && 
-            item.series.some(seriesItem => seriesItem.value > 0));
+        console.log('Datos recibidos del dashboard:', data);
         
-        // Procesar gastos por categoría - validar y limpiar datos
+        // Procesar ingresos vs costos
+        this.ingresosVsCostos = this.validateAndCleanIncomeData(data.ingresos);
+        console.log('Ingresos vs Costos procesados:', this.ingresosVsCostos);
+        this.showIngresosVsCostos = this.ingresosVsCostos.length > 0;
+        
+        // Procesar gastos por categoría
         this.gastosPorCategoria = this.validateAndCleanCategoryData(data.categorias);
-        // Verificar que hay categorías con valores positivos
-        this.showGastosPorCategoria = this.gastosPorCategoria.length > 0 && 
-          this.gastosPorCategoria.some(item => item.value > 0);
+        console.log('Gastos por categoría procesados:', this.gastosPorCategoria);
+        this.showGastosPorCategoria = this.gastosPorCategoria.length > 0;
         
         // Procesar movimientos proyectados
-        this.rowData = data.movimientos.filter((movement: ProjectedMovement) => 
-          movement.status === 'pending' && movement.amount > 0
-        );
+        this.rowData = data.movimientos;
+        console.log('Movimientos proyectados procesados:', this.rowData);
         this.showMovimientos = this.rowData.length > 0;
         
         // Procesar top expenses
         this.topExpenses = data.topExpenses;
+        console.log('Top expenses procesados:', this.topExpenses);
         this.showTopExpenses = this.topExpenses.length > 0;
         
         // Procesar resumen financiero
         this.financialSummary = data.financialSummary;
-        this.showFinancialSummary = this.financialSummary !== null;
+        console.log('Resumen financiero procesado:', this.financialSummary);
+        this.showFinancialSummary = !!this.financialSummary;
         
         this.onDataChanged();
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error al cargar datos del dashboard:', error);
@@ -328,65 +330,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private validateAndCleanIncomeData(data: any[]): any[] {
+    console.log('Validando datos de ingresos:', data);
     if (!Array.isArray(data)) return [];
     
     return data.map(item => {
-      if (!item || !item.series || !Array.isArray(item.series)) {
-        return null;
-      }
+      if (!item) return null;
       
-      const cleanSeries = item.series.map((seriesItem: any) => {
+      const series = Array.isArray(item.series) ? item.series.map((seriesItem: any) => {
+        if (!seriesItem) return null;
+        
         const value = Number(seriesItem.value);
         return {
           name: seriesItem.name || 'Sin nombre',
           value: isNaN(value) ? 0 : value
         };
-      }).filter((seriesItem: any) => seriesItem !== null);
-      
+      }).filter(Boolean) : [];
+
       return {
         name: item.name || 'Sin nombre',
-        series: cleanSeries
+        series: series
       };
-    }).filter(item => item !== null);
+    }).filter(Boolean);
   }
 
   private validateAndCleanCategoryData(data: any[]): any[] {
+    console.log('Validando datos de categorías:', data);
     if (!Array.isArray(data)) return [];
     
     return data.map(item => {
-      if (!item || typeof item.name !== 'string') {
-        return null;
-      }
+      if (!item) return null;
       
       const value = Number(item.value);
-      if (isNaN(value) || value <= 0) {
-        return null;
-      }
+      if (isNaN(value)) return null;
       
-      // Limpiar y validar el nombre de la categoría
-      let categoryName = item.name.trim();
-      
-      // Evitar nombres problemáticos
-      if (!categoryName || 
-          categoryName.toLowerCase() === 'undefined' || 
-          categoryName.toLowerCase() === 'null' ||
-          categoryName.toLowerCase() === 'otra categoria' ||
-          categoryName.toLowerCase() === 'otra categoría' ||
-          categoryName.toLowerCase() === 'sin categoria' ||
-          categoryName.toLowerCase() === 'sin categoría') {
-        return null;
-      }
-      
-      // Si el nombre está vacío o es muy corto, usar un nombre por defecto
-      if (categoryName.length < 2) {
-        categoryName = 'Sin nombre';
-      }
+      let categoryName = (item.name || '').trim();
+      if (!categoryName) categoryName = 'Sin categoría';
       
       return {
         name: categoryName,
         value: value
       };
-    }).filter(item => item !== null && item.value > 0); // Solo categorías con valores > 0
+    }).filter(Boolean);
   }
 
   private getVisibleSectionsCount(): number {

@@ -8,6 +8,12 @@ class WebSocketService {
     constructor() {
         console.log('Conectando a Redis URL:', process.env.REDIS_URL || config_1.config.redis.url);
         this.redis = new ioredis_1.Redis(process.env.REDIS_URL || config_1.config.redis.url);
+        this.redis.on('error', (err) => {
+            console.error('WebSocket Redis Error:', err);
+        });
+        this.redis.on('connect', () => {
+            console.log('WebSocket Redis Connected');
+        });
     }
     static getInstance() {
         if (!WebSocketService.instance) {
@@ -35,6 +41,18 @@ class WebSocketService {
                     console.log(`Enviando estado actual de tarea ${taskId}:`, taskStatus);
                     socket.emit('task-update', JSON.parse(taskStatus));
                 }
+                const subscriber = new ioredis_1.Redis(process.env.REDIS_URL || config_1.config.redis.url);
+                await subscriber.subscribe(`task:${taskId}:updates`);
+                subscriber.on('message', (channel, message) => {
+                    console.log(`Actualización recibida para tarea ${taskId}:`, message);
+                    const status = JSON.parse(message);
+                    this.io.to(`task-${taskId}`).emit('task-update', status);
+                });
+                socket.on('disconnect', () => {
+                    console.log(`Cliente ${socket.id} desconectado, limpiando suscripción a ${taskId}`);
+                    subscriber.unsubscribe(`task:${taskId}:updates`);
+                    subscriber.quit();
+                });
             });
             socket.on('unsubscribe-from-task', (taskId) => {
                 console.log(`Cliente ${socket.id} desuscrito de tarea ${taskId}`);
@@ -50,6 +68,7 @@ class WebSocketService {
         try {
             console.log(`Actualizando estado de tarea ${taskId}:`, status);
             await this.redis.set(`task:${taskId}`, JSON.stringify(status));
+            await this.redis.publish(`task:${taskId}:updates`, JSON.stringify(status));
             const room = `task-${taskId}`;
             const clientsInRoom = this.io.sockets.adapter.rooms.get(room);
             console.log(`Clientes en sala ${room}:`, clientsInRoom ? clientsInRoom.size : 0);

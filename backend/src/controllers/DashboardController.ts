@@ -98,8 +98,17 @@ export class DashboardController {
             const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-            const filters: IMovementFilters = { startDate, endDate, movementType: 'expense', userId };
+            // Mantenemos el filtro de tipo 'expense' pero no filtramos por tarjeta
+            const filters: IMovementFilters = { 
+                startDate, 
+                endDate, 
+                movementType: 'expense',
+                userId 
+            };
+            
+            console.log('[DashboardController] Buscando gastos por categoría con filtros:', filters);
             const movements: IMovement[] = await this.movementService.getMovements(filters);
+            console.log(`[DashboardController] Encontrados ${movements.length} movimientos`);
 
             const categoryData = movements.reduce((acc: { [key: string]: number }, mov: IMovement) => {
                 const amount = Number(mov.amount);
@@ -108,15 +117,21 @@ export class DashboardController {
                     return acc;
                 }
 
-                const categoryName = mov.category?.nameCategory || 'Otros';
+                const categoryName = mov.category?.nameCategory || 'Sin categoría';
                 acc[categoryName] = (acc[categoryName] || 0) + Math.abs(amount);
                 return acc;
             }, {});
 
-            const result = Object.entries(categoryData).map(([categoryName, value]) => ({ 
-                name: categoryName, 
-                value: Number(value) || 0 
-            }));
+            const result = Object.entries(categoryData)
+                .map(([categoryName, value]) => ({ 
+                    name: categoryName, 
+                    value: Math.abs(Number(value)) || 0,
+                    movementCount: movements.filter(m => 
+                        (m.category?.nameCategory || 'Sin categoría') === categoryName
+                    ).length
+                }))
+                .filter(category => category.value > 0)
+                .sort((a, b) => b.value - a.value);
 
             console.log('Datos formateados para gastos por categoría:', result);
             return res.json(result);
@@ -245,15 +260,16 @@ export class DashboardController {
             startDate.setDate(endDate.getDate() - days);
             const filters: IMovementFilters = { 
                 startDate, 
-                endDate, 
-                movementType: 'expense', 
+                endDate,
+                movementType: 'expense',
                 userId 
             };
-            const movements: IMovement[] = await this.movementService.getMovements(filters);
 
-            // Ordenar por monto (mayor a menor) y tomar los primeros 'limit'
+            console.log('[DashboardController] Buscando top gastos con filtros:', filters);
+            const movements: IMovement[] = await this.movementService.getMovements(filters);
+            console.log(`[DashboardController] Encontrados ${movements.length} gastos`);
             const topExpenses = movements
-                .filter(mov => mov.amount && !isNaN(Number(mov.amount)))
+                .filter(mov => mov.amount !== null && mov.amount !== undefined)
                 .sort((a, b) => Math.abs(Number(b.amount)) - Math.abs(Number(a.amount)))
                 .slice(0, limit)
                 .map(mov => ({
@@ -261,35 +277,33 @@ export class DashboardController {
                     description: mov.description,
                     amount: Math.abs(Number(mov.amount)),
                     transactionDate: mov.transactionDate,
-                    category: mov.category?.nameCategory || 'Otros',
-                    card: mov.card?.nameAccount || 'N/A'
+                    category: mov.category?.nameCategory || 'Sin categoría',
+                    card: mov.card?.nameAccount || 'Efectivo',
+                    movementSource: mov.movementSource || 'manual'
                 }));
 
-            console.log(`[DashboardController] Top ${limit} gastos encontrados para usuario ${userId}`);
+            console.log(`[DashboardController] Top ${limit} gastos encontrados:`, 
+                topExpenses.map(e => `${e.description}: $${e.amount} (${e.card})`));
             return res.json(topExpenses);
         } catch (error) {
             console.error('Error en getTopExpenses:', error);
             return res.status(500).json({ message: 'Error al obtener los gastos principales' });
         }
     };
-
-    /**
-     * Obtiene un resumen de la situación financiera del usuario
-     */
     public getFinancialSummary = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
         try {
             const userId = (req as AuthRequest).user?.id;
             if (!userId) { 
                 return res.status(401).json({ error: 'Usuario no autenticado' }); 
             }
-
             const cardService = new CardService();
             const userService = new UserService();
-            
-            // Obtener todas las tarjetas del usuario
             const cards = await cardService.getCardsByUserId(userId);
-            
-            // Calcular balance total y detalles por tarjeta
+            console.log(`[CardService] getCardsByUserId: userId=${userId}, found=${cards.length} cards`);
+            cards.forEach(card => {
+                console.log(`  - ID: ${card.id}, Name: ${card.nameAccount}, Status: ${card.statusAccount}`);
+            });
+
             let totalBalance = 0;
             const cardDetails = cards.map(card => {
                 const balance = Number(card.balance) || 0;
