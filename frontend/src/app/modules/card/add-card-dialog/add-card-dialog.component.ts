@@ -426,15 +426,20 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     this.loading = false;
     this.progress = 100;
     
-    // Mostrar mensaje de éxito
-    this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { 
-      duration: 10000,  // Aumentar duración del mensaje
-      panelClass: ['success-snackbar']
-    });
-    setTimeout(() => {
-      console.log('🏁 [ADD-CARD] Cerrando diálogo después de completar tarea');
-      this.dialogRef.close(true);
-    }, 5000);  // Aumentar a 5 segundos
+    // Forzar una actualización de las tarjetas
+    this.cardService.refreshCards().pipe(
+      finalize(() => {
+        // Mostrar mensaje de éxito
+        this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { 
+          duration: 10000,
+          panelClass: ['success-snackbar']
+        });
+        setTimeout(() => {
+          console.log('🏁 [ADD-CARD] Cerrando diálogo después de completar tarea');
+          this.dialogRef.close(true);
+        }, 10000); // Aumentar a 10 segundos
+      })
+    ).subscribe();
   }
 
   private verifyFinalStatus(taskId: string): void {

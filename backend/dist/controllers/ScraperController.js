@@ -233,7 +233,7 @@ class ScraperController {
                             throw new Error(`No se encontró tarjeta para el movimiento de la cuenta ${rawMov.cuenta}`);
                         }
                         const movementToCreate = await this.convertScraperMovement(rawMov, scraperTaskId, cardId);
-                        const newMovement = await movementService.createMovement(movementToCreate, userId, planId);
+                        const newMovement = await movementService.createMovementWithoutBalance(movementToCreate, userId, planId);
                         createdMovements.push(newMovement);
                         console.log(`[ScraperController] Movimiento creado: ${newMovement.description} - ${newMovement.amount} para tarjeta ${cardId} (cuenta ${rawMov.cuenta})`);
                         if (i % 5 === 0 || i === rawMovements.length - 1) {

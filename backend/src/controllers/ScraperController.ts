@@ -274,7 +274,7 @@ export class ScraperController {
           }
           
           const movementToCreate = await this.convertScraperMovement(rawMov as IScraperMovement, scraperTaskId, cardId);
-          const newMovement = await movementService.createMovement(movementToCreate, userId, planId);
+          const newMovement = await movementService.createMovementWithoutBalance(movementToCreate, userId, planId);
           createdMovements.push(newMovement);
           console.log(`[ScraperController] Movimiento creado: ${newMovement.description} - ${newMovement.amount} para tarjeta ${cardId} (cuenta ${rawMov.cuenta})`);
           

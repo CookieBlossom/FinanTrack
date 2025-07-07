@@ -97,19 +97,19 @@ export class WebSocketService {
       // Si es un estado final, esperar más tiempo antes de desconectar
       if (isFinalState) {
         console.log(`🏁 [WebSocket] Estado final detectado: ${status.status}`);
-        // Primero desuscribirse de la tarea
+        // Primero desuscribirse de la tarea después de un tiempo
         setTimeout(() => {
           if (this.activeTaskId === status.id) {
             console.log(`👋 [WebSocket] Desuscribiendo de tarea: ${status.id}`);
             this.unsubscribeFromTask(status.id);
-            // Esperar un poco más antes de desconectar
+            // Esperar más tiempo antes de desconectar
             setTimeout(() => {
               console.log(`👋 [WebSocket] Desconectando después de estado final`);
               this.disconnect();
               this.activeTaskId = null;
-            }, 5000); // 5 segundos adicionales después de desuscribirse
+            }, 15000); // Aumentar a 15 segundos para asegurar que lleguen todos los mensajes
           }
-        }, 5000); // 5 segundos para desuscribirse
+        }, 10000); // Aumentar a 10 segundos para desuscribirse
       }
     });
 

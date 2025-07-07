@@ -968,4 +968,136 @@ export class MovementService {
       throw new DatabaseError('Error al obtener los gastos por categoría');
     }
   }
+
+  async createMovementWithoutBalance(movementData: IMovementCreate, userId: number, planId: number): Promise<IMovement> {
+    try {
+      console.log(`[MovementService] Creando movimiento sin actualizar saldo:`, movementData);
+      
+      const card = await this.cardService.getCardById(movementData.cardId, userId);
+      if (!card) {
+        throw new DatabaseError('Tarjeta no encontrada o no pertenece al usuario.');
+      }
+
+      // Verificar si el movimiento ya existe usando metadata.uniqueKey
+      if (movementData.metadata?.uniqueKey) {
+        const existingMovement = await this.pool.query(`
+          SELECT id FROM movements 
+          WHERE card_id = $1 
+          AND metadata->>'uniqueKey' = $2
+        `, [
+          movementData.cardId,
+          movementData.metadata.uniqueKey
+        ]);
+
+        if (existingMovement.rows.length > 0) {
+          console.log(`[MovementService] Movimiento duplicado detectado, omitiendo creación`);
+          const movement = await this.getMovementById(existingMovement.rows[0].id);
+          if (!movement) {
+            throw new DatabaseError('Error al recuperar movimiento existente');
+          }
+          return movement;
+        }
+      }
+
+      // Verificar límites según el tipo de fuente
+      const limits = await this.planService.getLimitsForPlan(planId);
+      
+      if (movementData.movementSource === 'manual') {
+        if (limits.manual_movements !== undefined && limits.manual_movements !== -1) {
+          const used = await this.countMonthlyManualMoves(userId);
+          if (used >= limits.manual_movements) {
+            throw new DatabaseError(
+              `Has excedido el límite de ${limits.manual_movements} movimientos manuales por mes`
+            );
+          }
+        }
+      } else if (movementData.movementSource === 'cartola') {
+        if (limits.cartola_movements !== undefined && limits.cartola_movements !== -1) {
+          const used = await this.countMonthlyCartolaMoves(userId);
+          if (used >= limits.cartola_movements) {
+            throw new DatabaseError(
+              `Has excedido el límite de ${limits.cartola_movements} movimientos de cartola por mes`
+            );
+          }
+        }
+        const hasPermission = await this.planService.hasPermission(planId, 'cartola_upload');
+        if (!hasPermission) {
+          throw new DatabaseError('Tu plan no permite subir cartolas bancarias');
+        }
+      } else if (movementData.movementSource === 'scraper') {
+        if (limits.scraper_movements !== undefined && limits.scraper_movements !== -1) {
+          const used = await this.countMonthlyScraperMoves(userId);
+          if (used >= limits.scraper_movements) {
+            throw new DatabaseError(
+              `Has excedido el límite de ${limits.scraper_movements} movimientos del scraper por mes`
+            );
+          }
+        }
+        const hasPermission = await this.planService.hasPermission(planId, 'scraper_access');
+        if (!hasPermission) {
+          throw new DatabaseError('Tu plan no permite usar el scraper automático');
+        }
+      }
+
+      // Asegurarse de que la fecha esté en formato correcto
+      const transactionDate = this.formatDateToISO(movementData.transactionDate.toString());
+      console.log(`[MovementService] Fecha procesada: ${transactionDate.toLocaleDateString('es-CL')}`);
+
+      console.log(`[MovementService] Procesando movimiento sin actualizar saldo:
+        Descripción: ${movementData.description}
+        Monto: ${movementData.amount}
+        Tipo: ${movementData.movementType}
+        Fecha: ${transactionDate.toLocaleDateString('es-CL')}
+        Cuenta ID: ${movementData.cardId}
+        Categoría ID: ${movementData.categoryId}
+        Fuente: ${movementData.movementSource}
+      `);
+
+      // Si no se proporcionó una categoría, intentar categorizarla automáticamente
+      if (!movementData.categoryId && movementData.description) {
+        const categoryId = await this.companyService.findCategoryForDescription(movementData.description);
+        if (categoryId) {
+          movementData.categoryId = categoryId;
+        }
+      }
+
+      const query = `
+        INSERT INTO movements (
+          card_id, category_id, amount, description,
+          movement_type, movement_source, transaction_date,
+          metadata, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        RETURNING id
+      `;
+
+      const values = [
+        movementData.cardId,
+        movementData.categoryId || null,
+        movementData.amount,
+        movementData.description,
+        movementData.movementType,
+        movementData.movementSource || 'manual',
+        transactionDate,
+        movementData.metadata || null
+      ];
+
+      const result = await this.pool.query(query, values);
+      const newMovement = await this.getMovementById(result.rows[0].id);
+      
+      if (!newMovement) {
+        throw new DatabaseError('Error al crear el movimiento');
+      }
+
+      console.log(`[MovementService] Movimiento creado exitosamente sin actualizar saldo:`, {
+        id: newMovement.id,
+        description: newMovement.description,
+        amount: newMovement.amount
+      });
+
+      return newMovement;
+    } catch (error) {
+      console.error('[MovementService] Error al crear movimiento:', error);
+      throw error;
+    }
+  }
 } 
