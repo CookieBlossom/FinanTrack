@@ -351,50 +351,41 @@ export class MovementService {
     if (!dateStr) return new Date();
     
     try {
+      // Si es una fecha en formato DD/MM/YYYY
       if (typeof dateStr === 'string' && dateStr.includes('/')) {
         const [day, month, year] = dateStr.split('/').map(Number);
-        // Crear la fecha usando UTC para evitar problemas de zona horaria
-        const date = new Date(Date.UTC(year, month - 1, day));
-        console.log(`[MovementService] Fecha convertida:
+        const date = new Date(year, month - 1, day, 12, 0, 0);
+        console.log(`[MovementService] Fecha convertida desde string DD/MM/YYYY:
           Input: ${dateStr}
-          UTC: ${date.toISOString()}
+          Date: ${date.toISOString()}
           Local: ${date.toLocaleDateString('es-CL')}
         `);
         return date;
       }
-      if (dateStr instanceof Date) {
-        // Si ya es una fecha, asegurarnos de que esté en UTC
-        const utcDate = new Date(Date.UTC(
-          dateStr.getUTCFullYear(),
-          dateStr.getUTCMonth(),
-          dateStr.getUTCDate()
-        ));
-        console.log(`[MovementService] Fecha Date convertida:
-          Input: ${dateStr.toISOString()}
-          UTC: ${utcDate.toISOString()}
-          Local: ${utcDate.toLocaleDateString('es-CL')}
-        `);
-        return utcDate;
-      }
 
-      // Si es un string ISO o timestamp
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) {
+      // Si es una fecha ISO o timestamp
+      const inputDate = new Date(dateStr);
+      if (isNaN(inputDate.getTime())) {
         console.error('[MovementService] Fecha inválida:', dateStr);
         return new Date();
       }
-      // Asegurarnos de que esté en UTC
-      const utcDate = new Date(Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate()
-      ));
-      console.log(`[MovementService] Fecha string convertida:
+
+      // Ajustar la fecha para que sea a mediodía en la zona horaria local
+      const userTimezoneOffset = inputDate.getTimezoneOffset() * 60000;
+      const date = new Date(inputDate.getTime() + userTimezoneOffset + (12 * 3600000));
+      
+      // Resetear la hora a mediodía
+      date.setHours(12, 0, 0, 0);
+
+      console.log(`[MovementService] Fecha procesada:
         Input: ${dateStr}
-        UTC: ${utcDate.toISOString()}
-        Local: ${utcDate.toLocaleDateString('es-CL')}
+        Input Date: ${inputDate.toISOString()}
+        Timezone Offset: ${userTimezoneOffset / 3600000} hours
+        Final Date: ${date.toISOString()}
+        Local: ${date.toLocaleDateString('es-CL')}
       `);
-      return utcDate;
+      
+      return date;
     } catch (error) {
       console.error('[MovementService] Error al parsear fecha:', dateStr, error);
       return new Date();

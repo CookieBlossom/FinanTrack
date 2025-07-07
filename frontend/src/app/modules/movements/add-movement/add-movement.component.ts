@@ -23,6 +23,9 @@ import { Router } from '@angular/router';
 import { Subject, takeUntil, Observable, map } from 'rxjs';
 import { Movement } from '../../../models/movement.model';
 import { Category } from '../../../models/category.model';
+import { CategorizationService, CategorizationResult } from '../../../services/categorization.service';
+import { CategoryService } from '../../../services/category.service';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-add-movement',
@@ -72,6 +75,12 @@ export class AddMovementComponent implements OnInit, OnDestroy {
   // 🔄 Observable reactivo que filtra tarjetas de efectivo
   cards$: Observable<Card[]>;
 
+  // Variables para categorización
+  categories: Category[] = [];
+  categorizationResult: CategorizationResult | null = null;
+  showCategorizationSuggestion = false;
+  isCategorizationEnabled = false;
+
   constructor(
     private fb: FormBuilder,
     public dialogRef: MatDialogRef<AddMovementComponent>,
@@ -82,6 +91,8 @@ export class AddMovementComponent implements OnInit, OnDestroy {
     },
     private movementService: MovementService,
     private cardService: CardService,
+    private categoryService: CategoryService,
+    private categorizationService: CategorizationService,
     private snackBar: MatSnackBar,
     private limitNotificationsService: LimitNotificationsService,
     private planLimitsService: PlanLimitsService,
@@ -89,12 +100,14 @@ export class AddMovementComponent implements OnInit, OnDestroy {
     private planLimitAlertService: PlanLimitAlertService,
     private router: Router
   ) {
-    // Obtener fecha mínima (hoy)
-    this.minDate = new Date().toISOString().split('T')[0];
+    // Obtener fecha de hoy como valor por defecto
+    const today = new Date().toISOString().split('T')[0];
+    this.minDate = '2000-01-01'; // Fecha mínima desde el año 2000
     
     this.manualForm = this.fb.group({
       cardId: ['', Validators.required],
-      transactionDate: [this.minDate, [Validators.required, this.minDateValidator(this.minDate)]],
+      categoryId: ['', Validators.required],
+      transactionDate: [today, [Validators.required, this.minDateValidator.bind(this)]],
       description: ['', Validators.required],
       amount: [0, [Validators.required, Validators.min(0)]],
       movementType: ['', Validators.required],
@@ -182,6 +195,9 @@ export class AddMovementComponent implements OnInit, OnDestroy {
         console.log(`✅ [AddMovement] ${this.cards.length} tarjetas disponibles para movimientos`);
       }
     });
+
+    this.loadCategories();
+    this.setupCategorizationWatcher();
   }
 
   ngOnDestroy() {
@@ -214,16 +230,14 @@ export class AddMovementComponent implements OnInit, OnDestroy {
     this.cardService.getCards().subscribe();
   }
 
-  // Validador personalizado para fecha mínima
-  private minDateValidator(minDate: string) {
-    return (control: any) => {
-      if (!control.value) {
-        return null;
-      }
-      const selectedDate = new Date(control.value);
-      const minDateObj = new Date(minDate);
-      return selectedDate < minDateObj ? { minDate: true } : null;
-    };
+  // Validador personalizado para fecha mínima (desde año 2000)
+  private minDateValidator(control: any) {
+    if (!control.value) {
+      return null;
+    }
+    const selectedDate = new Date(control.value);
+    const minDate = new Date(2000, 0, 1); // 1 enero 2000
+    return selectedDate < minDate ? { minDate: true } : null;
   }
 
   private initializeData(): void {
@@ -244,7 +258,16 @@ export class AddMovementComponent implements OnInit, OnDestroy {
   }
 
   private loadCategories(): void {
-    // Cargar categorías si es necesario
+    this.categoryService.getUserCategories().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (cats) => {
+        this.categories = cats;
+      },
+      error: (err) => {
+        console.error('Error al cargar categorías:', err.message);
+      }
+    });
   }
 
   private loadLimitsInfo(): void {
@@ -638,5 +661,61 @@ export class AddMovementComponent implements OnInit, OnDestroy {
   removeFile(): void {
     this.selectedFile = null;
     this.uploadError = null;
+  }
+
+  private setupCategorizationWatcher(): void {
+    // Observar cambios en el campo de descripción
+    this.manualForm.get('description')?.valueChanges.pipe(
+      debounceTime(500), // Esperar 500ms después del último cambio
+      distinctUntilChanged(), // Solo procesar si el valor realmente cambió
+      takeUntil(this.destroy$)
+    ).subscribe(description => {
+      if (description && description.trim().length >= 3) {
+        this.performCategorization(description);
+      } else {
+        this.clearCategorizationResult();
+      }
+    });
+  }
+
+  private performCategorization(description: string): void {
+    this.categorizationService.categorizeDescription(description).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(result => {
+      this.categorizationResult = result;
+      this.showCategorizationSuggestion = result.found && result.confidence > 0.3;
+      
+      // Si se encuentra una categoría con alta confianza, sugerirla automáticamente
+      if (result.found && result.confidence > 0.6 && result.category) {
+        this.isCategorizationEnabled = true;
+      }
+    });
+  }
+
+  private clearCategorizationResult(): void {
+    this.categorizationResult = null;
+    this.showCategorizationSuggestion = false;
+    this.isCategorizationEnabled = false;
+  }
+
+  applySuggestedCategory(): void {
+    if (this.categorizationResult?.category) {
+      this.manualForm.patchValue({
+        categoryId: this.categorizationResult.category.id
+      });
+      this.showCategorizationSuggestion = false;
+    }
+  }
+
+  dismissSuggestion(): void {
+    this.showCategorizationSuggestion = false;
+  }
+
+  getConfidencePercentage(): number {
+    return this.categorizationResult ? Math.round(this.categorizationResult.confidence * 100) : 0;
+  }
+
+  getMatchedKeywordsText(): string {
+    return this.categorizationResult?.matchedKeywords.join(', ') || '';
   }
 }
