@@ -205,7 +205,7 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
             'ene', 'feb', 'mar', 'abr', 'may', 'jun',
             'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
         ];
-        return months.indexOf(monthName.toLowerCase().substring(0, 3));
+        return months.indexOf(monthName.toLowerCase());
     }
 
     onXAxisLabelClick(monthLabel: string) {
@@ -247,8 +247,20 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
     // Getter para el título del resumen
     get summaryTitle(): string {
         if (this.selectedMonth) {
-            const realYear = this.monthToYearMap.get(this.selectedMonth) || new Date().getFullYear();
-            return `Resumen de ${this.selectedMonth} ${realYear}`;
+            // Separar el mes y año del label seleccionado
+            const [monthStr] = this.selectedMonth.split(' ');
+            const monthIndex = this.getMonthIndex(monthStr);
+            
+            if (monthIndex !== -1) {
+                // Obtener el nombre completo del mes
+                const monthNames = [
+                    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+                ];
+                const monthName = monthNames[monthIndex];
+                const year = this.monthToYearMap.get(monthStr) || new Date().getFullYear();
+                return `Resumen de ${monthName} ${year}`;
+            }
         }
         return 'Resumen General';
     }

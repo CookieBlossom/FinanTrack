@@ -478,7 +478,7 @@
 ::ng-deep .x.axis-label,
 ::ng-deep .y.axis-label {
   font-family: var(--font-family-normal) !important;
-  font-size: var(--font-size-sm) !important;
+  font-size: var(--font-size-xs) !important;
   fill: var(--color-text) !important;
 }
 

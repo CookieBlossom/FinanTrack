@@ -301,8 +301,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
 
   private monitorScrapingProgress(taskId: string): void {
     console.log(`🔍 [ADD-CARD] Iniciando monitoreo de tarea: ${taskId}`);
-    
-    // Suscribirse a errores de conexión
+    this.cardForm.disable();
     this.wsService.getConnectionErrors().pipe(
       takeUntil(this.destroy$)
     ).subscribe((error: string) => {
@@ -314,8 +313,6 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
         this.retrySync();
       });
     });
-
-    // Monitorear estado de conexión
     this.wsService.getConnectionStatus().pipe(
       takeUntil(this.destroy$)
     ).subscribe((status: ConnectionStatus) => {
@@ -367,8 +364,9 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     // Actualizar progreso y mensaje
     this.progress = status.progress || 0;
     this.statusMessage = this.getStatusMessage(status.status);
-
-    // Manejar estados finales
+    this.loading = !['completed', 'failed', 'cancelled'].includes(status.status);
+    this.cardForm.enable(); // Habilitar el formulario si la tarea terminó
+    
     if (status.status === 'completed') {
       this.handleTaskCompletion(status);
     } else if (status.status === 'failed') {
@@ -397,12 +395,12 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   private handleTaskFailure(status: any): void {
     console.error(`❌ [ADD-CARD] Tarea falló:`, status);
     this.currentTaskId = null;
-    const errorMessage = status.error || status.message || 'Error durante la sincronización';
-    this.error = errorMessage;
+    this.error = status.error || status.message || 'Error durante la sincronización';
     this.canRetry = true;
     this.loading = false;
+    this.cardForm.enable();
     
-    this.snackBar.open(errorMessage, 'Cerrar', { 
+    this.snackBar.open(this.error || 'Error desconocido', 'Cerrar', { 
       duration: 7000,
       panelClass: ['error-snackbar']
     });
@@ -413,6 +411,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     this.currentTaskId = null;
     this.loading = false;
     this.progress = 0;
+    this.cardForm.enable();
     
     this.snackBar.open('Sincronización cancelada', 'Cerrar', { 
       duration: 3000,
@@ -425,6 +424,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     this.currentTaskId = null;
     this.loading = false;
     this.progress = 100;
+    this.cardForm.enable();
     
     // Forzar una actualización de las tarjetas
     this.cardService.refreshCards().pipe(
@@ -434,10 +434,10 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
           duration: 10000,
           panelClass: ['success-snackbar']
         });
-        setTimeout(() => {
-          console.log('🏁 [ADD-CARD] Cerrando diálogo después de completar tarea');
-          this.dialogRef.close(true);
-        }, 10000); // Aumentar a 10 segundos
+
+        // Cerrar el diálogo inmediatamente después de actualizar las tarjetas
+        console.log('🏁 [ADD-CARD] Cerrando diálogo después de completar tarea');
+        this.dialogRef.close(true);
       })
     ).subscribe();
   }
