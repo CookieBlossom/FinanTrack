@@ -122,8 +122,6 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
         Validators.required,
         (control: AbstractControl) => {
           const value = control.value;
-          
-          // Solo validar si el RUT tiene al menos 8 caracteres (formato mínimo)
           if (!value || value.length < 8) {
             return null; // No mostrar error hasta que tenga longitud mínima
           }
@@ -157,22 +155,14 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       this.manualForm.disable();
       return;
     }
-    
-    // Cargar límites
     this.loadLimitsInfo();
-    
-    // Cargar información del plan
     this.loadPlanInfo();
-    
-    // Carga dinámica de tipos y bancos
     this.cardTypes = (await firstValueFrom(this.cardService.getCardTypes()))
     .filter(type => type.name.toLowerCase() !== 'efectivo');
-
     this.banks = await firstValueFrom(this.cardService.getBanks());
   }
 
   loadLimitsInfo(): void {
-    // Cargar información de límites
     this.planLimitsService.currentUsage$.subscribe({
       next: (usage) => {
         this.limitsInfo = usage;
@@ -188,12 +178,8 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     this.featureControlService.featureControl$.subscribe(control => {
       if (control) {
         this.currentPlanName = control.planName;
-        
-        // Controlar qué pestañas mostrar según el plan
         this.showAutomaticTab = ['premium', 'pro'].includes(control.planName.toLowerCase());
         this.showManualTab = true; // Siempre mostrar manual
-        
-        // Si no se puede mostrar automático, cambiar a manual por defecto
         if (!this.showAutomaticTab && this.activeTab === 'automatic') {
           this.activeTab = 'manual';
         }
@@ -248,8 +234,6 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       this.snackBar.open(errorMessage, 'Cerrar', { duration: 5000 });
       return;
     }
-
-    // Verificar límites usando datos ya cargados
     const cardLimit = this.limitsInfo?.max_cards?.limit;
     const cardsUsed = this.limitsInfo?.max_cards?.used || 0;
     
@@ -264,8 +248,6 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       });
       return;
     }
-
-    // Verificar también límites del scraper si están disponibles
     const scraperLimit = this.limitsInfo?.monthly_scrapes?.limit;
     const scrapesUsed = this.limitsInfo?.monthly_scrapes?.used || 0;
     
@@ -446,18 +428,16 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     
     // Mostrar mensaje de éxito
     this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { 
-      duration: 3000,
+      duration: 10000,  // Aumentar duración del mensaje
       panelClass: ['success-snackbar']
     });
-
-    // Esperar un momento para que se vea el 100% antes de cerrar
     setTimeout(() => {
+      console.log('🏁 [ADD-CARD] Cerrando diálogo después de completar tarea');
       this.dialogRef.close(true);
-    }, 1000);
+    }, 5000);  // Aumentar a 5 segundos
   }
 
   private verifyFinalStatus(taskId: string): void {
-    // Verificar el estado final si el monitoreo se completa sin un estado definitivo
     this.scraperService.getTaskStatus(taskId).pipe(
       takeUntil(this.destroy$)
     ).subscribe({

@@ -1119,10 +1119,7 @@ class BancoEstadoScraper:
         """Procesa y categoriza los movimientos"""
         print("[INFO] Procesando y categorizando movimientos...")
         try:
-            # Obtener companies.json desde el backend
             backend_url = os.getenv('BACKEND_URL', 'http://localhost:3000')
-            
-            # Asegurar que la URL tenga el protocolo correcto
             if 'railway.app' in backend_url and not backend_url.startswith('http'):
                 backend_url = f"https://{backend_url}"
             elif not backend_url.startswith('http'):
@@ -1130,7 +1127,6 @@ class BancoEstadoScraper:
             
             companies_url = f"{backend_url}/config/companies"
             print(f"[INFO] Obteniendo companies.json desde: {companies_url}")
-            
             async with aiohttp.ClientSession() as session:
                 async with session.get(companies_url) as response:
                     if response.status == 200:

@@ -353,10 +353,28 @@ export class MovementService {
     try {
       if (typeof dateStr === 'string' && dateStr.includes('/')) {
         const [day, month, year] = dateStr.split('/').map(Number);
-        return new Date(year, month - 1, day);
+        // Crear la fecha usando UTC para evitar problemas de zona horaria
+        const date = new Date(Date.UTC(year, month - 1, day));
+        console.log(`[MovementService] Fecha convertida:
+          Input: ${dateStr}
+          UTC: ${date.toISOString()}
+          Local: ${date.toLocaleDateString('es-CL')}
+        `);
+        return date;
       }
       if (dateStr instanceof Date) {
-        return dateStr;
+        // Si ya es una fecha, asegurarnos de que esté en UTC
+        const utcDate = new Date(Date.UTC(
+          dateStr.getUTCFullYear(),
+          dateStr.getUTCMonth(),
+          dateStr.getUTCDate()
+        ));
+        console.log(`[MovementService] Fecha Date convertida:
+          Input: ${dateStr.toISOString()}
+          UTC: ${utcDate.toISOString()}
+          Local: ${utcDate.toLocaleDateString('es-CL')}
+        `);
+        return utcDate;
       }
 
       // Si es un string ISO o timestamp
@@ -365,7 +383,18 @@ export class MovementService {
         console.error('[MovementService] Fecha inválida:', dateStr);
         return new Date();
       }
-      return date;
+      // Asegurarnos de que esté en UTC
+      const utcDate = new Date(Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate()
+      ));
+      console.log(`[MovementService] Fecha string convertida:
+        Input: ${dateStr}
+        UTC: ${utcDate.toISOString()}
+        Local: ${utcDate.toLocaleDateString('es-CL')}
+      `);
+      return utcDate;
     } catch (error) {
       console.error('[MovementService] Error al parsear fecha:', dateStr, error);
       return new Date();
