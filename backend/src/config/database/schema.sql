@@ -131,6 +131,7 @@ CREATE TABLE cards (
     source VARCHAR(20) NOT NULL DEFAULT 'manual',
     card_type_id INTEGER REFERENCES card_types(id),
     bank_id INTEGER REFERENCES banks(id),
+    metadata JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP,
     CONSTRAINT cards_source_check CHECK (source IN ('manual', 'scraper', 'imported', 'api')),
@@ -297,6 +298,7 @@ CREATE INDEX idx_user_plan ON "user"(plan_id);
 CREATE INDEX idx_categories_name ON categories(name_category);
 CREATE INDEX idx_cards_user ON cards(user_id, status_account);
 CREATE INDEX idx_cards_type ON cards(card_type_id);
+CREATE INDEX idx_cards_metadata ON cards USING gin(metadata);
 CREATE INDEX idx_movements_user_date ON movements(card_id, transaction_date);
 CREATE INDEX idx_movements_category ON movements(category_id);
 CREATE INDEX idx_movements_type_date ON movements(movement_type, transaction_date);
