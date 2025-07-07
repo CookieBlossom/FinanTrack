@@ -26,11 +26,25 @@ import { FeatureControlService } from '../../../services/feature-control.service
 import { PlanLimitAlertService } from '../../../shared/services/plan-limit-alert.service';
 import { Router } from '@angular/router';
 import { ScraperService } from '../../../services/scraper.service';
+import { WebSocketService, ConnectionStatus } from '../../../services/websocket.service';
 
 interface CardCredentials {
   rut: string;
   password: string;
   site?: string;
+}
+
+interface TaskStatus {
+  id: string;
+  userId: number;
+  type: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'cancelling';
+  message: string;
+  progress: number;
+  result?: any;
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
 }
 
 @Component({
@@ -99,7 +113,8 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     private featureControlService: FeatureControlService,
     private planLimitAlertService: PlanLimitAlertService,
     private router: Router,
-    private scraperService: ScraperService
+    private scraperService: ScraperService,
+    private wsService: WebSocketService
   ) {
     // Scraper form
     this.cardForm = this.fb.group({
@@ -305,6 +320,31 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   private monitorScrapingProgress(taskId: string): void {
     console.log(`🔍 [ADD-CARD] Iniciando monitoreo de tarea: ${taskId}`);
     
+    // Suscribirse a errores de conexión
+    this.wsService.getConnectionErrors().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe((error: string) => {
+      console.error(`❌ [ADD-CARD] Error de conexión:`, error);
+      this.snackBar.open(`Error de conexión: ${error}`, 'Reintentar', {
+        duration: 0,
+        panelClass: ['error-snackbar']
+      }).onAction().subscribe(() => {
+        this.retrySync();
+      });
+    });
+
+    // Monitorear estado de conexión
+    this.wsService.getConnectionStatus().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe((status: ConnectionStatus) => {
+      if (!status.connected && status.reconnecting) {
+        this.statusMessage = `Reconectando... (Intento ${status.reconnectAttempt || 1}/5)`;
+      }
+      if (!status.connected && status.error && !status.reconnecting) {
+        this.handleTaskError(new Error(status.error));
+      }
+    });
+
     // Primero intentar obtener el estado actual
     this.scraperService.getTaskStatus(taskId).pipe(
       takeUntil(this.destroy$)
@@ -314,6 +354,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error(`❌ [ADD-CARD] Error al obtener estado inicial:`, err);
+        this.handleTaskError(err);
       }
     });
 
@@ -358,6 +399,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   }
 
   private handleTaskError(error: any): void {
+    console.error(`❌ [ADD-CARD] Error en tarea:`, error);
     this.currentTaskId = null;
     const errorMessage = this.getErrorMessageFromError(error) || 'Error al monitorear el progreso.';
     this.error = errorMessage;
@@ -371,7 +413,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
   }
 
   private handleTaskFailure(status: any): void {
-    console.log(`❌ [ADD-CARD] Tarea falló:`, status);
+    console.error(`❌ [ADD-CARD] Tarea falló:`, status);
     this.currentTaskId = null;
     const errorMessage = status.error || status.message || 'Error durante la sincronización';
     this.error = errorMessage;
@@ -438,7 +480,10 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       'cancelled': 'Sincronización cancelada',
       'initializing': 'Iniciando sincronización...',
       'logging_in': 'Iniciando sesión en el banco...',
-      'fetching_data': 'Obteniendo información de la cuenta...'
+      'fetching_data': 'Obteniendo información de la cuenta...',
+      'connecting': 'Conectando con el servidor...',
+      'reconnecting': 'Reconectando...',
+      'connection_lost': 'Se perdió la conexión, reconectando...'
     };
     return messages[status] || status;
   }

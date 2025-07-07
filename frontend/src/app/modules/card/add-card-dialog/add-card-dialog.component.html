@@ -48,37 +48,33 @@
             </button>
           </div>
 
-          <!-- Progress bar y mensajes -->
-          <div class="progress-container" *ngIf="loading">
-            <mat-progress-bar mode="determinate" [value]="progress" [color]="error ? 'warn' : 'primary'"></mat-progress-bar>
-            <div class="status-info">
-              <p class="status-message" [class.error]="error">{{ statusMessage }}</p>
-              <span class="progress-percentage" *ngIf="progress > 0">{{ progress }}%</span>
-            </div>
-            <div class="progress-actions" *ngIf="currentTaskId && !error">
-              <button mat-button color="warn" (click)="cancelCurrentTask()">
-                <mat-icon>cancel</mat-icon>
-                Cancelar Sincronización
-              </button>
-            </div>
-          </div>
-
-          <!-- Error message -->
-          <div class="error-container" *ngIf="error">
-            <div class="error-content">
+          <!-- Estado de conexión -->
+          <div *ngIf="loading" class="connection-status">
+            <mat-progress-bar mode="indeterminate" *ngIf="!progress"></mat-progress-bar>
+            <mat-progress-bar mode="determinate" [value]="progress" *ngIf="progress"></mat-progress-bar>
+            <p class="status-message">{{ statusMessage }}</p>
+            
+            <!-- Mostrar error si existe -->
+            <div *ngIf="error" class="error-container">
               <mat-icon color="warn">error</mat-icon>
               <p class="error-message">{{ error }}</p>
-            </div>
-            <div class="error-actions">
               <button mat-button color="primary" (click)="retrySync()" *ngIf="canRetry">
                 <mat-icon>refresh</mat-icon>
                 Reintentar
               </button>
-              <button mat-button color="warn" (click)="onCancel()">
-                <mat-icon>close</mat-icon>
-                Cerrar
+              <button mat-button color="warn" (click)="cancelCurrentTask()" *ngIf="currentTaskId">
+                <mat-icon>cancel</mat-icon>
+                Cancelar
               </button>
             </div>
+          </div>
+
+          <!-- Botón de cancelar tarea -->
+          <div *ngIf="loading && !error && currentTaskId" class="cancel-button">
+            <button mat-button color="warn" (click)="cancelCurrentTask()">
+              <mat-icon>cancel</mat-icon>
+              Cancelar sincronización
+            </button>
           </div>
 
           <!-- Success message -->
@@ -159,3 +155,39 @@
     </mat-tab>
   </mat-tab-group>
 </div>
+
+<style>
+.connection-status {
+  margin: 16px 0;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+}
+
+.status-message {
+  margin: 8px 0;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.error-container {
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #ffebee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-message {
+  margin: 0;
+  color: #d32f2f;
+  flex-grow: 1;
+}
+
+.cancel-button {
+  margin-top: 16px;
+  text-align: center;
+}
+</style>

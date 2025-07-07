@@ -126,6 +126,14 @@ export class BancoEstadoService {
         }
     }
 
+    private processBalance(balanceStr: string): number {
+        if (!balanceStr) return 0;
+        // Eliminar "Saldo: " y "$", luego convertir a número
+        const cleanStr = balanceStr.replace(/Saldo:\s*\$/, '').replace(/,/g, '');
+        // Asegurar que el número tenga exactamente 2 decimales para coincidir con DECIMAL(12,2)
+        return Number(parseFloat(cleanStr || '0').toFixed(2));
+    }
+
     private transformScraperResult(result: any): any {
         if (!result) return null;
 
@@ -134,7 +142,7 @@ export class BancoEstadoService {
             number: cuenta.numero,
             type: cuenta.tipo,
             bank: 'BancoEstado',
-            balance: cuenta.saldo,
+            balance: this.processBalance(cuenta.saldo),
             lastFourDigits: cuenta.numero.slice(-4),
             movements: cuenta.movimientos,
             status: cuenta.estado
