@@ -10,7 +10,7 @@ export interface ScraperTask {
   id: string;
   userId: number;
   type: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'cancelling';
   message: string;
   progress: number;
   result?: any;

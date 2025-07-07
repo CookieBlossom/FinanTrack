@@ -497,13 +497,14 @@ class CardService {
     /**
      * Versión mejorada de findOrCreateCard con lógica específica para Cuenta RUT para scraper
      */
-    async findOrCreateCardFromScraper(userId, nameAccount, accountHolder, initialBalance, source = 'scraper') {
+    async findOrCreateCardFromScraper(userId, nameAccount, accountHolder, initialBalance, source = 'scraper', accountNumber) {
         try {
             console.log(`[CardService] findOrCreateCardFromScraper - Procesando cuenta:`, {
                 nameAccount,
                 accountHolder,
                 initialBalance,
-                source
+                source,
+                accountNumber
             });
             // Detectar si es CuentaRUT
             const isCuentaRUT = nameAccount.toUpperCase().includes('CUENTARUT') ||
@@ -512,7 +513,7 @@ class CardService {
                 console.log('[CardService] Detectada CuentaRUT, buscando cuenta existente...');
                 // Buscar cualquier CuentaRUT existente de BancoEstado
                 const findQuery = `
-          SELECT id, name_account, balance
+          SELECT id, name_account, balance, metadata
           FROM cards 
           WHERE user_id = $1 
           AND card_type_id = $2 
@@ -532,13 +533,16 @@ class CardService {
                 balance_source = 'scraper',
                 last_balance_update = NOW(),
                 account_holder = COALESCE($2, account_holder),
+                metadata = COALESCE($3, metadata),
                 updated_at = NOW()
-            WHERE id = $3
+            WHERE id = $4
             RETURNING id
           `;
+                    const metadata = accountNumber ? JSON.stringify({ account_number: accountNumber }) : null;
                     const result = await this.pool.query(updateQuery, [
                         initialBalance,
                         accountHolder,
+                        metadata,
                         existingCard.rows[0].id
                     ]);
                     return { cardId: result.rows[0].id, wasCreated: false };
@@ -549,10 +553,11 @@ class CardService {
           INSERT INTO cards (
             user_id, name_account, account_holder, card_type_id,
             bank_id, balance, balance_source, source,
-            status_account, last_balance_update, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, 'scraper', $7, 'active', NOW(), NOW(), NOW())
+            status_account, last_balance_update, metadata, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, 'scraper', $7, 'active', NOW(), $8, NOW(), NOW())
           RETURNING id
         `;
+                const metadata = accountNumber ? JSON.stringify({ account_number: accountNumber }) : null;
                 const result = await this.pool.query(createQuery, [
                     userId,
                     nameAccount,
@@ -560,21 +565,35 @@ class CardService {
                     CUENTA_RUT_TYPE_ID,
                     BANCO_ESTADO_ID,
                     initialBalance,
-                    source
+                    source,
+                    metadata
                 ]);
                 return { cardId: result.rows[0].id, wasCreated: true };
             }
+            // Para otras cuentas, detectar el tipo de cuenta y banco
             const cardTypeId = this.detectCardTypeFromName(nameAccount);
             const bankId = 1; // Por defecto BancoEstado
-            const findQuery = `
+            // Buscar cuenta existente con el mismo número de cuenta si está disponible
+            let findQuery = `
         SELECT id 
         FROM cards 
         WHERE user_id = $1 
-        AND name_account = $2 
         AND status_account = 'active'
-        LIMIT 1
+        AND metadata->>'account_number' = $2
       `;
-            const existingCard = await this.pool.query(findQuery, [userId, nameAccount]);
+            let findParams = [userId, accountNumber];
+            if (!accountNumber) {
+                findQuery = `
+          SELECT id 
+          FROM cards 
+          WHERE user_id = $1 
+          AND name_account = $2 
+          AND status_account = 'active'
+          LIMIT 1
+        `;
+                findParams = [userId, nameAccount];
+            }
+            const existingCard = await this.pool.query(findQuery, findParams);
             if (existingCard.rows.length > 0) {
                 // Actualizar cuenta existente
                 const updateQuery = `
@@ -583,13 +602,16 @@ class CardService {
               balance_source = 'scraper',
               last_balance_update = NOW(),
               account_holder = COALESCE($2, account_holder),
+              metadata = COALESCE($3, metadata),
               updated_at = NOW()
-          WHERE id = $3
+          WHERE id = $4
           RETURNING id
         `;
+                const metadata = accountNumber ? JSON.stringify({ account_number: accountNumber }) : null;
                 const result = await this.pool.query(updateQuery, [
                     initialBalance,
                     accountHolder,
+                    metadata,
                     existingCard.rows[0].id
                 ]);
                 return { cardId: result.rows[0].id, wasCreated: false };
@@ -599,10 +621,11 @@ class CardService {
         INSERT INTO cards (
           user_id, name_account, account_holder, card_type_id,
           bank_id, balance, balance_source, source,
-          status_account, last_balance_update, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'scraper', $7, 'active', NOW(), NOW(), NOW())
+          status_account, last_balance_update, metadata, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'scraper', $7, 'active', NOW(), $8, NOW(), NOW())
         RETURNING id
       `;
+            const metadata = accountNumber ? JSON.stringify({ account_number: accountNumber }) : null;
             const result = await this.pool.query(createQuery, [
                 userId,
                 nameAccount,
@@ -610,7 +633,8 @@ class CardService {
                 cardTypeId,
                 bankId,
                 initialBalance,
-                source
+                source,
+                metadata
             ]);
             return { cardId: result.rows[0].id, wasCreated: true };
         }

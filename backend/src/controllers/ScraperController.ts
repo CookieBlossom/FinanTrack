@@ -191,7 +191,8 @@ export class ScraperController {
 
       console.log(`[ScraperController] Procesando ${rawMovements.length} movimientos del scraper para usuario ${userId}`);
       if (cuentas && Array.isArray(cuentas)) {
-        console.log(`[ScraperController] Procesando ${cuentas.length} cuentas detectadas por el scraper`);
+        console.log(`[ScraperController] Procesando ${cuentas.length} cuentas detectadas por el scraper:`, 
+          cuentas.map(c => `${c.tipo} (${c.numero})`));
       }
       
       await this.updateScraperTaskStatus(scraperTaskId, {
@@ -199,6 +200,7 @@ export class ScraperController {
         message: `Procesando ${rawMovements.length} movimientos...`,
         progress: 10
       });
+
       const cardService = new CardService();
       const userService = new UserService();
       const movementService = new MovementService();
@@ -217,20 +219,31 @@ export class ScraperController {
         for (const cuenta of cuentas) {
           try {
             console.log(`[ScraperController] Procesando cuenta: ${cuenta.tipo} - ${cuenta.numero}`);
+            
+            // Determinar si es CuentaRUT
+            const isCuentaRUT = cuenta.tipo.toUpperCase().includes('CUENTARUT') || 
+                              cuenta.tipo.toUpperCase().includes('CUENTA RUT');
+            
+            // Crear o encontrar la tarjeta
             const result = await cardService.findOrCreateCardFromScraper(
               userId,
               cuenta.tipo,
               cuenta.titular || 'Usuario Scraper',
               cuenta.saldo || 0,
-              'scraper'
+              'scraper',
+              cuenta.numero // Agregamos el número de cuenta como referencia
             );
+
             processedCards.set(cuenta.numero, result.cardId);
-            console.log(`[ScraperController] Cuenta ${result.wasCreated ? 'creada' : 'encontrada'} con ID ${result.cardId}`);
+            console.log(`[ScraperController] Cuenta ${result.wasCreated ? 'creada' : 'encontrada'} con ID ${result.cardId} para número ${cuenta.numero}`);
           } catch (error) {
             console.error(`[ScraperController] Error procesando cuenta ${cuenta.tipo}:`, error);
           }
         }
       }
+
+      console.log('[ScraperController] Mapeo de cuentas procesadas:', 
+        Array.from(processedCards.entries()).map(([numero, id]) => `${numero} -> ${id}`));
 
       const createdMovements: IMovement[] = [];
       const errors: any[] = [];
@@ -244,7 +257,7 @@ export class ScraperController {
         const rawMov = rawMovements[i];
         try {
           // Encontrar la tarjeta correspondiente para este movimiento
-          const cardId = processedCards.get(rawMov.cuenta) || processedCards.values().next().value;
+          const cardId = processedCards.get(rawMov.cuenta);
           if (!cardId) {
             throw new Error(`No se encontró tarjeta para el movimiento de la cuenta ${rawMov.cuenta}`);
           }
@@ -252,7 +265,7 @@ export class ScraperController {
           const movementToCreate = await this.convertScraperMovement(rawMov as IScraperMovement, scraperTaskId, cardId);
           const newMovement = await movementService.createMovement(movementToCreate, userId, planId);
           createdMovements.push(newMovement);
-          console.log(`[ScraperController] Movimiento creado: ${newMovement.description} - ${newMovement.amount} para tarjeta ${cardId}`);
+          console.log(`[ScraperController] Movimiento creado: ${newMovement.description} - ${newMovement.amount} para tarjeta ${cardId} (cuenta ${rawMov.cuenta})`);
           
           if (i % 5 === 0 || i === rawMovements.length - 1) {
             const progress = 30 + Math.round((i / rawMovements.length) * 60);
@@ -273,7 +286,11 @@ export class ScraperController {
         exitosos: createdMovements.length,
         errores: errors.length,
         por_categoria: this.getMovementsByCategory(createdMovements),
-        cuentas_procesadas: Array.from(processedCards.keys())
+        cuentas_procesadas: Array.from(processedCards.entries()).map(([numero, id]) => ({
+          numero,
+          id,
+          movimientos: createdMovements.filter(m => m.cardId === id).length
+        }))
       };
 
       console.log(`[ScraperController] Estadísticas del procesamiento del scraper:`, stats);

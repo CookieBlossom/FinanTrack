@@ -1538,7 +1538,7 @@ class BancoEstadoScraper:
                 print(f"[INFO] RUT procesado: {rut}")
                 sys.stdout.flush()
                 await self.type_like_human(page, "#rut", rut, delay=300)  # AUMENTADO: 200ms -> 300ms
-                await page.wait_for_timeout(random.randint(800, 1200))  # AUMENTADO: 500-600ms -> 800-1200ms
+                await page.wait_for_timeout(random.randint(800, 1000))  # AUMENTADO: 500-600ms -> 800-1200ms
                 print("[OK] RUT ingresado exitosamente")
                 sys.stdout.flush()
                 
@@ -1603,7 +1603,7 @@ class BancoEstadoScraper:
                 for i, selector in enumerate(ingresar_selectors):
                     try:
                         print(f"[INFO] Probando selector {i+1}: {selector}")
-                        button = await page.wait_for_selector(selector, timeout=15000, state="visible")  # AUMENTADO: 10s -> 15s
+                        button = await page.wait_for_selector(selector, timeout=10000, state="visible")  # AUMENTADO: 10s -> 15s
                         if button:
                             login_button = button
                             print(f"[OK] Botón 'Ingresar' encontrado con selector: {selector}")
@@ -1687,19 +1687,19 @@ class BancoEstadoScraper:
                 print("[INFO] Click exitoso, esperando navegación...")
                 sys.stdout.flush()
                 await page.wait_for_timeout(5000)  # AUMENTADO: 3s -> 5s
-                await page.wait_for_load_state("networkidle", timeout=25000)  # AUMENTADO: 15s -> 25s
-                await page.wait_for_timeout(8000)  # AUMENTADO: 6s -> 8s
+                await page.wait_for_load_state("networkidle", timeout=16000)  # AUMENTADO: 15s -> 25s
+                await page.wait_for_timeout(5400)  # AUMENTADO: 6s -> 8s
                 print("[OK] Navegación completada")
                 sys.stdout.flush()
             except Exception as e:
                 print(f"ERROR: Error al intentar hacer click en el botón: {str(e)}")
                 raise
-            await page.wait_for_timeout(7000)  # AUMENTADO: 5s -> 7s
+            await page.wait_for_timeout(6000)  # AUMENTADO: 5s -> 7s
             modal_error = page.locator("text='ha ocurrido un error'")
             if await modal_error.count() > 0:
                 print("[WARNING] Modal de error detectado tras login")
                 raise Exception("ERROR: Error visible en pantalla después de iniciar sesión")
-            await page.wait_for_timeout(9000)  # AUMENTADO: 7020ms -> 9000ms
+            await page.wait_for_timeout(6000)  # AUMENTADO: 7020ms -> 9000ms
             content = await page.content()
             errores = [
                 "clave incorrecta",
@@ -1716,7 +1716,7 @@ class BancoEstadoScraper:
             print(f"URL actual: {current_url}")
             print("Explorando dashboard...")
             await self.simular_scroll_natural(page)
-            await page.wait_for_timeout(random.randint(2000, 3000))  # AUMENTADO: 1500-2200ms -> 2000-3000ms
+            await page.wait_for_timeout(random.randint(2000, 2350))  # AUMENTADO: 1500-2200ms -> 2000-3000ms
             print(" Verificando si el login fue exitoso...")
             sys.stdout.flush()
             try:
@@ -1732,7 +1732,7 @@ class BancoEstadoScraper:
                 for i, selector in enumerate(success_selectors):
                     try:
                         print(f"[INFO] Buscando selector {i+1}: {selector}")
-                        await page.wait_for_selector(selector, timeout=40000)  # AUMENTADO: 10s -> 15s
+                        await page.wait_for_selector(selector, timeout=15000)  # AUMENTADO: 10s -> 15s
                         print(f"[OK] Login confirmado: Elemento {selector} encontrado")
                         login_success = True
                         break
@@ -1804,14 +1804,11 @@ async def main():
             rut="21.737.273-9",
             password="coom004"
         )
-        
         async with async_playwright() as p:
             # Configurar el navegador según el entorno
             import os
-            
             # Detectar si estamos en Railway
             is_railway = os.getenv('RAILWAY_ENVIRONMENT') == 'production'
-            
             if is_railway:
                 # Configuración para Railway (con display virtual)
                 browser_args = [

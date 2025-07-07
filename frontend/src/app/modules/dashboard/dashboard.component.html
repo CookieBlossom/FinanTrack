@@ -44,20 +44,20 @@
             </div>
 
             <div *ngIf="!loading && !error">
-                <div *ngFor="let monthData of monthlyExpenses" class="month-section">
-                    <h3>{{ formatMonth(monthData.month) }}</h3>
-                    
-                    <div class="category-list">
-                        <div *ngFor="let expense of monthData.expenses" class="category-item">
-                            <div class="category-name">{{ expense.category }}</div>
-                            <div class="category-amount">{{ formatAmount(expense.total) }}</div>
-                            <div class="category-percentage">{{ calculatePercentage(monthData, expense.category) }}</div>
+                <div *ngIf="monthlyExpenses && monthlyExpenses.length > 0; else noData">
+                    <div *ngFor="let monthData of monthlyExpenses" class="month-section">
+                        <h3>{{ formatMonth(monthData.month) }}</h3>
+                        <div class="category-list">
+                            <div *ngFor="let expense of monthData.expenses" class="category-item">
+                                <div class="category-name">{{ expense.category }}</div>
+                                <div class="category-amount">{{ formatAmount(expense.total) }}</div>
+                                <div class="category-percentage">{{ calculatePercentage(monthData, expense.category) }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
         <!-- Movimientos Proyectados -->
         <div class="projected-movements">
             <h2>Próximos Movimientos</h2>
@@ -83,7 +83,10 @@
 </ng-template>
 
 <ng-template #noData>
-    <div class="no-data">
-        <span>No hay datos disponibles</span>
+    <div class="empty-state">
+        <p>No hay gastos categorizados para mostrar</p>
+        <button mat-stroked-button color="primary" routerLink="/movements">
+            Agregar movimientos
+        </button>
     </div>
 </ng-template>
