@@ -13,6 +13,7 @@ const card_service_1 = require("../services/card.service");
 const user_service_1 = require("../services/user.service");
 const movement_service_1 = require("../services/movement.service");
 const dotenv_1 = __importDefault(require("dotenv"));
+const websocket_service_1 = require("../services/websocket.service");
 dotenv_1.default.config();
 class ScraperController {
     constructor() {
@@ -177,8 +178,6 @@ class ScraperController {
                 const cardService = new card_service_1.CardService();
                 const userService = new user_service_1.UserService();
                 const movementService = new movement_service_1.MovementService();
-                // Obtener o crear tarjeta "Efectivo" para el usuario
-                let defaultCard = await cardService.getCardsByUserId(userId);
                 // Obtener el plan real del usuario desde la base de datos
                 const user = await userService.getUserById(userId);
                 if (!user) {
@@ -186,42 +185,20 @@ class ScraperController {
                 }
                 const planId = user.plan_id;
                 console.log(`[ScraperController] Usuario ${userId} tiene plan ID ${planId}`);
-                let defaultCardId;
-                let cuentaRUTCard = null;
-                // Procesar cuentas específicas del scraper (especialmente Cuenta RUT)
+                // Procesar todas las cuentas encontradas por el scraper
+                const processedCards = new Map();
                 if (cuentas && Array.isArray(cuentas)) {
                     for (const cuenta of cuentas) {
-                        if (cuenta.tipo && (cuenta.tipo.toUpperCase().includes('CUENTARUT') || cuenta.tipo.toUpperCase().includes('CUENTA RUT'))) {
-                            console.log(`[ScraperController] Procesando Cuenta RUT: ${cuenta.tipo}`);
+                        try {
+                            console.log(`[ScraperController] Procesando cuenta: ${cuenta.tipo} - ${cuenta.numero}`);
                             const result = await cardService.findOrCreateCardFromScraper(userId, cuenta.tipo, cuenta.titular || 'Usuario Scraper', cuenta.saldo || 0, 'scraper');
-                            cuentaRUTCard = { id: result.cardId, wasCreated: result.wasCreated };
-                            console.log(`[ScraperController] Cuenta RUT ${result.wasCreated ? 'creada' : 'encontrada'} con ID ${result.cardId}`);
-                            break; // Solo procesar la primera Cuenta RUT encontrada
+                            processedCards.set(cuenta.numero, result.cardId);
+                            console.log(`[ScraperController] Cuenta ${result.wasCreated ? 'creada' : 'encontrada'} con ID ${result.cardId}`);
+                        }
+                        catch (error) {
+                            console.error(`[ScraperController] Error procesando cuenta ${cuenta.tipo}:`, error);
                         }
                     }
-                }
-                // Si no se encontró tarjeta, crear tarjeta fallback
-                if (!cuentaRUTCard) {
-                    if (defaultCard.length === 0) {
-                        const newCard = await cardService.createCard({
-                            nameAccount: 'Efectivo - BancoEstado',
-                            accountHolder: 'Usuario Scraper',
-                            cardTypeId: 1,
-                            balance: 0,
-                            balanceSource: 'manual',
-                            source: 'scraper'
-                        }, userId, planId);
-                        defaultCardId = newCard.id;
-                        console.log(`[ScraperController] Tarjeta "Efectivo" creada automáticamente con ID ${defaultCardId}`);
-                    }
-                    else {
-                        defaultCardId = defaultCard[0].id;
-                        console.log(`[ScraperController] Usando tarjeta existente ID ${defaultCardId}: ${defaultCard[0].nameAccount}`);
-                    }
-                }
-                else {
-                    defaultCardId = cuentaRUTCard.id;
-                    console.log(`[ScraperController] Usando Cuenta RUT ID ${defaultCardId} para movimientos`);
                 }
                 const createdMovements = [];
                 const errors = [];
@@ -233,12 +210,17 @@ class ScraperController {
                 for (let i = 0; i < rawMovements.length; i++) {
                     const rawMov = rawMovements[i];
                     try {
-                        const movementToCreate = await this.convertScraperMovement(rawMov, scraperTaskId, defaultCardId);
+                        // Encontrar la tarjeta correspondiente para este movimiento
+                        const cardId = processedCards.get(rawMov.cuenta) || processedCards.values().next().value;
+                        if (!cardId) {
+                            throw new Error(`No se encontró tarjeta para el movimiento de la cuenta ${rawMov.cuenta}`);
+                        }
+                        const movementToCreate = await this.convertScraperMovement(rawMov, scraperTaskId, cardId);
                         const newMovement = await movementService.createMovement(movementToCreate, userId, planId);
                         createdMovements.push(newMovement);
-                        console.log(`[ScraperController] Movimiento creado: ${newMovement.description} - ${newMovement.amount}`);
+                        console.log(`[ScraperController] Movimiento creado: ${newMovement.description} - ${newMovement.amount} para tarjeta ${cardId}`);
                         if (i % 5 === 0 || i === rawMovements.length - 1) {
-                            const progress = 30 + Math.round((i / rawMovements.length) * 60); // De 30% a 90%
+                            const progress = 30 + Math.round((i / rawMovements.length) * 60);
                             await this.updateScraperTaskStatus(scraperTaskId, {
                                 status: 'processing',
                                 message: `Procesando movimientos: ${i + 1}/${rawMovements.length}`,
@@ -256,7 +238,7 @@ class ScraperController {
                     exitosos: createdMovements.length,
                     errores: errors.length,
                     por_categoria: this.getMovementsByCategory(createdMovements),
-                    cuenta_rut_procesada: cuentaRUTCard ? true : false
+                    cuentas_procesadas: Array.from(processedCards.keys())
                 };
                 console.log(`[ScraperController] Estadísticas del procesamiento del scraper:`, stats);
                 if (errors.length > 0 && createdMovements.length > 0) {
@@ -290,7 +272,7 @@ class ScraperController {
                 else {
                     await this.updateScraperTaskStatus(scraperTaskId, {
                         status: 'completed',
-                        message: ` ${createdMovements.length} movimientos procesados exitosamente`,
+                        message: `${createdMovements.length} movimientos procesados exitosamente`,
                         progress: 100,
                         result: { movements: createdMovements, stats }
                     });
@@ -387,27 +369,21 @@ class ScraperController {
         try {
             console.log(`[ScraperController] Actualizando tarea ${taskId}:`, update);
             const redisService = new redis_service_1.RedisService();
+            const webSocketService = websocket_service_1.WebSocketService.getInstance();
             const currentTaskData = await redisService.hGet(`scraper:tasks:${taskId}`, 'data');
+            let updatedTask;
             if (currentTaskData) {
                 const currentTask = JSON.parse(currentTaskData);
-                const updatedTask = {
+                updatedTask = {
                     ...currentTask,
                     ...update,
                     updated_at: new Date().toISOString()
                 };
-                await redisService.hSet(`scraper:tasks:${taskId}`, 'data', JSON.stringify(updatedTask));
-                console.log(`[ScraperController] Tarea ${taskId} actualizada exitosamente. Nuevo estado:`, updatedTask.status);
-                // Verificar que la actualización se guardó correctamente
-                const verifyData = await redisService.hGet(`scraper:tasks:${taskId}`, 'data');
-                if (verifyData) {
-                    const verifyTask = JSON.parse(verifyData);
-                    console.log(`[ScraperController] Verificación - Tarea ${taskId} estado: ${verifyTask.status}, progreso: ${verifyTask.progress}%`);
-                }
             }
             else {
                 console.warn(`[ScraperController] No se encontró la tarea ${taskId} en Redis`);
                 // Intentar crear la tarea con la información disponible
-                const newTask = {
+                updatedTask = {
                     id: taskId,
                     status: update.status || 'processing',
                     message: update.message || 'Procesando...',
@@ -417,8 +393,18 @@ class ScraperController {
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 };
-                await redisService.hSet(`scraper:tasks:${taskId}`, 'data', JSON.stringify(newTask));
-                console.log(`[ScraperController] Tarea ${taskId} creada en Redis con estado: ${newTask.status}`);
+            }
+            // Guardar en Redis
+            await redisService.hSet(`scraper:tasks:${taskId}`, 'data', JSON.stringify(updatedTask));
+            console.log(`[ScraperController] Tarea ${taskId} actualizada en Redis. Estado: ${updatedTask.status}`);
+            // Notificar a través de WebSocket
+            await webSocketService.updateTaskStatus(taskId, updatedTask);
+            console.log(`[ScraperController] Notificación WebSocket enviada para tarea ${taskId}`);
+            // Verificar que la actualización se guardó correctamente
+            const verifyData = await redisService.hGet(`scraper:tasks:${taskId}`, 'data');
+            if (verifyData) {
+                const verifyTask = JSON.parse(verifyData);
+                console.log(`[ScraperController] Verificación - Tarea ${taskId} estado: ${verifyTask.status}, progreso: ${verifyTask.progress}%`);
             }
         }
         catch (error) {

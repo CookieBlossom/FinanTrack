@@ -69,3 +69,13 @@ export interface IMovementFilters {
   orderBy?: string;
   orderDirection?: 'ASC' | 'DESC';
 }
+
+export interface CategoryExpense {
+  category: string;
+  total: number;
+}
+
+export interface MonthlyExpenses {
+  month: string;
+  expenses: CategoryExpense[];
+}

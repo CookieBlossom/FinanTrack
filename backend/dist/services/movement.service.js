@@ -776,24 +776,45 @@ class MovementService {
     async getExpensesByCategory(userId) {
         try {
             const query = `
+        WITH monthly_data AS (
+          SELECT 
+            DATE_TRUNC('month', m.transaction_date) as month,
+            COALESCE(c.name_category, 'Sin categoría') as category,
+            SUM(m.amount) as total
+          FROM movements m
+          JOIN cards ca ON m.card_id = ca.id
+          LEFT JOIN categories c ON m.category_id = c.id
+          WHERE ca.user_id = $1
+            AND m.movement_type = 'expense'
+            AND ca.status_account = 'active'
+          GROUP BY DATE_TRUNC('month', m.transaction_date), c.name_category
+        )
         SELECT 
-          COALESCE(c.name_category, 'Sin categoría') as category,
-          SUM(m.amount) as total
-        FROM movements m
-        JOIN cards ca ON m.card_id = ca.id
-        LEFT JOIN categories c ON m.category_id = c.id
-        WHERE ca.user_id = $1
-          AND m.movement_type = 'expense'
-          AND ca.status_account = 'active'
-          AND m.transaction_date >= DATE_TRUNC('month', CURRENT_DATE)
-          AND m.transaction_date < DATE_TRUNC('month', CURRENT_DATE + INTERVAL '1 month')
-        GROUP BY c.name_category
-        ORDER BY total DESC
+          TO_CHAR(month, 'YYYY-MM') as month,
+          category,
+          ABS(total) as total
+        FROM monthly_data
+        ORDER BY month ASC
       `;
             const result = await this.pool.query(query, [userId]);
-            return result.rows.map(row => ({
-                ...row,
-                total: Number(row.total)
+            // Agrupar por mes y ordenar cronológicamente
+            const monthlyExpenses = result.rows.reduce((acc, row) => {
+                const { month, category, total } = row;
+                if (!acc[month]) {
+                    acc[month] = [];
+                }
+                acc[month].push({
+                    category,
+                    total: Number(total)
+                });
+                return acc;
+            }, {});
+            // Convertir a array y ordenar por mes
+            return Object.entries(monthlyExpenses)
+                .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
+                .map(([month, expenses]) => ({
+                month,
+                expenses
             }));
         }
         catch (error) {

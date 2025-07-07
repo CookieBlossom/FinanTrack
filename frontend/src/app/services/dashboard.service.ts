@@ -12,8 +12,13 @@ export interface TopExpense {
 }
 
 export interface CategoryExpense {
-  name: string;
-  value: number;
+  category: string;
+  total: number;
+}
+
+export interface MonthlyExpenses {
+  month: string;
+  expenses: CategoryExpense[];
 }
 
 export interface FinancialCard {
@@ -74,8 +79,8 @@ export class DashboardService {
     );
   }
 
-  getExpensesByCategory(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/dashboard/expenses-by-category`).pipe(
+  getExpensesByCategory(): Observable<MonthlyExpenses[]> {
+    return this.http.get<MonthlyExpenses[]>(`${this.apiUrl}/dashboard/expenses-by-category`).pipe(
       catchError(error => {
         console.error('Error al obtener gastos por categoría:', error);
         return throwError(() => error);

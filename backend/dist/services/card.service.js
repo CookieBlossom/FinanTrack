@@ -499,44 +499,144 @@ class CardService {
      */
     async findOrCreateCardFromScraper(userId, nameAccount, accountHolder, initialBalance, source = 'scraper') {
         try {
-            // Detectar si es Cuenta RUT basándose en el nombre
-            const isAccountRUT = nameAccount.toUpperCase().includes('CUENTARUT') ||
+            console.log(`[CardService] findOrCreateCardFromScraper - Procesando cuenta:`, {
+                nameAccount,
+                accountHolder,
+                initialBalance,
+                source
+            });
+            // Detectar si es CuentaRUT
+            const isCuentaRUT = nameAccount.toUpperCase().includes('CUENTARUT') ||
                 nameAccount.toUpperCase().includes('CUENTA RUT');
-            if (isAccountRUT) {
-                console.log(`[CardService] Procesando Cuenta RUT desde scraper con lógica especializada`);
-                const result = await this.findOrCreateCuentaRUT(userId, accountHolder || 'Usuario Scraper', initialBalance, source, nameAccount);
-                return { cardId: result.card.id, wasCreated: result.wasCreated };
+            if (isCuentaRUT) {
+                console.log('[CardService] Detectada CuentaRUT, buscando cuenta existente...');
+                // Buscar cualquier CuentaRUT existente de BancoEstado
+                const findQuery = `
+          SELECT id, name_account, balance
+          FROM cards 
+          WHERE user_id = $1 
+          AND card_type_id = $2 
+          AND bank_id = $3
+          AND status_account = 'active'
+          LIMIT 1
+        `;
+                const CUENTA_RUT_TYPE_ID = 9; // ID de tipo CuentaRUT
+                const BANCO_ESTADO_ID = 1; // ID de BancoEstado
+                const existingCard = await this.pool.query(findQuery, [userId, CUENTA_RUT_TYPE_ID, BANCO_ESTADO_ID]);
+                if (existingCard.rows.length > 0) {
+                    console.log(`[CardService] CuentaRUT existente encontrada: ${existingCard.rows[0].name_account}`);
+                    // Actualizar la CuentaRUT existente
+                    const updateQuery = `
+            UPDATE cards 
+            SET balance = $1,
+                balance_source = 'scraper',
+                last_balance_update = NOW(),
+                account_holder = COALESCE($2, account_holder),
+                updated_at = NOW()
+            WHERE id = $3
+            RETURNING id
+          `;
+                    const result = await this.pool.query(updateQuery, [
+                        initialBalance,
+                        accountHolder,
+                        existingCard.rows[0].id
+                    ]);
+                    return { cardId: result.rows[0].id, wasCreated: false };
+                }
+                // Si no existe, crear nueva CuentaRUT
+                console.log('[CardService] Creando nueva CuentaRUT...');
+                const createQuery = `
+          INSERT INTO cards (
+            user_id, name_account, account_holder, card_type_id,
+            bank_id, balance, balance_source, source,
+            status_account, last_balance_update, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, 'scraper', $7, 'active', NOW(), NOW(), NOW())
+          RETURNING id
+        `;
+                const result = await this.pool.query(createQuery, [
+                    userId,
+                    nameAccount,
+                    accountHolder,
+                    CUENTA_RUT_TYPE_ID,
+                    BANCO_ESTADO_ID,
+                    initialBalance,
+                    source
+                ]);
+                return { cardId: result.rows[0].id, wasCreated: true };
             }
-            // Para otras tarjetas, usar lógica original
-            // Detectar tipo de tarjeta y banco basándose en el nombre
             const cardTypeId = this.detectCardTypeFromName(nameAccount);
-            const bankId = 1; // Por defecto BancoEstado para scraper
-            const cardId = await this.findOrCreateCard(userId, nameAccount, accountHolder, initialBalance, new Date(), source, cardTypeId, bankId);
-            return { cardId, wasCreated: true }; // Asumimos que se creó porque findOrCreateCard no retorna esta info
+            const bankId = 1; // Por defecto BancoEstado
+            const findQuery = `
+        SELECT id 
+        FROM cards 
+        WHERE user_id = $1 
+        AND name_account = $2 
+        AND status_account = 'active'
+        LIMIT 1
+      `;
+            const existingCard = await this.pool.query(findQuery, [userId, nameAccount]);
+            if (existingCard.rows.length > 0) {
+                // Actualizar cuenta existente
+                const updateQuery = `
+          UPDATE cards 
+          SET balance = $1,
+              balance_source = 'scraper',
+              last_balance_update = NOW(),
+              account_holder = COALESCE($2, account_holder),
+              updated_at = NOW()
+          WHERE id = $3
+          RETURNING id
+        `;
+                const result = await this.pool.query(updateQuery, [
+                    initialBalance,
+                    accountHolder,
+                    existingCard.rows[0].id
+                ]);
+                return { cardId: result.rows[0].id, wasCreated: false };
+            }
+            // Crear nueva cuenta
+            const createQuery = `
+        INSERT INTO cards (
+          user_id, name_account, account_holder, card_type_id,
+          bank_id, balance, balance_source, source,
+          status_account, last_balance_update, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'scraper', $7, 'active', NOW(), NOW(), NOW())
+        RETURNING id
+      `;
+            const result = await this.pool.query(createQuery, [
+                userId,
+                nameAccount,
+                accountHolder,
+                cardTypeId,
+                bankId,
+                initialBalance,
+                source
+            ]);
+            return { cardId: result.rows[0].id, wasCreated: true };
         }
         catch (error) {
-            console.error('Error en findOrCreateCardFromScraper:', error);
-            throw new errors_1.DatabaseError('Error al procesar la tarjeta desde el scraper');
+            console.error('[CardService] Error en findOrCreateCardFromScraper:', error);
+            throw new errors_1.DatabaseError('Error al buscar o crear la tarjeta desde el scraper');
         }
     }
-    /**
-     * Detecta el tipo de tarjeta basándose en el nombre
-     */
     detectCardTypeFromName(nameAccount) {
-        const name = nameAccount.toUpperCase();
-        if (name.includes('CUENTARUT') || name.includes('CUENTA RUT')) {
+        const upperName = nameAccount.toUpperCase();
+        if (upperName.includes('AHORRO')) {
+            return 2; // Cuenta de Ahorro
+        }
+        else if (upperName.includes('PLAZO')) {
+            return 3; // Cuenta a Plazo
+        }
+        else if (upperName.includes('VISTA')) {
+            return 4; // Cuenta Vista
+        }
+        else if (upperName.includes('CORRIENTE')) {
+            return 5; // Cuenta Corriente
+        }
+        else if (upperName.includes('CUENTARUT') || upperName.includes('CUENTA RUT')) {
             return 9; // CuentaRUT
         }
-        if (name.includes('AHORRO')) {
-            return 6; // Ahorro
-        }
-        if (name.includes('CREDITO')) {
-            return 2; // Credito
-        }
-        if (name.includes('VISTA')) {
-            return 2; // Cuenta Vista (usar ID de débito)
-        }
-        return 1; // Debito por defecto
+        return 1; // Tipo por defecto
     }
 }
 exports.CardService = CardService;

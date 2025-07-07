@@ -82,30 +82,77 @@ export class WebSocketService {
 
     public async updateTaskStatus(taskId: string, status: any) {
         try {
-            console.log(`Actualizando estado de tarea ${taskId}:`, status);
+            console.log(`[WebSocketService] Actualizando estado de tarea ${taskId}:`, status);
+            const updatedStatus = {
+                ...status,
+                updatedAt: new Date().toISOString()
+            };
             
-            await this.redis.set(`task:${taskId}`, JSON.stringify(status));
-            await this.redis.publish(`task:${taskId}:updates`, JSON.stringify(status));
+            // Guardar en Redis
+            const statusKey = `task:${taskId}`;
+            await this.redis.set(statusKey, JSON.stringify(updatedStatus));
             
+            // Si la tarea está completada o fallida, establecer un TTL de 1 hora
+            if (['completed', 'failed', 'cancelled'].includes(status.status)) {
+                await this.redis.expire(statusKey, 3600); // 1 hora
+            }
+            
+            // Publicar actualización
+            const channel = `task:${taskId}:updates`;
+            await this.redis.publish(channel, JSON.stringify(updatedStatus));
+            
+            // Enviar a todos los clientes en la sala
             const room = `task-${taskId}`;
             const clientsInRoom = this.io.sockets.adapter.rooms.get(room);
+            const clientCount = clientsInRoom ? clientsInRoom.size : 0;
             
-            console.log(`Clientes en sala ${room}:`, clientsInRoom ? clientsInRoom.size : 0);
+            console.log(`[WebSocketService] Enviando actualización a ${clientCount} clientes en sala ${room}`);
             
-            this.io.to(room).emit('task-update', status);
-            console.log(`Evento task-update emitido para tarea ${taskId}`);
+            if (clientCount > 0) {
+                this.io.to(room).emit('task-update', updatedStatus);
+                console.log(`[WebSocketService] Evento task-update emitido para tarea ${taskId}`);
+            } else {
+                console.log(`[WebSocketService] No hay clientes en la sala ${room}`);
+            }
+
+            // Verificar que la actualización se guardó correctamente
+            const savedStatus = await this.redis.get(statusKey);
+            if (savedStatus) {
+                const parsed = JSON.parse(savedStatus);
+                console.log(`[WebSocketService] Verificación - Estado guardado correctamente:`, {
+                    taskId,
+                    status: parsed.status,
+                    progress: parsed.progress
+                });
+            }
+
+            return true;
         } catch (err: unknown) {
-            console.error(`Error al actualizar estado de tarea ${taskId}:`, err);
+            console.error(`[WebSocketService] Error al actualizar estado de tarea ${taskId}:`, err);
+            if (err instanceof Error) {
+                console.error(`[WebSocketService] Stack:`, err.stack);
+            }
             throw err;
         }
     }
 
     public async getTaskStatus(taskId: string) {
         try {
-            const status = await this.redis.get(`task:${taskId}`);
-            return status ? JSON.parse(status) : null;
+            const statusKey = `task:${taskId}`;
+            const status = await this.redis.get(statusKey);
+            
+            if (status) {
+                console.log(`[WebSocketService] Estado recuperado para tarea ${taskId}:`, status);
+                return JSON.parse(status);
+            }
+            
+            console.log(`[WebSocketService] No se encontró estado para tarea ${taskId}`);
+            return null;
         } catch (err: unknown) {
-            console.error(`Error al obtener estado de tarea ${taskId}:`, err);
+            console.error(`[WebSocketService] Error al obtener estado de tarea ${taskId}:`, err);
+            if (err instanceof Error) {
+                console.error(`[WebSocketService] Stack:`, err.stack);
+            }
             return null;
         }
     }

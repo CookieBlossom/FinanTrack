@@ -1062,3 +1062,74 @@ h2 {
   font-family: var(--font-family-normal) !important;
   font-size: var(--font-size-xs) !important;
 }
+
+.expenses-by-category {
+  margin: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.month-section {
+  margin-bottom: 30px;
+}
+
+.month-section h3 {
+  color: #333;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #eee;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  align-items: center;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.category-item:hover {
+  background-color: #e9ecef;
+}
+
+.category-name {
+  font-weight: 500;
+  color: #495057;
+}
+
+.category-amount {
+  text-align: right;
+  color: #495057;
+  font-weight: 500;
+}
+
+.category-percentage {
+  text-align: right;
+  color: #6c757d;
+  font-size: 0.9em;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+}
+
+.error {
+  text-align: center;
+  padding: 20px;
+  color: #dc3545;
+  background-color: #f8d7da;
+  border-radius: 6px;
+  margin: 10px 0;
+}

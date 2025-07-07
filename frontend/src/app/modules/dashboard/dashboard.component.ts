@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DashboardService } from '../../services/dashboard.service';
+import { DashboardService, MonthlyExpenses } from '../../services/dashboard.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -16,7 +16,7 @@ export class DashboardComponent implements OnInit {
   topExpenses: any[] = [];
   projectedMovements: any[] = [];
   financialSummary: any = {};
-  expensesByCategory: any[] = [];
+  monthlyExpenses: MonthlyExpenses[] = [];
   loading = true;
   error = false;
 
@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit {
     this.topExpenses = [];
     this.projectedMovements = [];
     this.financialSummary = {};
-    this.expensesByCategory = [];
+    this.monthlyExpenses = [];
     this.loading = true;
     this.error = false;
 
@@ -50,7 +50,7 @@ export class DashboardComponent implements OnInit {
         this.financialSummary = results.financialSummary;
         this.topExpenses = results.topExpenses;
         this.projectedMovements = results.projectedMovements;
-        this.expensesByCategory = results.expensesByCategory;
+        this.monthlyExpenses = results.expensesByCategory;
         this.loading = false;
       },
       error: (error) => {
@@ -59,6 +59,13 @@ export class DashboardComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // Función para formatear el mes (YYYY-MM a texto)
+  formatMonth(monthStr: string): string {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
   }
 
   // Función auxiliar para formatear montos
@@ -82,11 +89,11 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Función para calcular el porcentaje de una categoría
-  calculatePercentage(category: any): string {
-    if (!this.expensesByCategory.length) return '0%';
-    const total = this.expensesByCategory.reduce((sum, cat) => sum + cat.total, 0);
-    return total > 0 ? `${((category.total / total) * 100).toFixed(1)}%` : '0%';
+  // Función para calcular el porcentaje de una categoría dentro de su mes
+  calculatePercentage(monthExpenses: MonthlyExpenses, category: string): string {
+    const total = monthExpenses.expenses.reduce((sum, exp) => sum + exp.total, 0);
+    const categoryTotal = monthExpenses.expenses.find(exp => exp.category === category)?.total || 0;
+    return total > 0 ? `${((categoryTotal / total) * 100).toFixed(1)}%` : '0%';
   }
 
   // Función para determinar el estado del balance

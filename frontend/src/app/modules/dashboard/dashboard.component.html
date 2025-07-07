@@ -34,14 +34,25 @@
         <!-- Gastos por Categoría -->
         <div class="expenses-by-category">
             <h2>Gastos por Categoría</h2>
-            <div class="category-list" *ngIf="expensesByCategory.length > 0; else noData">
-                <div class="category-item" *ngFor="let category of expensesByCategory">
-                    <div class="category-info">
-                        <span>{{ category.category }}</span>
-                        <span>{{ category.percentage }}%</span>
-                    </div>
-                    <div class="category-amount">
-                        {{ formatAmount(category.total) }}
+            
+            <div *ngIf="loading" class="loading">
+                Cargando datos...
+            </div>
+
+            <div *ngIf="error" class="error">
+                Error al cargar los datos. Por favor, intenta de nuevo.
+            </div>
+
+            <div *ngIf="!loading && !error">
+                <div *ngFor="let monthData of monthlyExpenses" class="month-section">
+                    <h3>{{ formatMonth(monthData.month) }}</h3>
+                    
+                    <div class="category-list">
+                        <div *ngFor="let expense of monthData.expenses" class="category-item">
+                            <div class="category-name">{{ expense.category }}</div>
+                            <div class="category-amount">{{ formatAmount(expense.total) }}</div>
+                            <div class="category-percentage">{{ calculatePercentage(monthData, expense.category) }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
