@@ -307,7 +307,7 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
     ngAfterViewInit(): void {
         const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
-                const width = entry.contentRect.width * 0.98;
+                const width = entry.contentRect.width * 0.95;
                 const height = entry.contentRect.height * 0.8;
                 this.chartView = [width, height];
                 this.cdr.detectChanges();
