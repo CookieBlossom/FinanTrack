@@ -2,17 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardController = void 0;
 const movement_service_1 = require("../services/movement.service");
-const scraper_service_1 = require("../services/scrapers/scraper.service");
 const ScraperDataProcessor_1 = require("../utils/ScraperDataProcessor");
 const category_service_1 = require("../services/category.service");
-const redis_service_1 = require("../services/redis.service");
 const card_service_1 = require("../services/card.service");
-const user_service_1 = require("../services/user.service");
+const redis_service_1 = require("../services/redis.service");
 class DashboardController {
     constructor() {
-        /**
-         * Obtiene los ingresos vs gastos del año especificado
-         */
         this.getIncomeVsExpenses = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
@@ -80,7 +75,6 @@ class DashboardController {
                 const now = new Date();
                 const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
                 const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-                // Mantenemos el filtro de tipo 'expense' pero no filtramos por tarjeta
                 const filters = {
                     startDate,
                     endDate,
@@ -116,9 +110,6 @@ class DashboardController {
                 return res.status(500).json({ message: 'Error al obtener los datos de gastos por categoría' });
             }
         };
-        /**
-         * Obtiene los movimientos recientes, incluyendo los del scraper
-         */
         this.getRecentMovements = async (req, res, next) => {
             try {
                 const userId = req.user?.id;
@@ -137,97 +128,75 @@ class DashboardController {
                 return res.status(500).json({ message: 'Error al obtener los movimientos recientes' });
             }
         };
-        this.getTopExpenses = async (req, res, next) => {
+        this.getTopExpenses = async (req, res) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
-                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                    res.status(401).json({ message: 'Usuario no autenticado' });
+                    return;
                 }
-                const days = parseInt(req.query.days) || 30;
-                const limit = parseInt(req.query.limit) || 5;
-                const endDate = new Date();
-                const startDate = new Date();
-                startDate.setDate(endDate.getDate() - days);
-                const filters = {
-                    startDate,
-                    endDate,
-                    movementType: 'expense',
-                    userId
-                };
-                console.log('[DashboardController] Buscando top gastos con filtros:', filters);
-                const movements = await this.movementService.getMovements(filters);
-                console.log(`[DashboardController] Encontrados ${movements.length} gastos`);
-                const topExpenses = movements
-                    .filter(mov => mov.amount !== null && mov.amount !== undefined)
-                    .sort((a, b) => Math.abs(Number(b.amount)) - Math.abs(Number(a.amount)))
-                    .slice(0, limit)
-                    .map(mov => ({
-                    id: mov.id,
-                    description: mov.description,
-                    amount: Math.abs(Number(mov.amount)),
-                    transactionDate: mov.transactionDate,
-                    category: mov.category?.nameCategory || 'Sin categoría',
-                    card: mov.card?.nameAccount || 'Efectivo',
-                    movementSource: mov.movementSource || 'manual'
-                }));
-                console.log(`[DashboardController] Top ${limit} gastos encontrados:`, topExpenses.map(e => `${e.description}: $${e.amount} (${e.card})`));
-                return res.json(topExpenses);
+                const topExpenses = await this.movementService.getTopExpenses(userId);
+                res.json(topExpenses);
             }
             catch (error) {
-                console.error('Error en getTopExpenses:', error);
-                return res.status(500).json({ message: 'Error al obtener los gastos principales' });
+                console.error('Error al obtener top expenses:', error);
+                res.status(500).json({ message: 'Error al obtener top expenses' });
             }
         };
-        this.getFinancialSummary = async (req, res, next) => {
+        this.getProjectedMovements = async (req, res) => {
             try {
                 const userId = req.user?.id;
                 if (!userId) {
-                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                    res.status(401).json({ message: 'Usuario no autenticado' });
+                    return;
                 }
-                const cardService = new card_service_1.CardService();
-                const userService = new user_service_1.UserService();
-                const cards = await cardService.getCardsByUserId(userId);
-                console.log(`[CardService] getCardsByUserId: userId=${userId}, found=${cards.length} cards`);
-                cards.forEach(card => {
-                    console.log(`  - ID: ${card.id}, Name: ${card.nameAccount}, Status: ${card.statusAccount}`);
-                });
-                let totalBalance = 0;
-                const cardDetails = cards.map(card => {
-                    const balance = Number(card.balance) || 0;
-                    totalBalance += balance;
-                    return {
-                        id: card.id,
-                        name: card.nameAccount,
-                        accountHolder: card.accountHolder || 'N/A',
-                        balance: balance,
-                        cardTypeId: card.cardTypeId,
-                        statusAccount: card.statusAccount,
-                        isPositive: balance >= 0
-                    };
-                });
-                // Obtener información del plan del usuario para límites
-                const user = await userService.getUserById(userId);
-                const summary = {
+                const projectedMovements = await this.movementService.getProjectedMovements(userId);
+                res.json(projectedMovements);
+            }
+            catch (error) {
+                console.error('Error al obtener movimientos proyectados:', error);
+                res.status(500).json({ message: 'Error al obtener movimientos proyectados' });
+            }
+        };
+        this.getFinancialSummary = async (req, res) => {
+            try {
+                const userId = req.user?.id;
+                if (!userId) {
+                    res.status(401).json({ message: 'Usuario no autenticado' });
+                    return;
+                }
+                const cards = await this.cardService.getCardsByUserId(userId);
+                const totalBalance = cards.reduce((sum, card) => sum + (Number(card.balance) || 0), 0);
+                res.json({
                     totalBalance,
-                    isPositive: totalBalance >= 0,
-                    cardCount: cards.length,
-                    cards: cardDetails,
-                    userPlanId: user?.plan_id || 1,
-                    lastUpdated: new Date().toISOString()
-                };
-                console.log(`[DashboardController] Resumen financiero generado para usuario ${userId}: Balance total $${totalBalance}`);
-                return res.json(summary);
+                    totalCards: cards.length,
+                    activeCards: cards.filter(card => card.statusAccount === 'active').length
+                });
             }
             catch (error) {
-                console.error('Error en getFinancialSummary:', error);
-                return res.status(500).json({ message: 'Error al obtener el resumen financiero' });
+                console.error('Error al obtener resumen financiero:', error);
+                res.status(500).json({ message: 'Error al obtener resumen financiero' });
             }
         };
-        const cardService = new card_service_1.CardService();
-        this.movementService = new movement_service_1.MovementService();
+        this.getExpensesByCategory = async (req, res) => {
+            try {
+                const userId = req.user?.id;
+                if (!userId) {
+                    res.status(401).json({ message: 'Usuario no autenticado' });
+                    return;
+                }
+                const expensesByCategory = await this.movementService.getExpensesByCategory(userId);
+                res.json(expensesByCategory);
+            }
+            catch (error) {
+                console.error('Error al obtener gastos por categoría:', error);
+                res.status(500).json({ message: 'Error al obtener gastos por categoría' });
+            }
+        };
         const redisService = new redis_service_1.RedisService();
-        this.scraperService = new scraper_service_1.ScraperService(redisService);
+        this.movementService = new movement_service_1.MovementService();
         this.categoryService = new category_service_1.CategoryService();
+        this.cardService = new card_service_1.CardService();
     }
     async convertScraperMovement(mov, taskId, defaultCardId) {
         const processedMov = await ScraperDataProcessor_1.ScraperDataProcessor.processMovement(mov, defaultCardId);

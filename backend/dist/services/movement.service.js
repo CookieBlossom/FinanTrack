@@ -301,10 +301,51 @@ class MovementService {
             throw new errors_1.DatabaseError('Error al obtener los movimientos del mes');
         }
     }
+    // Función auxiliar para formatear fechas
+    formatDateToISO(dateStr) {
+        // Si no hay fecha, retornar la fecha actual
+        if (!dateStr)
+            return new Date();
+        // Si ya es un objeto Date, retornarlo ajustando la zona horaria
+        if (dateStr instanceof Date) {
+            // Ajustar a mediodía en la zona horaria local para evitar problemas con UTC
+            const date = new Date(dateStr);
+            date.setHours(12, 0, 0, 0);
+            return date;
+        }
+        try {
+            // Si es una fecha en formato dd/mm/yyyy
+            if (typeof dateStr === 'string' && dateStr.includes('/')) {
+                const [day, month, year] = dateStr.split('/').map(Number);
+                // Crear la fecha a mediodía para evitar problemas con UTC
+                const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+                // Verificar que la fecha es válida
+                if (isNaN(date.getTime())) {
+                    console.error('[MovementService] Fecha inválida:', dateStr);
+                    return new Date();
+                }
+                return date;
+            }
+            // Si es una fecha en formato ISO o timestamp
+            const date = new Date(dateStr);
+            // Ajustar a mediodía
+            date.setHours(12, 0, 0, 0);
+            // Verificar que la fecha es válida
+            if (isNaN(date.getTime())) {
+                console.error('[MovementService] Fecha inválida:', dateStr);
+                return new Date();
+            }
+            return date;
+        }
+        catch (error) {
+            console.error('[MovementService] Error al parsear fecha:', dateStr, error);
+            return new Date();
+        }
+    }
     async createMovement(movementData, userId, planId) {
         try {
             console.log(`[MovementService] Creando movimiento con datos:`, movementData);
-            console.log(`[MovementService] Monto recibido: ${movementData.amount} (tipo: ${typeof movementData.amount})`);
+            console.log(`[MovementService] Fecha recibida:`, movementData.transactionDate);
             const card = await this.cardService.getCardById(movementData.cardId, userId);
             if (!card) {
                 throw new errors_1.DatabaseError('Tarjeta no encontrada o no pertenece al usuario.');
@@ -355,15 +396,9 @@ class MovementService {
                     throw new errors_1.DatabaseError('Tu plan no permite importar movimientos');
                 }
             }
-            // Determinar el tipo de movimiento basado en la descripción si viene de cartola
-            if (movementData.movementSource === 'cartola' && !movementData.movementType) {
-                if (movementData.description.match(/COMPRA|GIRO|PAGO|TEF A|TRANSFERENCIA A/i)) {
-                    movementData.movementType = 'expense';
-                }
-                else if (movementData.description.match(/TEF DE|TRANSFERENCIA DE|DEPOSITO|ABONO/i)) {
-                    movementData.movementType = 'income';
-                }
-            }
+            // Asegurarse de que la fecha esté en formato correcto
+            const transactionDate = this.formatDateToISO(movementData.transactionDate.toString());
+            console.log(`[MovementService] Fecha formateada:`, transactionDate);
             const amountForBalance = movementData.movementType === 'income' ? movementData.amount : -movementData.amount;
             console.log(`[MovementService] Calculando balance:`);
             console.log(`  - Tipo de movimiento: ${movementData.movementType}`);
@@ -395,11 +430,12 @@ class MovementService {
                 movementData.description,
                 movementData.movementType,
                 movementData.movementSource,
-                movementData.transactionDate || new Date(),
+                transactionDate,
                 movementData.metadata || null
             ];
             const result = await this.pool.query(query, values);
             const newMovement = result.rows[0];
+            console.log(`[MovementService] Movimiento creado con fecha:`, newMovement.transactionDate);
             let categoryName = undefined;
             let categoryColor = undefined;
             if (newMovement.categoryId) {
@@ -411,7 +447,7 @@ class MovementService {
             }
             return {
                 ...newMovement,
-                transactionDate: new Date(newMovement.transactionDate),
+                transactionDate: this.formatDateToISO(newMovement.transactionDate),
                 category: newMovement.categoryId ? {
                     id: newMovement.categoryId,
                     nameCategory: categoryName || '',
@@ -671,6 +707,98 @@ class MovementService {
         const card = await this.cardService.getCardById(movement.cardId, userId);
         if (!card) {
             throw new Error('Tarjeta no encontrada o no pertenece al usuario');
+        }
+    }
+    async getTopExpenses(userId) {
+        try {
+            const query = `
+        SELECT 
+          m.id,
+          m.description,
+          m.amount,
+          m.transaction_date as "transactionDate",
+          COALESCE(c.name_category, 'Sin categoría') as category,
+          ca.name_account as card
+        FROM movements m
+        JOIN cards ca ON m.card_id = ca.id
+        LEFT JOIN categories c ON m.category_id = c.id
+        WHERE ca.user_id = $1
+          AND m.movement_type = 'expense'
+          AND ca.status_account = 'active'
+        ORDER BY m.amount DESC
+        LIMIT 5
+      `;
+            const result = await this.pool.query(query, [userId]);
+            return result.rows.map(row => ({
+                ...row,
+                transactionDate: new Date(row.transactionDate),
+                amount: Number(row.amount)
+            }));
+        }
+        catch (error) {
+            console.error('[MovementService] Error al obtener top gastos:', error);
+            throw new errors_1.DatabaseError('Error al obtener los gastos más altos');
+        }
+    }
+    async getProjectedMovements(userId) {
+        try {
+            const today = new Date();
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            const query = `
+        SELECT 
+          m.id,
+          m.description,
+          m.amount,
+          m.transaction_date as "transactionDate",
+          COALESCE(c.name_category, 'Sin categoría') as category,
+          ca.name_account as card
+        FROM movements m
+        JOIN cards ca ON m.card_id = ca.id
+        LEFT JOIN categories c ON m.category_id = c.id
+        WHERE ca.user_id = $1
+          AND ca.status_account = 'active'
+          AND m.transaction_date > NOW()
+          AND m.transaction_date <= $2
+        ORDER BY m.transaction_date ASC
+      `;
+            const result = await this.pool.query(query, [userId, endOfMonth]);
+            return result.rows.map(row => ({
+                ...row,
+                transactionDate: new Date(row.transactionDate),
+                amount: Number(row.amount)
+            }));
+        }
+        catch (error) {
+            console.error('[MovementService] Error al obtener movimientos proyectados:', error);
+            throw new errors_1.DatabaseError('Error al obtener los movimientos proyectados');
+        }
+    }
+    async getExpensesByCategory(userId) {
+        try {
+            const query = `
+        SELECT 
+          COALESCE(c.name_category, 'Sin categoría') as category,
+          SUM(m.amount) as total
+        FROM movements m
+        JOIN cards ca ON m.card_id = ca.id
+        LEFT JOIN categories c ON m.category_id = c.id
+        WHERE ca.user_id = $1
+          AND m.movement_type = 'expense'
+          AND ca.status_account = 'active'
+          AND m.transaction_date >= DATE_TRUNC('month', CURRENT_DATE)
+          AND m.transaction_date < DATE_TRUNC('month', CURRENT_DATE + INTERVAL '1 month')
+        GROUP BY c.name_category
+        ORDER BY total DESC
+      `;
+            const result = await this.pool.query(query, [userId]);
+            return result.rows.map(row => ({
+                ...row,
+                total: Number(row.total)
+            }));
+        }
+        catch (error) {
+            console.error('[MovementService] Error al obtener gastos por categoría:', error);
+            throw new errors_1.DatabaseError('Error al obtener los gastos por categoría');
         }
     }
 }

@@ -1,39 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, throwError, of } from 'rxjs';
-import { DatabaseService } from './database.service';
-
-export interface IncomeVsExpenses {
-  name: string;
-  series: Array<{
-    name: string;
-    value: number;
-  }>;
-}
-
-export interface CategoryExpense {
-  name: string;
-  value: number;
-}
-
-export interface RecentMovement {
-  id: number;
-  cardId: number;
-  amount: number;
-  description: string;
-  movementType: 'income' | 'expense';
-  movementSource: 'manual' | 'scraper';
-  transactionDate: Date;
-  category?: string;
-  metadata?: {
-    originalData?: any;
-    scraperTaskId?: string;
-    cuenta?: string;
-    referencia?: string;
-    estado?: string;
-    tipo?: string;
-  };
-}
+import { HttpClient } from '@angular/common/http';
+import { Observable, catchError, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface TopExpense {
   id: number;
@@ -41,7 +9,11 @@ export interface TopExpense {
   amount: number;
   transactionDate: Date;
   category: string;
-  card: string;
+}
+
+export interface CategoryExpense {
+  name: string;
+  value: number;
 }
 
 export interface FinancialCard {
@@ -49,127 +21,63 @@ export interface FinancialCard {
   name: string;
   accountHolder: string;
   balance: number;
-  cardTypeId: number;
-  statusAccount: 'active' | 'inactive';
-  isPositive: boolean;
 }
 
 export interface FinancialSummary {
   totalBalance: number;
   isPositive: boolean;
-  cardCount: number;
   cards: FinancialCard[];
-  userPlanId: number;
-  lastUpdated: string;
 }
 
-export interface DashboardSummary {
-  totalIngresos: number;
-  totalGastos: number;
-  saldoActual: number;
-  gastosPorCategoria: CategoryExpense[];
-  ultimosMovimientos: RecentMovement[];
+export interface ProjectedMovement {
+  id: number;
+  description: string;
+  amount: number;
+  expectedDate: Date;
+  movementType: 'income' | 'expense';
+  status: 'pending' | 'completed' | 'cancelled';
+  probability: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl: string;
+  private apiUrl = environment.apiUrl;
 
-  constructor(
-    private http: HttpClient,
-    private database: DatabaseService
-  ) {
-    this.apiUrl = database.getApiUrl();
-  }
+  constructor(private http: HttpClient) {}
 
-  getIncomeVsExpenses(year?: number): Observable<IncomeVsExpenses[]> {
-    console.log('Obteniendo ingresos vs gastos para el año:', year);
-    let params = new HttpParams();
-    if (year) {
-      params = params.set('year', year.toString());
-    }
-    return this.http.get<IncomeVsExpenses[]>(`${this.apiUrl}/dashboard/income-expenses`, { 
-      params,
-      responseType: 'json' as const
-    }).pipe(
+  getTopExpenses(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/dashboard/top-expenses`).pipe(
       catchError(error => {
-        console.error('Error en getIncomeVsExpenses:', error);
-        return of([]);
-      })
-    );
-  }
-
-  getCategoryExpenses(year?: number, month?: number): Observable<CategoryExpense[]> {
-    console.log('Obteniendo gastos por categoría para año:', year, 'mes:', month);
-    let params = new HttpParams();
-    if (year) {
-      params = params.set('year', year.toString());
-    }
-    if (month) {
-      params = params.set('month', month.toString());
-    }
-    return this.http.get<CategoryExpense[]>(`${this.apiUrl}/dashboard/category-expenses`, {
-      params,
-      responseType: 'json' as const
-    }).pipe(
-      catchError(error => {
-        console.error('Error en getCategoryExpenses:', error);
-        return of([]);
-      })
-    );
-  }
-
-  getRecentMovements(limit: number = 10): Observable<RecentMovement[]> {
-    console.log('Obteniendo movimientos recientes, límite:', limit);
-    const params = new HttpParams().set('limit', limit.toString());
-    return this.http.get<RecentMovement[]>(`${this.apiUrl}/dashboard/recent-movements`, {
-      params,
-      responseType: 'json' as const
-    }).pipe(
-      catchError(error => {
-        console.error('Error en getRecentMovements:', error);
-        return of([]);
-      })
-    );
-  }
-
-  getDashboardSummary(): Observable<DashboardSummary> {
-    console.log('Obteniendo resumen del dashboard');
-    return this.http.get<DashboardSummary>(`${this.apiUrl}/dashboard/summary`, {
-      responseType: 'json' as const
-    }).pipe(
-      catchError(error => {
-        console.error('Error en getDashboardSummary:', error);
+        console.error('Error al obtener top expenses:', error);
         return throwError(() => error);
       })
     );
   }
 
-  getTopExpenses(days: number = 30, limit: number = 5): Observable<TopExpense[]> {
-    console.log('Obteniendo top gastos, días:', days, 'límite:', limit);
-    const params = new HttpParams()
-      .set('days', days.toString())
-      .set('limit', limit.toString());
-    return this.http.get<TopExpense[]>(`${this.apiUrl}/dashboard/top-expenses`, {
-      params,
-      responseType: 'json' as const
-    }).pipe(
+  getProjectedMovements(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/dashboard/projected-movements`).pipe(
       catchError(error => {
-        console.error('Error en getTopExpenses:', error);
-        return of([]);
+        console.error('Error al obtener movimientos proyectados:', error);
+        return throwError(() => error);
       })
     );
   }
 
-  getFinancialSummary(): Observable<FinancialSummary> {
-    console.log('Obteniendo resumen financiero');
-    return this.http.get<FinancialSummary>(`${this.apiUrl}/dashboard/financial-summary`, {
-      responseType: 'json' as const
-    }).pipe(
+  getFinancialSummary(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/dashboard/financial-summary`).pipe(
       catchError(error => {
-        console.error('Error en getFinancialSummary:', error);
+        console.error('Error al obtener resumen financiero:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getExpensesByCategory(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/dashboard/expenses-by-category`).pipe(
+      catchError(error => {
+        console.error('Error al obtener gastos por categoría:', error);
         return throwError(() => error);
       })
     );

@@ -43,7 +43,6 @@ protectedRouter.use('/analytics', analyticsRoutes);
 protectedRouter.use('/banks', bankRoutes);
 protectedRouter.use('/movements', movementRoutes);
 protectedRouter.use('/plans', planRoutes);
-
 // (opcional) ruta de prueba protegida  
 protectedRouter.get('/', (req, res) => {
     res.json({ message: 'rutas protegidas funcionando correctamente' });
