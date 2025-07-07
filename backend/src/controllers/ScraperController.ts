@@ -14,6 +14,7 @@ import { IMovementCreate, IMovement } from '../interfaces/IMovement';
 import { IScraperMovement } from '../interfaces/IScraper';
 import dotenv from 'dotenv';
 import { WebSocketService } from '../services/websocket.service';
+import { CompanyService } from '../services/company.service';
 dotenv.config();
 
 export class ScraperController {
@@ -353,12 +354,17 @@ export class ScraperController {
     }
   };
   private async convertScraperMovement(mov: IScraperMovement, taskId: string, defaultCardId: number): Promise<IMovementCreate> {
-    const categoryId = 1;
+    // Intentar categorizar usando CompanyService
+    const companyService = new CompanyService();
+    const categoryId = await companyService.findCategoryForDescription(mov.descripcion) || 1;
+
     const originalAmount = mov.monto;
     const absoluteAmount = Math.abs(originalAmount);
     const determinedType = mov.movement_type || (originalAmount > 0 ? 'income' : 'expense');
 
-    console.log(`[ScraperController] Procesando monto: ${originalAmount} → ${absoluteAmount} (${determinedType})`);
+    // Crear una clave única para el movimiento
+    const uniqueKey = `${mov.fecha}_${mov.descripcion}_${mov.monto}_${mov.cuenta}`;
+    console.log(`[ScraperController] Generando clave única para movimiento: ${uniqueKey}`);
 
     return {
       description: mov.descripcion,
@@ -373,7 +379,8 @@ export class ScraperController {
         cuenta: mov.cuenta,
         referencia: mov.referencia || taskId,
         estado: mov.estado,
-        tipo: mov.tipo
+        tipo: mov.tipo,
+        uniqueKey
       }
     };
   }
@@ -396,7 +403,9 @@ export class ScraperController {
         console.error(`[ScraperController] Componentes de fecha inválidos: ${fechaStr}`);
         return new Date(); // Fecha actual como fallback
       }
-      const parsedDate = new Date(year, month, day);
+
+      // Crear fecha en UTC para evitar problemas de zona horaria
+      const parsedDate = new Date(Date.UTC(year, month, day));
       if (isNaN(parsedDate.getTime())) {
         console.error(`[ScraperController] Fecha parsing resultó en fecha inválida: ${fechaStr}`);
         return new Date(); // Fecha actual como fallback

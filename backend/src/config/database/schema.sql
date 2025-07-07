@@ -135,7 +135,7 @@ CREATE TABLE cards (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP,
     CONSTRAINT cards_source_check CHECK (source IN ('manual', 'scraper', 'imported', 'api')),
-    CONSTRAINT cards_balance_source_check CHECK (balance_source IN ('manual', 'cartola')),
+    CONSTRAINT cards_balance_source_check CHECK (balance_source IN ('manual', 'cartola', 'scraper')),
     CONSTRAINT cards_status_check CHECK (status_account IN ('active', 'inactive'))
 );
 

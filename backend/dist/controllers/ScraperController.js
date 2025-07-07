@@ -14,6 +14,7 @@ const user_service_1 = require("../services/user.service");
 const movement_service_1 = require("../services/movement.service");
 const dotenv_1 = __importDefault(require("dotenv"));
 const websocket_service_1 = require("../services/websocket.service");
+const company_service_1 = require("../services/company.service");
 dotenv_1.default.config();
 class ScraperController {
     constructor() {
@@ -317,11 +318,15 @@ class ScraperController {
         this.planService = new plan_service_1.PlanService();
     }
     async convertScraperMovement(mov, taskId, defaultCardId) {
-        const categoryId = 1;
+        // Intentar categorizar usando CompanyService
+        const companyService = new company_service_1.CompanyService();
+        const categoryId = await companyService.findCategoryForDescription(mov.descripcion) || 1;
         const originalAmount = mov.monto;
         const absoluteAmount = Math.abs(originalAmount);
         const determinedType = mov.movement_type || (originalAmount > 0 ? 'income' : 'expense');
-        console.log(`[ScraperController] Procesando monto: ${originalAmount} → ${absoluteAmount} (${determinedType})`);
+        // Crear una clave única para el movimiento
+        const uniqueKey = `${mov.fecha}_${mov.descripcion}_${mov.monto}_${mov.cuenta}`;
+        console.log(`[ScraperController] Generando clave única para movimiento: ${uniqueKey}`);
         return {
             description: mov.descripcion,
             amount: absoluteAmount,
@@ -335,7 +340,8 @@ class ScraperController {
                 cuenta: mov.cuenta,
                 referencia: mov.referencia || taskId,
                 estado: mov.estado,
-                tipo: mov.tipo
+                tipo: mov.tipo,
+                uniqueKey
             }
         };
     }
@@ -355,7 +361,8 @@ class ScraperController {
                 console.error(`[ScraperController] Componentes de fecha inválidos: ${fechaStr}`);
                 return new Date(); // Fecha actual como fallback
             }
-            const parsedDate = new Date(year, month, day);
+            // Crear fecha en UTC para evitar problemas de zona horaria
+            const parsedDate = new Date(Date.UTC(year, month, day));
             if (isNaN(parsedDate.getTime())) {
                 console.error(`[ScraperController] Fecha parsing resultó en fecha inválida: ${fechaStr}`);
                 return new Date(); // Fecha actual como fallback

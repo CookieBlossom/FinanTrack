@@ -41,7 +41,7 @@
     },
     {
         "normalizedName": "Youtube",
-        "keywords": ["YOUTUBE"],
+        "keywords": ["YOUTUBE", "GOOGLE PLAY YOUTUB"],
         "category": "Entretenimiento"
     },
     {
@@ -118,5 +118,30 @@
         "normalizedName": "BIP",
         "keywords": ["PAGO AUTOMATICO QR", "PASAJE QR", "DEUDA PASAJE QR"],
         "category": "Transporte"
+    },
+    {
+        "normalizedName": "Google Play",
+        "keywords": ["GOOGLE PLAY", "GOOGLE *PLAY"],
+        "category": "Entretenimiento"
+    },
+    {
+        "normalizedName": "Cursor AI",
+        "keywords": ["CURSOR, AI POWER", "CURSOR AI"],
+        "category": "Otros"
+    },
+    {
+        "normalizedName": "Railway",
+        "keywords": ["RAILWAY"],
+        "category": "Otros"
+    },
+    {
+        "normalizedName": "Comisiones Bancarias",
+        "keywords": ["COMISION TRANSACCION", "COMISION INTERNACIONAL"],
+        "category": "Otros"
+    },
+    {
+        "normalizedName": "Ahorro Automático",
+        "keywords": ["AHORRO MENSUAL AUTOMATICO", "AHORRO AUTOMATICO"],
+        "category": "Otros"
     }
 ]

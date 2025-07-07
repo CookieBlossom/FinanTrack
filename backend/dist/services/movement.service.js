@@ -301,41 +301,24 @@ class MovementService {
             throw new errors_1.DatabaseError('Error al obtener los movimientos del mes');
         }
     }
-    // Función auxiliar para formatear fechas
     formatDateToISO(dateStr) {
-        // Si no hay fecha, retornar la fecha actual
         if (!dateStr)
             return new Date();
-        // Si ya es un objeto Date, retornarlo ajustando la zona horaria
-        if (dateStr instanceof Date) {
-            // Ajustar a mediodía en la zona horaria local para evitar problemas con UTC
-            const date = new Date(dateStr);
-            date.setHours(12, 0, 0, 0);
-            return date;
-        }
         try {
             // Si es una fecha en formato dd/mm/yyyy
             if (typeof dateStr === 'string' && dateStr.includes('/')) {
                 const [day, month, year] = dateStr.split('/').map(Number);
-                // Crear la fecha a mediodía para evitar problemas con UTC
-                const date = new Date(year, month - 1, day, 12, 0, 0, 0);
-                // Verificar que la fecha es válida
-                if (isNaN(date.getTime())) {
-                    console.error('[MovementService] Fecha inválida:', dateStr);
-                    return new Date();
-                }
-                return date;
+                // Crear fecha en UTC para evitar problemas de zona horaria
+                return new Date(Date.UTC(year, month - 1, day));
             }
-            // Si es una fecha en formato ISO o timestamp
+            // Si ya es un objeto Date o timestamp
             const date = new Date(dateStr);
-            // Ajustar a mediodía
-            date.setHours(12, 0, 0, 0);
-            // Verificar que la fecha es válida
             if (isNaN(date.getTime())) {
                 console.error('[MovementService] Fecha inválida:', dateStr);
                 return new Date();
             }
-            return date;
+            // Ajustar a UTC
+            return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
         }
         catch (error) {
             console.error('[MovementService] Error al parsear fecha:', dateStr, error);
@@ -349,6 +332,25 @@ class MovementService {
             const card = await this.cardService.getCardById(movementData.cardId, userId);
             if (!card) {
                 throw new errors_1.DatabaseError('Tarjeta no encontrada o no pertenece al usuario.');
+            }
+            // Verificar si el movimiento ya existe usando metadata.uniqueKey
+            if (movementData.metadata?.uniqueKey) {
+                const existingMovement = await this.pool.query(`
+          SELECT id FROM movements 
+          WHERE card_id = $1 
+          AND metadata->>'uniqueKey' = $2
+        `, [
+                    movementData.cardId,
+                    movementData.metadata.uniqueKey
+                ]);
+                if (existingMovement.rows.length > 0) {
+                    console.log(`[MovementService] Movimiento duplicado detectado, omitiendo creación`);
+                    const movement = await this.getMovementById(existingMovement.rows[0].id);
+                    if (!movement) {
+                        throw new errors_1.DatabaseError('Error al recuperar movimiento existente');
+                    }
+                    return movement;
+                }
             }
             // Verificar límites según el tipo de fuente
             const limits = await this.planService.getLimitsForPlan(planId);
