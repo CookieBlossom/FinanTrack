@@ -486,7 +486,7 @@
 ::ng-deep .tooltip-value {
   font-family: var(--font-family-bold) !important;
   font-size: var(--font-size-sm) !important;
-  color: var(--color-text) !important;
+  color: var(--color-text-inverse) !important;
 }
 
 @media screen and (max-height:1000px) {
