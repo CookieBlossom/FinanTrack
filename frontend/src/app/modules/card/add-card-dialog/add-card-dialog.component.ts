@@ -230,9 +230,9 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.authTokenService.hasToken()) {
-      const errorMsg = 'No hay sesión activa. Por favor, inicia sesión nuevamente.';
-      this.error = errorMsg;
-      this.snackBar.open(errorMsg, 'Cerrar', { duration: 5000 });
+      const errorMessage = 'No hay sesión activa. Por favor, inicia sesión nuevamente.';
+      this.error = errorMessage;
+      this.snackBar.open(errorMessage, 'Cerrar', { duration: 5000 });
       return;
     }
 
@@ -284,26 +284,22 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       password: formValue.password,
       site: 'banco-estado' // Fijo para Banco Estado
     };
+
     // Iniciar el scraper
     this.scraperService.startScraping(credentials).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
       next: (response) => {
         if (response.taskId) {
-          this.currentTaskId = response.taskId; // Guardar ID de la tarea activa
+          this.currentTaskId = response.taskId;
           this.statusMessage = 'Iniciando scraper...';
           this.progress = 10;
-          // Monitorear el progreso
           this.monitorScrapingProgress(response.taskId);
         }
       },
       error: (err) => {
-        this.currentTaskId = null; // Limpiar tarea si falla al iniciar
         const errorMessage = this.getErrorMessageFromError(err) || 'Error al iniciar el scraper.';
-        this.error = errorMessage;
-        this.canRetry = true;
-        this.loading = false;
-        this.snackBar.open(errorMessage, 'Cerrar', { duration: 7000 });
+        this.handleTaskError(errorMessage);
       }
     });
   }
@@ -363,32 +359,28 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     }
   }
 
-  private handleTaskCompletion(status: any): void {
-    console.log(`✅ [ADD-CARD] Tarea completada exitosamente`);
+  private handleTaskError(error: any): void {
     this.currentTaskId = null;
+    const errorMessage = this.getErrorMessageFromError(error) || 'Error al monitorear el progreso.';
+    this.error = errorMessage;
+    this.canRetry = true;
     this.loading = false;
-    this.progress = 100;
     
-    // Mostrar mensaje de éxito
-    this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { 
-      duration: 3000,
-      panelClass: ['success-snackbar']
+    this.snackBar.open(errorMessage, 'Cerrar', { 
+      duration: 7000,
+      panelClass: ['error-snackbar']
     });
-
-    // Esperar un momento para que se vea el 100% antes de cerrar
-    setTimeout(() => {
-      this.dialogRef.close(true);
-    }, 1000);
   }
 
   private handleTaskFailure(status: any): void {
     console.log(`❌ [ADD-CARD] Tarea falló:`, status);
     this.currentTaskId = null;
-    this.error = status.error || status.message || 'Error durante la sincronización';
+    const errorMessage = status.error || status.message || 'Error durante la sincronización';
+    this.error = errorMessage;
     this.canRetry = true;
     this.loading = false;
     
-    this.snackBar.open(this.error, 'Cerrar', { 
+    this.snackBar.open(errorMessage, 'Cerrar', { 
       duration: 7000,
       panelClass: ['error-snackbar']
     });
@@ -406,17 +398,22 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     });
   }
 
-  private handleTaskError(error: any): void {
+  private handleTaskCompletion(status: any): void {
+    console.log(`✅ [ADD-CARD] Tarea completada exitosamente`);
     this.currentTaskId = null;
-    const errorMessage = this.getErrorMessageFromError(error) || 'Error al monitorear el progreso.';
-    this.error = errorMessage;
-    this.canRetry = true;
     this.loading = false;
+    this.progress = 100;
     
-    this.snackBar.open(errorMessage, 'Cerrar', { 
-      duration: 7000,
-      panelClass: ['error-snackbar']
+    // Mostrar mensaje de éxito
+    this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { 
+      duration: 3000,
+      panelClass: ['success-snackbar']
     });
+
+    // Esperar un momento para que se vea el 100% antes de cerrar
+    setTimeout(() => {
+      this.dialogRef.close(true);
+    }, 1000);
   }
 
   private verifyFinalStatus(taskId: string): void {
@@ -484,9 +481,9 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.isUploading = false;
-        const errorMsg = err.message || 'Error al crear tarjeta';
-        this.manualError = errorMsg;
-        this.snackBar.open(errorMsg, 'Cerrar', { duration: 5000 });
+        const errorMessage = err.message || 'Error al crear tarjeta';
+        this.manualError = errorMessage;
+        this.snackBar.open(errorMessage, 'Cerrar', { duration: 5000 });
       }
     });
   }
