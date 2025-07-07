@@ -37,6 +37,7 @@ export interface ScraperResponse<T> {
 export class ScraperService {
   private apiUrl = `${environment.apiUrl}/scraper`;
   private currentTask = new BehaviorSubject<ScraperTask | null>(null);
+  private taskTimeout = 600000; // 10 minutos
 
   constructor(
     private http: HttpClient,
@@ -53,7 +54,6 @@ export class ScraperService {
   }
 
   private handleError = (error: HttpErrorResponse) => {
-    console.error('Error en el servicio de scraper:', error);
     let errorMessage = 'Error en el servicio de scraper';
 
     if (error.error instanceof ErrorEvent) {
@@ -97,6 +97,31 @@ export class ScraperService {
       tap(response => {
         if (response.success && response.data?.taskId) {
           this.wsService.subscribeToTask(response.data.taskId);
+          
+          // Configurar timeout para la tarea
+          setTimeout(() => {
+            const currentTask = this.currentTask.getValue();
+            if (currentTask?.id === response.data?.taskId && 
+                currentTask?.status && 
+                !['completed', 'failed', 'cancelled'].includes(currentTask.status)) {
+              if (response.data?.taskId) {
+                this.wsService.unsubscribeFromTask(response.data.taskId);
+                // Crear una nueva tarea con todos los campos requeridos
+                const timeoutTask: ScraperTask = {
+                  id: response.data.taskId,
+                  userId: currentTask.userId,
+                  type: currentTask.type,
+                  status: 'failed',
+                  message: 'La tarea excedió el tiempo máximo de espera',
+                  progress: currentTask.progress,
+                  createdAt: currentTask.createdAt,
+                  updatedAt: new Date().toISOString(),
+                  error: 'Timeout'
+                };
+                this.currentTask.next(timeoutTask);
+              }
+            }
+          }, this.taskTimeout);
         }
       }),
       map(response => {
@@ -119,6 +144,16 @@ export class ScraperService {
       `${this.apiUrl}/task/${taskId}`,
       { headers: this.getHeaders() }
     ).pipe(
+      tap(response => {
+        if (response.success && response.data) {
+          this.currentTask.next(response.data);
+          
+          // Si la tarea está en estado final, desuscribirse
+          if (['completed', 'failed', 'cancelled'].includes(response.data.status)) {
+            this.wsService.unsubscribeFromTask(taskId);
+          }
+        }
+      }),
       catchError(this.handleError)
     );
   }
@@ -135,6 +170,21 @@ export class ScraperService {
       { headers: this.getHeaders() }
     ).pipe(
       tap(() => {
+        const currentTask = this.currentTask.getValue();
+        if (currentTask?.id === taskId) {
+          // Crear una nueva tarea con todos los campos requeridos
+          const cancelledTask: ScraperTask = {
+            id: currentTask.id,
+            userId: currentTask.userId,
+            type: currentTask.type,
+            status: 'cancelled',
+            message: 'Tarea cancelada por el usuario',
+            progress: currentTask.progress,
+            createdAt: currentTask.createdAt,
+            updatedAt: new Date().toISOString()
+          };
+          this.currentTask.next(cancelledTask);
+        }
         this.wsService.unsubscribeFromTask(taskId);
       }),
       catchError(this.handleError)
@@ -145,8 +195,23 @@ export class ScraperService {
   monitorTask(taskId: string): Observable<ScraperTask> {
     this.wsService.subscribeToTask(taskId);
     return this.wsService.getTaskStatus().pipe(
-      filter((task): task is ScraperTask => task !== null)
+      filter((task): task is ScraperTask => task !== null),
+      tap(task => {
+        this.currentTask.next(task);
+        
+        // Si la tarea está en estado final, desuscribirse
+        if (['completed', 'failed', 'cancelled'].includes(task.status)) {
+          setTimeout(() => {
+            this.wsService.unsubscribeFromTask(taskId);
+          }, 1000);
+        }
+      })
     );
+  }
+
+  // Obtener la tarea actual
+  getCurrentTask(): Observable<ScraperTask | null> {
+    return this.currentTask.asObservable();
   }
 
   // Obtener todas las tareas del usuario
@@ -194,6 +259,7 @@ export class ScraperService {
     
     return verifier === calculatedVerifier;
   }
+
   formatRut(rut: string): string {
     if (!rut) return '';
     

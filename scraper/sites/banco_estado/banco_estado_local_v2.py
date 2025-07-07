@@ -1094,65 +1094,74 @@ class BancoEstadoScraper:
 
     async def process_and_categorize_movements(self, cuentas: List[dict], task_data: dict) -> dict:
         """
-        Procesa y categoriza los movimientos utilizando el sistema de companies.json del backend
+        Procesa y categoriza los movimientos extraídos
         """
-        import aiohttp
-        import json
-        import os
+        print("[INFO] Procesando y categorizando movimientos...")
         
-        # Obtener companies.json desde el backend API
-        backend_url = os.getenv('BACKEND_URL', 'http://localhost:3000')
-        
-        # Agregar protocolo https si no está presente y es Railway
-        if 'railway.app' in backend_url and not backend_url.startswith('http'):
-            backend_url = f"https://{backend_url}"
-        
-        companies = []
+        # Obtener companies.json desde el backend
+        print("[INFO] Obteniendo companies.json desde: https://finantrack-production.up.railway.app/config/companies")
         
         try:
-            print(f"[INFO] Obteniendo companies.json desde: {backend_url}/config/companies")
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"{backend_url}/config/companies") as response:
+                async with session.get('https://finantrack-production.up.railway.app/config/companies') as response:
                     if response.status == 200:
-                        result = await response.json()
-                        if result.get('success') and result.get('data'):
-                            companies = result['data']
-                            print(f"[INFO] Cargadas {len(companies)} empresas para categorización desde API")
-                        else:
-                            print(f"[WARNING] Respuesta del backend sin datos: {result}")
+                        companies = await response.json()
+                        print(f"[INFO] Cargadas {len(companies)} empresas para categorización desde API")
                     else:
-                        print(f"[WARNING] Error al obtener companies.json: HTTP {response.status}")
+                        print("[WARNING] No se pudo obtener companies.json, usando categorización básica")
+                        companies = []
         except Exception as e:
-            print(f"[WARNING] No se pudo obtener companies.json desde API: {e}")
-            print(f"[WARNING] URL intentada: {backend_url}/config/companies")
+            print(f"[WARNING] Error al obtener companies.json: {e}")
+            companies = []
         
-        processed_movements = []
-        categorization_stats = {
-            'total': 0,
-            'categorized': 0,
-            'uncategorized': 0
+        # Procesar cada cuenta y sus movimientos
+        all_movements = []
+        for cuenta in cuentas:
+            if not cuenta.get('movimientos'):
+                continue
+                
+            # Convertir el saldo a float y limpiar el formato
+            saldo_str = cuenta.get('saldo', '0').replace('$', '').replace('.', '').replace(',', '').strip()
+            try:
+                cuenta['saldo'] = float(saldo_str)
+            except ValueError:
+                cuenta['saldo'] = 0
+                print(f"[WARNING] No se pudo convertir el saldo '{saldo_str}' a número")
+            
+            for mov in cuenta['movimientos']:
+                processed_mov = self.process_single_movement(mov, cuenta, companies)
+                if processed_mov:
+                    all_movements.append(processed_mov)
+        
+        print(f"[INFO] Enviando {len(all_movements)} movimientos al backend...")
+        
+        # Enviar al backend
+        await self.send_movements_to_backend(all_movements, task_data, cuentas)
+        
+        # Guardar localmente como respaldo
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"results/banco_estado_{timestamp}.json"
+        
+        data = {
+            'movements': all_movements,
+            'cuentas': cuentas,
+            'stats': {
+                'total': len(all_movements),
+                'timestamp': timestamp
+            }
         }
         
-        for cuenta in cuentas:
-            for movimiento in cuenta.get('movimientos', []):
-                # Procesar movimiento
-                processed_movement = self.process_single_movement(movimiento, cuenta, companies)
-                processed_movements.append(processed_movement)
-                
-                # Actualizar estadísticas
-                categorization_stats['total'] += 1
-                if processed_movement.get('categoria_automatica'):
-                    categorization_stats['categorized'] += 1
-                else:
-                    categorization_stats['uncategorized'] += 1
-        
-        # Enviar movimientos al backend
-        if processed_movements:
-            await self.send_movements_to_backend(processed_movements, task_data, cuentas)
+        self.guardar_en_json(filename, data)
+        print(f"[OK] Datos guardados en {filename}")
         
         return {
-            'processed_movements': processed_movements,
-            'categorization_stats': categorization_stats
+            'success': True,
+            'message': 'Scraping completado exitosamente',
+            'data': {
+                'cuentas_extraidas': len(cuentas),
+                'movimientos_procesados': len(all_movements),
+                'movimientos_categorizados': len([m for m in all_movements if m.get('categoria_automatica')])
+            }
         }
     
     def process_single_movement(self, movimiento: dict, cuenta: dict, companies: List[dict]) -> dict:

@@ -198,6 +198,16 @@ class ScraperController {
                             // Crear o encontrar la tarjeta
                             const result = await cardService.findOrCreateCardFromScraper(userId, cuenta.tipo, cuenta.titular || 'Usuario Scraper', cuenta.saldo || 0, 'scraper', cuenta.numero // Agregamos el número de cuenta como referencia
                             );
+                            // Actualizar el saldo de la tarjeta
+                            if (cuenta.saldo !== undefined) {
+                                try {
+                                    await cardService.updateBalanceFromCartola(result.cardId, userId, cuenta.saldo);
+                                    console.log(`[ScraperController] Saldo actualizado para tarjeta ${result.cardId}: ${cuenta.saldo}`);
+                                }
+                                catch (error) {
+                                    console.error(`[ScraperController] Error actualizando saldo de tarjeta ${result.cardId}:`, error);
+                                }
+                            }
                             processedCards.set(cuenta.numero, result.cardId);
                             console.log(`[ScraperController] Cuenta ${result.wasCreated ? 'creada' : 'encontrada'} con ID ${result.cardId} para número ${cuenta.numero}`);
                         }

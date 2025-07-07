@@ -156,8 +156,6 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
     this.banks = await firstValueFrom(this.cardService.getBanks());
   }
 
-
-
   loadLimitsInfo(): void {
     // Cargar información de límites
     this.planLimitsService.currentUsage$.subscribe({
@@ -165,7 +163,7 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
         this.limitsInfo = usage;
       },
       error: (error) => {
-        console.error('Error al cargar límites:', error);
+        // Error silencioso
       }
     });
   }
@@ -498,7 +496,6 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           // Cerrar de todas formas aunque falle la cancelación
-          this.currentTaskId = null;
           this.dialogRef.close();
         }
       });

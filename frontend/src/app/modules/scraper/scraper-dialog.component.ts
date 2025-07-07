@@ -444,15 +444,12 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    console.log('Inicializando componente ScraperDialog');
     this.wsService.connect();
   }
 
   ngOnDestroy() {
-    console.log('Destruyendo componente ScraperDialog');
     this.stopMonitoring();
     if (this.currentTask?.id) {
-      console.log('Desuscribiendo de tarea:', this.currentTask.id);
       this.wsService.unsubscribeFromTask(this.currentTask.id);
       this.wsService.disconnect();
     }
@@ -496,7 +493,6 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('[ScraperDialog] Error al iniciar scraping:', error);
         this.snackBar.open('Error al iniciar scraping', 'Cerrar', { 
           duration: 5000,
           panelClass: ['error-snackbar']
@@ -510,70 +506,126 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
   startMonitoring(taskId: string) {
     this.stopMonitoring();
     
-    console.log('[ScraperDialog] Iniciando monitoreo de tarea:', taskId);
-    this.wsService.subscribeToTask(taskId);
-    
-    this.monitoringSubscription = this.wsService.getTaskStatus().subscribe({
-      next: (task) => {
-        console.log('[ScraperDialog] Actualización de tarea recibida:', task);
-        if (task) {
-          this.currentTask = task as ScraperTask;
+    // Primero obtener el estado actual
+    this.scraperService.getTaskStatus(taskId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.currentTask = response.data;
           
-          if (['completed', 'failed', 'cancelled'].includes(task.status)) {
-            this.isProcessing = false;
-            this.stopMonitoring();
-            
-            if (task.status === 'completed') {
-              this.snackBar.open('¡Scraping completado exitosamente!', 'Cerrar', { duration: 3000 });
-            } else if (task.status === 'failed') {
-              let errorMessage = 'Error en el scraping';
-              if (task.message) {
-                errorMessage = task.message;
-              }
-              if (task.error) {
-                errorMessage += `: ${task.error}`;
-              }
-              if (task.result?.errors?.length > 0) {
-                const firstError = task.result.errors[0].error;
-                errorMessage += `\nPrimer error: ${firstError}`;
-              }
+          // Si la tarea ya está en estado final, no iniciar monitoreo
+          if (['completed', 'failed', 'cancelled'].includes(response.data.status)) {
+            this.handleTaskCompletion(response.data);
+            return;
+          }
+          
+          // Iniciar monitoreo solo si la tarea no está en estado final
+          this.monitoringSubscription = this.scraperService.monitorTask(taskId).subscribe({
+            next: (task) => {
+              this.currentTask = task;
               
-              this.snackBar.open(errorMessage, 'Cerrar', { 
-                duration: 8000,
+              // Verificar si la tarea ha alcanzado un estado final
+              if (['completed', 'failed', 'cancelled'].includes(task.status)) {
+                this.handleTaskCompletion(task);
+              }
+            },
+            error: (error) => {
+              this.snackBar.open('Error al monitorear la tarea', 'Cerrar', {
+                duration: 5000,
                 panelClass: ['error-snackbar']
               });
-
-              this.scraperForm.enable();
-              if (!this.scraperForm.get('rut')?.value) {
-                this.scraperForm.reset({
-                  site: 'banco-estado'
-                });
-              }
-            } else {
-              this.snackBar.open('Scraping cancelado', 'Cerrar', { duration: 3000 });
+              this.handleTaskError(error);
             }
-          }
+          });
+        } else {
+          this.snackBar.open('Error al obtener estado de la tarea', 'Cerrar', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+          this.handleTaskError(new Error('No se pudo obtener el estado inicial'));
         }
       },
-      error: (error: Error) => {
-        console.error('[ScraperDialog] Error monitoreando tarea:', error);
-        this.snackBar.open('Error monitoreando el progreso', 'Cerrar', { 
+      error: (error) => {
+        this.snackBar.open('Error al obtener estado de la tarea', 'Cerrar', {
           duration: 5000,
           panelClass: ['error-snackbar']
         });
-        this.isProcessing = false;
-        this.scraperForm.enable();
+        this.handleTaskError(error);
       }
     });
+  }
+
+  private handleTaskCompletion(task: ScraperTask) {
+    // Detener el monitoreo
+    this.stopMonitoring();
+    
+    // Actualizar UI
+    this.isProcessing = false;
+    this.scraperForm.enable();
+    
+    // Mostrar mensaje según el estado
+    let message = '';
+    let panelClass = '';
+    
+    switch (task.status) {
+      case 'completed':
+        message = 'Scraping completado exitosamente';
+        panelClass = 'success-snackbar';
+        break;
+      case 'failed':
+        message = `Error en el scraping: ${task.error || task.message}`;
+        panelClass = 'error-snackbar';
+        break;
+      case 'cancelled':
+        message = 'Scraping cancelado';
+        panelClass = 'warning-snackbar';
+        break;
+    }
+    
+    this.snackBar.open(message, 'Cerrar', {
+      duration: 5000,
+      panelClass: [panelClass]
+    });
+    
+    // Desuscribirse del WebSocket
+    if (task.id) {
+      this.wsService.unsubscribeFromTask(task.id);
+    }
+  }
+
+  private handleTaskError(error: any) {
+    // Detener el monitoreo
+    this.stopMonitoring();
+    
+    // Actualizar UI
+    this.isProcessing = false;
+    this.scraperForm.enable();
+    
+    // Actualizar estado de la tarea
+    if (this.currentTask) {
+      // Crear una nueva tarea con todos los campos requeridos
+      this.currentTask = {
+        id: this.currentTask.id,
+        userId: this.currentTask.userId,
+        type: this.currentTask.type,
+        status: 'failed',
+        message: 'Error en el scraping',
+        progress: this.currentTask.progress,
+        createdAt: this.currentTask.createdAt,
+        updatedAt: new Date().toISOString(),
+        error: error.message || 'Error desconocido'
+      };
+    }
+    
+    // Desuscribirse del WebSocket si hay una tarea activa
+    if (this.currentTask?.id) {
+      this.wsService.unsubscribeFromTask(this.currentTask.id);
+    }
   }
 
   stopMonitoring() {
     if (this.monitoringSubscription) {
       this.monitoringSubscription.unsubscribe();
       this.monitoringSubscription = undefined;
-    }
-    if (this.currentTask?.id) {
-      this.wsService.unsubscribeFromTask(this.currentTask.id);
     }
   }
 
@@ -592,7 +644,6 @@ export class ScraperDialogComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('[ScraperDialog] Error al cancelar tarea:', error);
         this.snackBar.open('Error al cancelar la tarea', 'Cerrar', { 
           duration: 5000,
           panelClass: ['error-snackbar']

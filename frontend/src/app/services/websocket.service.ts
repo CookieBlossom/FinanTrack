@@ -27,9 +27,9 @@ export class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 2000; // 2 segundos
+  private activeTaskId: string | null = null;
 
   constructor() {
-    console.log('[WebSocketService] Inicializando servicio');
     this.socket = io(environment.apiUrl, {
       transports: ['websocket'],
       autoConnect: false,
@@ -43,73 +43,112 @@ export class WebSocketService {
 
   private setupSocketListeners() {
     this.socket.on('connect', () => {
-      console.log('[WebSocketService] Conectado al servidor');
       this.isConnected = true;
       this.reconnectAttempts = 0;
+      
+      // Resubscribir a la tarea activa si existe
+      if (this.activeTaskId) {
+        this.socket.emit('subscribe-to-task', this.activeTaskId);
+      }
     });
 
     this.socket.on('disconnect', () => {
-      console.log('[WebSocketService] Desconectado del servidor');
       this.isConnected = false;
       this.handleDisconnect();
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('[WebSocketService] Error de conexión:', error);
       this.handleConnectionError(error);
     });
 
     this.socket.on('task-update', (status: TaskStatus) => {
-      console.log('[WebSocketService] Actualización de tarea recibida:', status);
+      // Verificar si es un estado final
+      const isFinalState = ['completed', 'failed', 'cancelled'].includes(status.status);
+      
       this.taskStatus.next(status);
+      
+      // Si es un estado final, desuscribirse y desconectar después de un breve delay
+      if (isFinalState) {
+        setTimeout(() => {
+          if (this.activeTaskId === status.id) {
+            this.unsubscribeFromTask(status.id);
+            this.disconnect();
+            this.activeTaskId = null;
+          }
+        }, 1000);
+      }
     });
   }
 
   private handleDisconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`[WebSocketService] Intento de reconexión ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
       
-      timer(this.reconnectDelay).subscribe(() => {
-        if (!this.isConnected) {
-          this.connect();
-        }
-      });
+      // Solo intentar reconectar si hay una tarea activa que no está en estado final
+      const currentStatus = this.taskStatus.getValue();
+      const isActiveFinalState = currentStatus && ['completed', 'failed', 'cancelled'].includes(currentStatus.status);
+      
+      if (this.activeTaskId && !isActiveFinalState) {
+        timer(this.reconnectDelay).subscribe(() => {
+          if (!this.isConnected) {
+            this.connect();
+          }
+        });
+      }
     } else {
-      console.error('[WebSocketService] Máximo número de intentos de reconexión alcanzado');
+      // Notificar error en el estado
+      const currentStatus = this.taskStatus.getValue();
+      if (currentStatus) {
+        this.taskStatus.next({
+          ...currentStatus,
+          status: 'failed',
+          message: 'Error de conexión con el servidor',
+          error: 'Máximo número de intentos de reconexión alcanzado'
+        });
+      }
     }
   }
 
   private handleConnectionError(error: Error) {
-    console.error('[WebSocketService] Error de conexión:', error);
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`[WebSocketService] Reintentando conexión ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+    } else {
+      // Notificar error en el estado
+      const currentStatus = this.taskStatus.getValue();
+      if (currentStatus) {
+        this.taskStatus.next({
+          ...currentStatus,
+          status: 'failed',
+          message: 'Error de conexión con el servidor',
+          error: error.message
+        });
+      }
     }
   }
 
   connect() {
     if (!this.isConnected) {
-      console.log('[WebSocketService] Intentando conectar...');
       this.socket.connect();
     }
   }
 
   disconnect() {
     if (this.isConnected) {
-      console.log('[WebSocketService] Desconectando...');
       this.socket.disconnect();
+      this.isConnected = false;
     }
   }
 
   subscribeToTask(taskId: string) {
-    console.log(`[WebSocketService] Suscribiendo a tarea ${taskId}`);
+    this.activeTaskId = taskId;
     this.connect();
     this.socket.emit('subscribe-to-task', taskId);
   }
 
   unsubscribeFromTask(taskId: string) {
-    console.log(`[WebSocketService] Desuscribiendo de tarea ${taskId}`);
+    if (this.activeTaskId === taskId) {
+      this.activeTaskId = null;
+    }
     this.socket.emit('unsubscribe-from-task', taskId);
   }
 
@@ -117,7 +156,6 @@ export class WebSocketService {
     return this.taskStatus.asObservable().pipe(
       retryWhen(errors => 
         errors.pipe(
-          tap(error => console.error('[WebSocketService] Error en el stream de estado:', error)),
           delay(this.reconnectDelay),
           take(this.maxReconnectAttempts)
         )
