@@ -25,6 +25,7 @@ const ScraperController_1 = require("../controllers/ScraperController");
 const router = (0, express_1.Router)();
 const protectedRouter = (0, express_1.Router)();
 const scraperController = new ScraperController_1.ScraperController();
+// Rutas públicas
 router.use('/users', userRoutes_1.default);
 router.use('/plans-page', plansPageRoutes_1.default);
 router.use('/stripe', stripeRoutes_1.default);
@@ -34,6 +35,7 @@ router.post('/scraper/process-data', scraperController.processScraperData);
 router.get('/', (req, res) => {
     res.json({ message: 'rutas publicas funcionando correctamente' });
 });
+// Rutas protegidas
 protectedRouter.use(authMiddleware_1.authMiddleware);
 protectedRouter.use('/cards', cardRoutes_1.default);
 protectedRouter.use('/cartolas', cartola_routes_1.default);
@@ -46,7 +48,6 @@ protectedRouter.use('/analytics', analyticsRoutes_1.default);
 protectedRouter.use('/banks', bankRoutes_1.default);
 protectedRouter.use('/movements', movementRoutes_1.default);
 protectedRouter.use('/plans', planRoutes_1.default);
-// (opcional) ruta de prueba protegida  
 protectedRouter.get('/', (req, res) => {
     res.json({ message: 'rutas protegidas funcionando correctamente' });
 });
