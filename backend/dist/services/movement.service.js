@@ -305,20 +305,20 @@ class MovementService {
         if (!dateStr)
             return new Date();
         try {
-            // Si es una fecha en formato dd/mm/yyyy
             if (typeof dateStr === 'string' && dateStr.includes('/')) {
                 const [day, month, year] = dateStr.split('/').map(Number);
-                // Crear fecha en UTC para evitar problemas de zona horaria
-                return new Date(Date.UTC(year, month - 1, day));
+                return new Date(year, month - 1, day);
             }
-            // Si ya es un objeto Date o timestamp
+            if (dateStr instanceof Date) {
+                return dateStr;
+            }
+            // Si es un string ISO o timestamp
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) {
                 console.error('[MovementService] Fecha inválida:', dateStr);
                 return new Date();
             }
-            // Ajustar a UTC
-            return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+            return date;
         }
         catch (error) {
             console.error('[MovementService] Error al parsear fecha:', dateStr, error);
@@ -328,7 +328,6 @@ class MovementService {
     async createMovement(movementData, userId, planId) {
         try {
             console.log(`[MovementService] Creando movimiento con datos:`, movementData);
-            console.log(`[MovementService] Fecha recibida:`, movementData.transactionDate);
             const card = await this.cardService.getCardById(movementData.cardId, userId);
             if (!card) {
                 throw new errors_1.DatabaseError('Tarjeta no encontrada o no pertenece al usuario.');
@@ -355,7 +354,6 @@ class MovementService {
             // Verificar límites según el tipo de fuente
             const limits = await this.planService.getLimitsForPlan(planId);
             if (movementData.movementSource === 'manual') {
-                // Verificar límite de movimientos manuales solo si no es ilimitado
                 if (limits.manual_movements !== undefined && limits.manual_movements !== -1) {
                     const used = await this.countMonthlyManualMoves(userId);
                     if (used >= limits.manual_movements) {
@@ -364,54 +362,53 @@ class MovementService {
                 }
             }
             else if (movementData.movementSource === 'cartola') {
-                // Verificar límite de movimientos de cartola solo si no es ilimitado
                 if (limits.cartola_movements !== undefined && limits.cartola_movements !== -1) {
                     const used = await this.countMonthlyCartolaMoves(userId);
                     if (used >= limits.cartola_movements) {
                         throw new errors_1.DatabaseError(`Has excedido el límite de ${limits.cartola_movements} movimientos de cartola por mes`);
                     }
                 }
-                // Verificar permiso para cartolas
                 const hasPermission = await this.planService.hasPermission(planId, 'cartola_upload');
                 if (!hasPermission) {
                     throw new errors_1.DatabaseError('Tu plan no permite subir cartolas bancarias');
                 }
             }
             else if (movementData.movementSource === 'scraper') {
-                // Verificar límite de movimientos del scraper solo si no es ilimitado
                 if (limits.scraper_movements !== undefined && limits.scraper_movements !== -1) {
                     const used = await this.countMonthlyScraperMoves(userId);
                     if (used >= limits.scraper_movements) {
                         throw new errors_1.DatabaseError(`Has excedido el límite de ${limits.scraper_movements} movimientos del scraper por mes`);
                     }
                 }
-                // Verificar permiso para scraper
                 const hasPermission = await this.planService.hasPermission(planId, 'scraper_access');
                 if (!hasPermission) {
                     throw new errors_1.DatabaseError('Tu plan no permite usar el scraper automático');
                 }
             }
-            else if (['imported', 'subscription'].includes(movementData.movementSource)) {
-                // Verificar permiso para importación
-                const hasPermission = await this.planService.hasPermission(planId, 'cartola_upload');
-                if (!hasPermission) {
-                    throw new errors_1.DatabaseError('Tu plan no permite importar movimientos');
-                }
-            }
             // Asegurarse de que la fecha esté en formato correcto
             const transactionDate = this.formatDateToISO(movementData.transactionDate.toString());
-            console.log(`[MovementService] Fecha formateada:`, transactionDate);
-            const amountForBalance = movementData.movementType === 'income' ? movementData.amount : -movementData.amount;
-            console.log(`[MovementService] Calculando balance:`);
-            console.log(`  - Tipo de movimiento: ${movementData.movementType}`);
-            console.log(`  - Monto original: ${movementData.amount} (tipo: ${typeof movementData.amount})`);
-            console.log(`  - Monto para balance: ${amountForBalance} (tipo: ${typeof amountForBalance})`);
+            console.log(`[MovementService] Fecha procesada: ${transactionDate.toLocaleDateString('es-CL')}`);
+            // Calcular el monto para el balance basado en el tipo de movimiento
+            const amountForBalance = movementData.movementType === 'income' ?
+                Math.abs(movementData.amount) :
+                -Math.abs(movementData.amount);
+            console.log(`[MovementService] Procesando movimiento:
+        Descripción: ${movementData.description}
+        Monto: ${movementData.amount}
+        Monto para balance: ${amountForBalance}
+        Tipo: ${movementData.movementType}
+        Fecha: ${transactionDate.toLocaleDateString('es-CL')}
+        Cuenta ID: ${movementData.cardId}
+        Categoría ID: ${movementData.categoryId}
+        Fuente: ${movementData.movementSource}
+      `);
             await this.cardService.updateBalance(movementData.cardId, userId, amountForBalance);
             // Si no se proporcionó una categoría, intentar categorizarla automáticamente
             if (!movementData.categoryId && movementData.description) {
                 const categoryId = await this.companyService.findCategoryForDescription(movementData.description);
                 if (categoryId) {
                     movementData.categoryId = categoryId;
+                    console.log(`[MovementService] Categoría asignada automáticamente: ${categoryId}`);
                 }
             }
             const query = `
@@ -437,7 +434,7 @@ class MovementService {
             ];
             const result = await this.pool.query(query, values);
             const newMovement = result.rows[0];
-            console.log(`[MovementService] Movimiento creado con fecha:`, newMovement.transactionDate);
+            console.log(`[MovementService] Movimiento creado con fecha: ${new Date(newMovement.transactionDate).toLocaleDateString('es-CL')}`);
             let categoryName = undefined;
             let categoryColor = undefined;
             if (newMovement.categoryId) {

@@ -323,14 +323,27 @@ class ScraperController {
         const categoryId = await companyService.findCategoryForDescription(mov.descripcion) || 1;
         const originalAmount = mov.monto;
         const absoluteAmount = Math.abs(originalAmount);
-        const determinedType = mov.movement_type || (originalAmount > 0 ? 'income' : 'expense');
+        // Determinar tipo basado solo en el signo del monto
+        const determinedType = originalAmount < 0 ? 'expense' : 'income';
+        // Parsear la fecha manteniendo el formato original
+        const [day, month, year] = mov.fecha.split('/').map(Number);
+        const parsedDate = new Date(year, month - 1, day);
+        console.log(`[ScraperController] Procesando movimiento:
+      Descripción: ${mov.descripcion}
+      Monto original: ${originalAmount}
+      Monto absoluto: ${absoluteAmount}
+      Tipo: ${determinedType} (basado en signo del monto)
+      Fecha original: ${mov.fecha}
+      Fecha parseada: ${parsedDate.toLocaleDateString('es-CL')}
+      Cuenta: ${mov.cuenta}
+      Categoría: ${categoryId}
+    `);
         // Crear una clave única para el movimiento
-        const uniqueKey = `${mov.fecha}_${mov.descripcion}_${mov.monto}_${mov.cuenta}`;
-        console.log(`[ScraperController] Generando clave única para movimiento: ${uniqueKey}`);
+        const uniqueKey = `${mov.fecha}_${mov.descripcion}_${originalAmount}_${mov.cuenta}`;
         return {
             description: mov.descripcion,
             amount: absoluteAmount,
-            transactionDate: this.parseScraperDate(mov.fecha),
+            transactionDate: parsedDate,
             movementType: determinedType,
             categoryId,
             cardId: defaultCardId,
@@ -341,33 +354,31 @@ class ScraperController {
                 referencia: mov.referencia || taskId,
                 estado: mov.estado,
                 tipo: mov.tipo,
-                uniqueKey
+                uniqueKey,
+                originalAmount,
+                originalDate: mov.fecha
             }
         };
     }
     parseScraperDate(fechaStr) {
         try {
             // Formato esperado: DD/MM/YYYY
-            const parts = fechaStr.split('/');
-            if (parts.length !== 3) {
-                console.error(`[ScraperController] Formato de fecha inválido: ${fechaStr}`);
-                return new Date(); // Fecha actual como fallback
-            }
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1; // Los meses en JavaScript van de 0-11
-            const year = parseInt(parts[2], 10);
+            const [day, month, year] = fechaStr.split('/').map(Number);
             // Validar que los componentes sean números válidos
             if (isNaN(day) || isNaN(month) || isNaN(year)) {
                 console.error(`[ScraperController] Componentes de fecha inválidos: ${fechaStr}`);
                 return new Date(); // Fecha actual como fallback
             }
-            // Crear fecha en UTC para evitar problemas de zona horaria
-            const parsedDate = new Date(Date.UTC(year, month, day));
+            // Crear fecha manteniendo la zona horaria local
+            const parsedDate = new Date(year, month - 1, day);
             if (isNaN(parsedDate.getTime())) {
                 console.error(`[ScraperController] Fecha parsing resultó en fecha inválida: ${fechaStr}`);
                 return new Date(); // Fecha actual como fallback
             }
-            console.log(`[ScraperController] Fecha parseada correctamente: ${fechaStr} -> ${parsedDate.toISOString()}`);
+            console.log(`[ScraperController] Fecha parseada:
+        Original: ${fechaStr}
+        Parseada: ${parsedDate.toLocaleDateString('es-CL')}
+      `);
             return parsedDate;
         }
         catch (error) {
