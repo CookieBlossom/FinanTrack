@@ -179,8 +179,7 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
         sortedMonths.forEach(month => {
             const monthData = seriesMap.get(month);
             if (monthData) {
-                const year = this.monthToYearMap.get(month);
-                const monthLabel = `${month} ${year}`;
+                const monthLabel = month;
                 
                 series[0].series.push({ name: monthLabel, value: monthData.get('income') || 0 });
                 series[1].series.push({ name: monthLabel, value: monthData.get('expense') || 0 });
@@ -213,12 +212,12 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
         const point = this.chartData[0].series.find(d => d.name === monthLabel);
         this.monthData = point || null;
         
-        // Extraer mes y año del label
-        const [month, year] = monthLabel.split(' ');
-        const monthIndex = this.getMonthIndex(month);
+        // Obtener el año del mapa usando solo el mes
+        const year = this.monthToYearMap.get(monthLabel);
+        const monthIndex = this.getMonthIndex(monthLabel);
         
         if (monthIndex !== -1 && year) {
-            this.loadMonthlyStatistics(parseInt(year), monthIndex + 1);
+            this.loadMonthlyStatistics(year, monthIndex + 1);
         }
     }
 
@@ -247,19 +246,15 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
     // Getter para el título del resumen
     get summaryTitle(): string {
         if (this.selectedMonth) {
-            // Separar el mes y año del label seleccionado
-            const [monthStr] = this.selectedMonth.split(' ');
-            const monthIndex = this.getMonthIndex(monthStr);
+            const monthIndex = this.getMonthIndex(this.selectedMonth);
+            const year = this.monthToYearMap.get(this.selectedMonth);
             
-            if (monthIndex !== -1) {
-                // Obtener el nombre completo del mes
+            if (monthIndex !== -1 && year) {
                 const monthNames = [
                     'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
                     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
                 ];
-                const monthName = monthNames[monthIndex];
-                const year = this.monthToYearMap.get(monthStr) || new Date().getFullYear();
-                return `Resumen de ${monthName} ${year}`;
+                return `Resumen de ${monthNames[monthIndex]} ${year}`;
             }
         }
         return 'Resumen General';
@@ -307,7 +302,7 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
     ngAfterViewInit(): void {
         const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
-                const width = entry.contentRect.width * 0.95;
+                const width = entry.contentRect.width * 0.98;
                 const height = entry.contentRect.height * 0.8;
                 this.chartView = [width, height];
                 this.cdr.detectChanges();
