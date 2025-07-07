@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface AnalyticsData {
@@ -72,14 +73,47 @@ export interface AnalyticsData {
 })
 export class AnalyticsService {
     private apiUrl = `${environment.apiUrl}/analytics`;
+    private analyticsData = new BehaviorSubject<AnalyticsData | null>(null);
+    analyticsData$ = this.analyticsData.asObservable();
 
     constructor(private http: HttpClient) {}
 
     getAnalyticsData(): Observable<AnalyticsData> {
-        return this.http.get<AnalyticsData>(this.apiUrl);
+        return this.http.get<AnalyticsData>(this.apiUrl).pipe(
+            map(data => this.processAnalyticsData(data)),
+            tap(data => this.analyticsData.next(data))
+        );
     }
 
     getAnalyticsDataByMonth(year: number, month: number): Observable<AnalyticsData> {
-        return this.http.get<AnalyticsData>(`${this.apiUrl}/month/${year}/${month}`);
+        return this.http.get<AnalyticsData>(`${this.apiUrl}/month/${year}/${month}`).pipe(
+            map(data => this.processAnalyticsData(data))
+        );
+    }
+
+    private processAnalyticsData(data: AnalyticsData): AnalyticsData {
+        // Ordenar transacciones por fecha
+        data.chartData.realTransactions = this.sortTransactionsByDate(data.chartData.realTransactions);
+        data.chartData.expectedSubscriptions = this.sortTransactionsByDate(data.chartData.expectedSubscriptions);
+        data.chartData.expectedBudgets = this.sortTransactionsByDate(data.chartData.expectedBudgets);
+
+        return data;
+    }
+
+    private sortTransactionsByDate(transactions: Array<{month: string; type: string; total: number}>): Array<{month: string; type: string; total: number}> {
+        return transactions.sort((a, b) => {
+            const dateA = new Date(a.month);
+            const dateB = new Date(b.month);
+            return dateA.getTime() - dateB.getTime();
+        });
+    }
+
+    clearData(): void {
+        this.analyticsData.next(null);
+    }
+
+    refreshData(): Observable<AnalyticsData> {
+        this.clearData();
+        return this.getAnalyticsData();
     }
 } 

@@ -265,92 +265,83 @@
 
 /* Contenedor de progreso */
 .progress-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 16px;
-  background: var(--clr-surface-a0);
-  border-radius: 8px;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: var(--clr-surface-a20);
+  margin-top: 20px;
+  padding: 10px;
   border-radius: 4px;
-  overflow: hidden;
+  background-color: #f5f5f5;
 }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-primary-darkest) 100%);
-  transition: width 0.3s ease;
+.status-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
 }
 
 .status-message {
-  font-size: 0.875rem;
-  color: var(--color-text);
-  font-weight: 500;
+  margin: 8px 0;
+  color: #666;
+  font-size: 14px;
 }
 
-.progress-message {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
+.status-message.error {
+  color: #f44336;
 }
 
-/* Mensaje informativo */
-.info-message {
-  font-size: 0.875rem;
-  color: var(--color-info);
-  background: var(--clr-warning-a10);
-  padding: 8px 12px;
-  border-radius: 6px;
-  border-left: 3px solid var(--color-info);
+.progress-percentage {
+  font-weight: bold;
+  color: #1976d2;
 }
 
-/* Contenedor de error */
-.error-container {
+.progress-actions {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.error-container {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #fdecea;
+}
+
+.error-content {
+  display: flex;
   align-items: center;
-  text-align: center;
-  background: var(--clr-surface-a0);
-  border-radius: 16px;
-  border: 2px solid var(--clr-error-a20);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.1);
-  transition: all 0.3s ease;
+  gap: 8px;
 }
 
-.error-container:hover {
-  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.15);
+.error-message {
+  margin: 0;
+  color: #d32f2f;
+  font-size: 14px;
 }
 
-.error-icon {
-  font-size: 3rem;
-  color: var(--color-error);
-  width: 3rem;
-  height: 3rem;
+.error-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 
-.error-text {
-  color: var(--color-error);
-  font-weight: 600;
+.success-container {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #e8f5e9;
 }
 
-.retry-button {
-  background: var(--color-error);
-  color: var(--color-text-inverse);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
+.success-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.retry-button mat-icon {
-  margin-right: 8px;
+.success-message {
+  margin: 0;
+  color: #2e7d32;
+  font-size: 14px;
 }
 
 /* Botón de envío */
@@ -840,30 +831,18 @@ mat-spinner {
   opacity: 0.8;
 }
 
-/* Acciones del progreso */
-.progress-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
+/* Estilos para los snackbars */
+::ng-deep .success-snackbar {
+  background-color: #4caf50;
+  color: white;
 }
 
-.progress-actions button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  padding: 8px 16px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+::ng-deep .error-snackbar {
+  background-color: #f44336;
+  color: white;
 }
 
-.progress-actions button mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.progress-actions button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+::ng-deep .warning-snackbar {
+  background-color: #ff9800;
+  color: white;
 }

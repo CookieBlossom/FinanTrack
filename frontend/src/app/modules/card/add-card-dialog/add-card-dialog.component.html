@@ -50,9 +50,12 @@
 
           <!-- Progress bar y mensajes -->
           <div class="progress-container" *ngIf="loading">
-            <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
-            <p class="status-message">{{ statusMessage }}</p>
-            <div class="progress-actions" *ngIf="currentTaskId">
+            <mat-progress-bar mode="determinate" [value]="progress" [color]="error ? 'warn' : 'primary'"></mat-progress-bar>
+            <div class="status-info">
+              <p class="status-message" [class.error]="error">{{ statusMessage }}</p>
+              <span class="progress-percentage" *ngIf="progress > 0">{{ progress }}%</span>
+            </div>
+            <div class="progress-actions" *ngIf="currentTaskId && !error">
               <button mat-button color="warn" (click)="cancelCurrentTask()">
                 <mat-icon>cancel</mat-icon>
                 Cancelar Sincronización
@@ -62,11 +65,28 @@
 
           <!-- Error message -->
           <div class="error-container" *ngIf="error">
-            <p class="error-message">{{ error }}</p>
-            <button mat-button color="primary" (click)="retrySync()" *ngIf="canRetry">
-              <mat-icon>refresh</mat-icon>
-              Reintentar
-            </button>
+            <div class="error-content">
+              <mat-icon color="warn">error</mat-icon>
+              <p class="error-message">{{ error }}</p>
+            </div>
+            <div class="error-actions">
+              <button mat-button color="primary" (click)="retrySync()" *ngIf="canRetry">
+                <mat-icon>refresh</mat-icon>
+                Reintentar
+              </button>
+              <button mat-button color="warn" (click)="onCancel()">
+                <mat-icon>close</mat-icon>
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          <!-- Success message -->
+          <div class="success-container" *ngIf="progress === 100 && !error && !loading">
+            <div class="success-content">
+              <mat-icon color="primary">check_circle</mat-icon>
+              <p class="success-message">¡Sincronización completada exitosamente!</p>
+            </div>
           </div>
         </form>
       </div>

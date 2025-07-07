@@ -310,49 +310,142 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
 
   private monitorScrapingProgress(taskId: string): void {
     console.log(`🔍 [ADD-CARD] Iniciando monitoreo de tarea: ${taskId}`);
+    
+    // Primero intentar obtener el estado actual
+    this.scraperService.getTaskStatus(taskId).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (initialStatus) => {
+        this.updateTaskStatus(initialStatus);
+      },
+      error: (err) => {
+        console.error(`❌ [ADD-CARD] Error al obtener estado inicial:`, err);
+      }
+    });
+
+    // Luego suscribirse a las actualizaciones
     this.scraperService.monitorTask(taskId).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
       next: (status) => {
-        console.log(`🔍 [ADD-CARD] Estado recibido:`, status);
-        this.progress = status.progress;
-        this.statusMessage = this.getStatusMessage(status.status);
-        
-        if (status.status === 'completed') {
-          console.log(`✅ [ADD-CARD] Tarea completada exitosamente: ${taskId}`);
-          this.currentTaskId = null; // Limpiar tarea activa
-          this.loading = false;
-          this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { duration: 3000 });
-          this.dialogRef.close(true);
-        } else if (status.status === 'failed') {
-          console.log(`❌ [ADD-CARD] Tarea falló: ${taskId}`, status);
-          this.currentTaskId = null; // Limpiar tarea activa
-          this.error = status.error || status.message || 'Error durante la sincronización';
-          this.canRetry = true;
-          this.loading = false;
-          this.snackBar.open(this.error, 'Cerrar', { duration: 7000 });
-        } else if (status.status === 'cancelled') {
-          console.log(`🚫 [ADD-CARD] Tarea cancelada: ${taskId}`);
-          this.currentTaskId = null; // Limpiar tarea activa
-          this.loading = false;
-          this.snackBar.open('Sincronización cancelada', 'Cerrar', { duration: 3000 });
-        } else {
-          console.log(`🔄 [ADD-CARD] Tarea en progreso: ${taskId} - ${status.status} (${status.progress}%)`);
-        }
+        this.updateTaskStatus(status);
       },
       error: (err) => {
         console.error(`❌ [ADD-CARD] Error en monitoreo de tarea ${taskId}:`, err);
-        this.currentTaskId = null; // Limpiar tarea activa en caso de error
-        const errorMessage = this.getErrorMessageFromError(err) || 'Error al monitorear el progreso.';
-        this.error = errorMessage;
-        this.canRetry = true;
-        this.loading = false;
-        this.snackBar.open(errorMessage, 'Cerrar', { duration: 7000 });
+        this.handleTaskError(err);
       },
       complete: () => {
         console.log(`🏁 [ADD-CARD] Monitoreo completado para tarea: ${taskId}`);
+        // Si el monitoreo se completa sin error y sin estado final, verificar estado
+        if (this.loading) {
+          this.verifyFinalStatus(taskId);
+        }
       }
     });
+  }
+
+  private updateTaskStatus(status: any): void {
+    console.log(`🔄 [ADD-CARD] Actualizando estado:`, status);
+    
+    // Actualizar progreso y mensaje
+    this.progress = status.progress || 0;
+    this.statusMessage = this.getStatusMessage(status.status);
+
+    // Manejar estados finales
+    if (status.status === 'completed') {
+      this.handleTaskCompletion(status);
+    } else if (status.status === 'failed') {
+      this.handleTaskFailure(status);
+    } else if (status.status === 'cancelled') {
+      this.handleTaskCancellation();
+    } else {
+      console.log(`🔄 [ADD-CARD] Tarea en progreso: ${status.status} (${this.progress}%)`);
+    }
+  }
+
+  private handleTaskCompletion(status: any): void {
+    console.log(`✅ [ADD-CARD] Tarea completada exitosamente`);
+    this.currentTaskId = null;
+    this.loading = false;
+    this.progress = 100;
+    
+    // Mostrar mensaje de éxito
+    this.snackBar.open('¡Sincronización completada exitosamente!', 'Cerrar', { 
+      duration: 3000,
+      panelClass: ['success-snackbar']
+    });
+
+    // Esperar un momento para que se vea el 100% antes de cerrar
+    setTimeout(() => {
+      this.dialogRef.close(true);
+    }, 1000);
+  }
+
+  private handleTaskFailure(status: any): void {
+    console.log(`❌ [ADD-CARD] Tarea falló:`, status);
+    this.currentTaskId = null;
+    this.error = status.error || status.message || 'Error durante la sincronización';
+    this.canRetry = true;
+    this.loading = false;
+    
+    this.snackBar.open(this.error, 'Cerrar', { 
+      duration: 7000,
+      panelClass: ['error-snackbar']
+    });
+  }
+
+  private handleTaskCancellation(): void {
+    console.log(`🚫 [ADD-CARD] Tarea cancelada`);
+    this.currentTaskId = null;
+    this.loading = false;
+    this.progress = 0;
+    
+    this.snackBar.open('Sincronización cancelada', 'Cerrar', { 
+      duration: 3000,
+      panelClass: ['warning-snackbar']
+    });
+  }
+
+  private handleTaskError(error: any): void {
+    this.currentTaskId = null;
+    const errorMessage = this.getErrorMessageFromError(error) || 'Error al monitorear el progreso.';
+    this.error = errorMessage;
+    this.canRetry = true;
+    this.loading = false;
+    
+    this.snackBar.open(errorMessage, 'Cerrar', { 
+      duration: 7000,
+      panelClass: ['error-snackbar']
+    });
+  }
+
+  private verifyFinalStatus(taskId: string): void {
+    // Verificar el estado final si el monitoreo se completa sin un estado definitivo
+    this.scraperService.getTaskStatus(taskId).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (finalStatus) => {
+        this.updateTaskStatus(finalStatus);
+      },
+      error: (err) => {
+        console.error(`❌ [ADD-CARD] Error al verificar estado final:`, err);
+        this.handleTaskError(err);
+      }
+    });
+  }
+
+  getStatusMessage(status: string): string {
+    const messages: { [key: string]: string } = {
+      'pending': 'Esperando inicio...',
+      'processing': 'Procesando información...',
+      'completed': '¡Sincronización completada!',
+      'failed': 'Error en la sincronización',
+      'cancelled': 'Sincronización cancelada',
+      'initializing': 'Iniciando sincronización...',
+      'logging_in': 'Iniciando sesión en el banco...',
+      'fetching_data': 'Obteniendo información de la cuenta...'
+    };
+    return messages[status] || status;
   }
 
   // --- Manual TAB
@@ -441,19 +534,6 @@ export class AddCardDialogComponent implements OnInit, OnDestroy {
         }
       });
     }
-  }
-  getStatusMessage(status: string): string {
-    const messages: { [key: string]: string } = {
-      'pending': 'Esperando inicio...',
-      'processing': 'Procesando información...',
-      'completed': 'Sincronización completada',
-      'failed': 'Error en la sincronización',
-      'cancelled': 'Sincronización cancelada',
-      'initializing': 'Iniciando sincronización...',
-      'logging_in': 'Iniciando sesión en el banco...',
-      'fetching_data': 'Obteniendo información de la cuenta...'
-    };
-    return messages[status] || status;
   }
   getErrorMessageFromError(error: any): string {
     if (typeof error === 'string') return error;

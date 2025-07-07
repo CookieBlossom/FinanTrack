@@ -77,8 +77,9 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
     loadAnalyticsData(): void {
         this.isLoading = true;
         this.error = null;
+        this.chartData = []; // Limpiar datos anteriores
         
-        this.analyticsService.getAnalyticsData().subscribe({
+        this.analyticsService.refreshData().subscribe({
             next: (data: AnalyticsData) => {
                 this.hasData = data.hasData;
                 this.spendingLimits = data.spendingLimits;
@@ -110,11 +111,11 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
         if (data.chartData.realTransactions.length > 0) {
             data.chartData.realTransactions.forEach((transaction: { month: string; type: string; total: number }) => {
                 const transactionDate = new Date(transaction.month);
-                const month = transactionDate.toLocaleString('es-ES', { month: 'short' });
+                const month = this.formatMonth(transactionDate);
                 const year = transactionDate.getFullYear();
                 
                 months.add(month);
-                this.monthToYearMap.set(month, year); // Almacenar el año real del mes
+                this.monthToYearMap.set(month, year);
                 
                 if (!seriesMap.has(month)) {
                     seriesMap.set(month, new Map());
@@ -127,11 +128,11 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
         if (data.chartData.expectedSubscriptions.length > 0) {
             data.chartData.expectedSubscriptions.forEach((subscription: { month: string; type: string; total: number }) => {
                 const subscriptionDate = new Date(subscription.month);
-                const month = subscriptionDate.toLocaleString('es-ES', { month: 'short' });
+                const month = this.formatMonth(subscriptionDate);
                 const year = subscriptionDate.getFullYear();
                 
                 months.add(month);
-                this.monthToYearMap.set(month, year); // Almacenar el año real del mes
+                this.monthToYearMap.set(month, year);
                 
                 if (!seriesMap.has(month)) {
                     seriesMap.set(month, new Map());
@@ -144,11 +145,11 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
         if (data.chartData.expectedBudgets.length > 0) {
             data.chartData.expectedBudgets.forEach((budget: { month: string; type: string; total: number }) => {
                 const budgetDate = new Date(budget.month);
-                const month = budgetDate.toLocaleString('es-ES', { month: 'short' });
+                const month = this.formatMonth(budgetDate);
                 const year = budgetDate.getFullYear();
                 
                 months.add(month);
-                this.monthToYearMap.set(month, year); // Almacenar el año real del mes
+                this.monthToYearMap.set(month, year);
                 
                 if (!seriesMap.has(month)) {
                     seriesMap.set(month, new Map());
@@ -157,7 +158,17 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
             });
         }
 
-        // Convertir a formato de series
+        // Convertir a formato de series y ordenar por fecha
+        const sortedMonths = Array.from(months).sort((a, b) => {
+            const yearA = this.monthToYearMap.get(a) || 0;
+            const yearB = this.monthToYearMap.get(b) || 0;
+            if (yearA !== yearB) return yearA - yearB;
+            
+            const monthIndexA = this.getMonthIndex(a);
+            const monthIndexB = this.getMonthIndex(b);
+            return monthIndexA - monthIndexB;
+        });
+
         const series: ChartSeries[] = [
             { name: 'Ingresos Reales', series: [] },
             { name: 'Costos Reales', series: [] },
@@ -165,94 +176,27 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
             { name: 'Costos Esperados', series: [] }
         ];
 
-        Array.from(months).sort().forEach(month => {
+        sortedMonths.forEach(month => {
             const monthData = seriesMap.get(month);
             if (monthData) {
-                series[0].series.push({ name: month, value: monthData.get('income') || 0 });
-                series[1].series.push({ name: month, value: monthData.get('expense') || 0 });
-                series[2].series.push({ name: month, value: monthData.get('expected_income') || 0 });
-                series[3].series.push({ name: month, value: monthData.get('expected_expense') || 0 });
+                const year = this.monthToYearMap.get(month);
+                const monthLabel = `${month} ${year}`;
+                
+                series[0].series.push({ name: monthLabel, value: monthData.get('income') || 0 });
+                series[1].series.push({ name: monthLabel, value: monthData.get('expense') || 0 });
+                series[2].series.push({ name: monthLabel, value: monthData.get('expected_income') || 0 });
+                series[3].series.push({ name: monthLabel, value: monthData.get('expected_expense') || 0 });
             }
         });
 
-        // Filtrar series vacías
+        // Filtrar series vacías y actualizar chartData
         this.chartData = series.filter(series => 
             series.series.some(point => point.value > 0)
         );
     }
 
-    ngAfterViewInit(): void {
-        const resizeObserver = new ResizeObserver(entries => {
-            for (let entry of entries) {
-                const width = entry.contentRect.width;
-                const height = entry.contentRect.height * 0.8;
-                this.chartView = [width, height];
-                this.cdr.detectChanges();
-            }
-        });
-
-        resizeObserver.observe(this.chartContainerRef.nativeElement);
-
-        // Observador para detectar los ticks del eje X
-        const mutationObserver = new MutationObserver(() => {
-            const ticks = this.chartEl.nativeElement.querySelectorAll('g.x.axis g.tick text');
-            if (ticks.length > 0) {
-                ticks.forEach((tick: any) => {
-                    tick.style.cursor = 'pointer';
-                    tick.style.fill = 'var(--color-primary)';
-                    tick.style.fontWeight = '600';
-                    tick.addEventListener('click', () => {
-                        const month = tick.textContent?.trim();
-                        if (month) this.onXAxisLabelClick(month);
-                    });
-                });
-                mutationObserver.disconnect();
-            }
-        });
-
-        mutationObserver.observe(this.chartEl.nativeElement, {
-            childList: true,
-            subtree: true,
-        });
-    }
-
-    onXAxisLabelClick(month: string) {
-        this.selectedMonth = month;
-        const point = this.chartData[0].series.find(d => d.name === month);
-        this.monthData = point || null;
-        
-        // Cargar estadísticas específicas del mes
-        this.loadMonthlyStatistics(month);
-    }
-
-    // Función para obtener estadísticas de un mes específico
-    loadMonthlyStatistics(monthName: string): void {
-        // Convertir nombre del mes a número
-        const monthIndex = this.getMonthIndex(monthName);
-        if (monthIndex === -1) {
-            console.error('Mes inválido:', monthName);
-            return;
-        }
-
-        // Obtener el año real del mes desde el mapeo
-        const realYear = this.monthToYearMap.get(monthName) || new Date().getFullYear();
-        
-        this.analyticsService.getAnalyticsDataByMonth(realYear, monthIndex + 1).subscribe({
-            next: (data: AnalyticsData) => {
-                this.monthlySummary = data.monthlySummary;
-                this.cdr.detectChanges();
-            },
-            error: (error) => {
-                console.error('Error al cargar estadísticas mensuales:', error);
-            }
-        });
-    }
-
-    // Función para resetear a vista general
-    resetToGeneralView(): void {
-        this.selectedMonth = null;
-        this.monthData = null;
-        this.loadAnalyticsData(); // Recargar datos generales
+    private formatMonth(date: Date): string {
+        return date.toLocaleString('es-ES', { month: 'short' });
     }
 
     // Función auxiliar para convertir nombre de mes a índice
@@ -262,6 +206,42 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
             'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
         ];
         return months.indexOf(monthName.toLowerCase().substring(0, 3));
+    }
+
+    onXAxisLabelClick(monthLabel: string) {
+        this.selectedMonth = monthLabel;
+        const point = this.chartData[0].series.find(d => d.name === monthLabel);
+        this.monthData = point || null;
+        
+        // Extraer mes y año del label
+        const [month, year] = monthLabel.split(' ');
+        const monthIndex = this.getMonthIndex(month);
+        
+        if (monthIndex !== -1 && year) {
+            this.loadMonthlyStatistics(parseInt(year), monthIndex + 1);
+        }
+    }
+
+    // Función para obtener estadísticas de un mes específico
+    loadMonthlyStatistics(year: number, month: number): void {
+        this.analyticsService.getAnalyticsDataByMonth(year, month).subscribe({
+            next: (data: AnalyticsData) => {
+                this.monthlySummary = data.monthlySummary;
+                this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('Error al cargar estadísticas mensuales:', error);
+                this.error = 'Error al cargar los datos del mes seleccionado.';
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    // Función para resetear a vista general
+    resetToGeneralView(): void {
+        this.selectedMonth = null;
+        this.monthData = null;
+        this.loadAnalyticsData(); // Recargar datos generales
     }
 
     // Getter para el título del resumen
@@ -310,6 +290,41 @@ export class AnalyticsComponent implements AfterViewInit, OnInit {
             return 'No hay datos';
         }
         return new Date(value).toLocaleDateString('es-ES');
+    }
+
+    ngAfterViewInit(): void {
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const width = entry.contentRect.width;
+                const height = entry.contentRect.height * 0.8;
+                this.chartView = [width, height];
+                this.cdr.detectChanges();
+            }
+        });
+
+        resizeObserver.observe(this.chartContainerRef.nativeElement);
+
+        // Observador para detectar los ticks del eje X
+        const mutationObserver = new MutationObserver(() => {
+            const ticks = this.chartEl.nativeElement.querySelectorAll('g.x.axis g.tick text');
+            if (ticks.length > 0) {
+                ticks.forEach((tick: any) => {
+                    tick.style.cursor = 'pointer';
+                    tick.style.fill = 'var(--color-primary)';
+                    tick.style.fontWeight = '600';
+                    tick.addEventListener('click', () => {
+                        const month = tick.textContent?.trim();
+                        if (month) this.onXAxisLabelClick(month);
+                    });
+                });
+                mutationObserver.disconnect();
+            }
+        });
+
+        mutationObserver.observe(this.chartEl.nativeElement, {
+            childList: true,
+            subtree: true,
+        });
     }
 }
 
