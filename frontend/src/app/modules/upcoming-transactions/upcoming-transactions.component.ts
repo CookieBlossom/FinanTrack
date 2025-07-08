@@ -33,6 +33,7 @@ import { MovementService } from '../../services/movement.service';
 import { ProjectedMovement } from '../../models/projected-movement.model';
 import { AuthTokenService } from '../../services/auth-token.service';
 import { MovementCreate } from '../../models/movement.model';
+import { AuthService } from '../../services/auth.service';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -263,6 +264,7 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     private projectedMovementService: ProjectedMovementService,
     private movementService: MovementService,
     private authTokenService: AuthTokenService,
+    private authService: AuthService,
     private snackBar: MatSnackBar
   ) {
     // 🔄 Inicializar observables reactivos
@@ -277,6 +279,14 @@ export class UpcomingTransactionsComponent implements OnInit, OnDestroy {
     // Configurar funciones globales para los botones de acción
     (window as any).completeMovement = (id: number) => this.completeMovement(id);
     (window as any).cancelMovement = (id: number) => this.cancelMovement(id);
+
+    // Suscribirse al evento de logout
+    this.authService.onLogout$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.rowData = [];
+      console.log('🧹 [UpcomingTransactionsComponent] Datos limpiados por logout');
+    });
   }
 
   ngOnInit(): void {

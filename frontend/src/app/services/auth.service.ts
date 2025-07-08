@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { Observable, throwError, BehaviorSubject, Subject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthResponse } from '../models/user.model';
@@ -15,7 +15,10 @@ import { PlanService } from './plan.service';
 export class AuthService {
   private apiUrl = environment.apiUrl;
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private logoutEvent = new Subject<void>();
+  
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  onLogout$ = this.logoutEvent.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -82,6 +85,8 @@ export class AuthService {
     console.log('Cerrando sesión...');
     this.authTokenService.removeToken();
     this.isAuthenticatedSubject.next(false);
+    // Emitir evento de logout
+    this.logoutEvent.next();
     // Limpiar información del plan al cerrar sesión
     this.planService.clearCurrentPlan();
     this.router.navigate(['/login']);

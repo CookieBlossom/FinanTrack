@@ -9,6 +9,7 @@ import {
   ProjectedMovementUpdate, 
   ProjectedMovementFilters 
 } from '../models/projected-movement.model';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -28,7 +29,25 @@ export class ProjectedMovementService {
   public intelligentMovements$ = this.intelligentMovementsSubject.asObservable();
   public loading$ = this.loadingSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {
+    // Suscribirse a cambios en la autenticación
+    this.authService.isAuthenticated$.subscribe(isAuthenticated => {
+      if (!isAuthenticated) {
+        this.clearCache();
+      }
+    });
+  }
+  clearCache(): void {
+    this.projectedMovementsSubject.next([]);
+    this.intelligentMovementsSubject.next([]);
+    this.projectedLoaded = false;
+    this.intelligentLoaded = false;
+    this.loadingSubject.next(false);
+    console.log('🧹 [ProjectedMovementService] Cache limpiado');
+  }
 
   // 🔄 Obtener todos los movimientos proyectados (reactivo)
   getProjectedMovements(): Observable<ProjectedMovement[]> {
@@ -262,6 +281,8 @@ export class ProjectedMovementService {
       errorMessage = 'No se pudo conectar con el servidor. Por favor, verifica tu conexión a internet.';
     } else if (error.status === 401) {
       errorMessage = 'No autorizado. Por favor, inicia sesión nuevamente.';
+      this.clearCache(); // Limpiar caché en caso de error de autorización
+      this.authService.logout(); // Cerrar sesión automáticamente
     } else if (error.status === 403) {
       errorMessage = 'No tienes permisos para realizar esta acción.';
     } else if (error.status === 404) {
