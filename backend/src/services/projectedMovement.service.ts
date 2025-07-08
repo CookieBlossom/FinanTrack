@@ -19,6 +19,14 @@ export class ProjectedMovementService {
         return Number(res.rows[0].cnt);
       }
     async getAllProjectedMovements(userId: number): Promise<IProjectedMovement[]> {
+        // Verificar que el usuario existe y está activo
+        const userQuery = 'SELECT id FROM "user" WHERE id = $1 AND is_active = true AND deleted_at IS NULL';
+        const userResult = await this.pool.query(userQuery, [userId]);
+        
+        if (userResult.rows.length === 0) {
+            throw new DatabaseError('Usuario no encontrado o inactivo');
+        }
+
         const query = `
             SELECT 
                 pm.id, pm.user_id as "userId", pm.category_id as "categoryId",

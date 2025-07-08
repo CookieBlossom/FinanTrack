@@ -2,12 +2,13 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../interfaces/AuthRequest';
 import jwt from 'jsonwebtoken';
 import { IUserToken } from '../interfaces/IUser';
+import { pool } from '../config/database/connection';
 
-export const authMiddleware = (
+export const authMiddleware = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -26,7 +27,22 @@ export const authMiddleware = (
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET || '2004'
-      ) as IUserToken
+      ) as IUserToken;
+
+      // Verificar que el usuario existe y está activo
+      const userQuery = 'SELECT id, is_active FROM "user" WHERE id = $1 AND deleted_at IS NULL';
+      const userResult = await pool.query(userQuery, [decoded.id]);
+      
+      if (userResult.rows.length === 0) {
+        res.status(401).json({ error: 'Usuario no encontrado' });
+        return;
+      }
+
+      if (!userResult.rows[0].is_active) {
+        res.status(401).json({ error: 'Usuario inactivo' });
+        return;
+      }
+
       // Asegurar que el token decodificado tenga un rol
       if (!decoded.role) {
         decoded.role = 'user'; // Rol por defecto

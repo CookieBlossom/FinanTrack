@@ -52,6 +52,14 @@ export class CategoryService {
     async getUserCategories(userId: number): Promise<ICategory[]> {
         console.log(`Obteniendo categorías para usuario ${userId}`);
         
+        // Verificar que el usuario existe y está activo
+        const userQuery = 'SELECT id FROM "user" WHERE id = $1 AND is_active = true AND deleted_at IS NULL';
+        const userResult = await this.pool.query(userQuery, [userId]);
+        
+        if (userResult.rows.length === 0) {
+            throw new DatabaseError('Usuario no encontrado o inactivo');
+        }
+        
         const query = `
             SELECT 
                 c.*, 

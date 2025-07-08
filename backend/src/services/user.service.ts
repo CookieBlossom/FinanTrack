@@ -179,15 +179,15 @@ export class UserService {
       if (!isPasswordValid) {
         throw new DatabaseError('La contraseña es incorrecta');
       }
-      const name = (user.first_name || user.firstName || '') +
-      ((user.last_name || user.lastName) ? ' ' + (user.last_name || user.lastName) : '');
       const planRes = await this.pool.query(planQuery, [user.id]);
       const planData = planRes.rows[0] || { plan_id: 1, plan_name: 'basic' };
       const { plan_id, plan_name } = planData;
+      const name = (user.first_name || user.firstName || '') +
+        ((user.last_name || user.lastName) ? ' ' + (user.last_name || user.lastName) : '') || user.email;
       const payload = {
         id: user.id,
         email: user.email,
-        name: user.email,
+        name: name,
         role: user.role,
         planId: plan_id,
         planName: plan_name
